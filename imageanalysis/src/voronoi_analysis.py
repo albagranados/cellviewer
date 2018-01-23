@@ -7,13 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi
 import cv2  # RUN WITH ASTYPE(FLOAT)
-# my_modules
-sys.path.append(os.path.join(os.getcwd(), 'src'))  # if we want to run in the Python Console. Source in wdir
-sys.path.append(os.path.join(os.getcwd(), 'src/ThirdParty/naturalneighbor-0.1.7/naturalneighbor'))
-import vprocessing as vproc
-import iprocessing as iproc  # image processings
-import statistics as stat
-import utilities as util
 # configure latex plots
 matplotlib.rcParams['text.usetex'] = True; matplotlib.rcParams['font.family'] = 'serif'
 
@@ -21,11 +14,16 @@ matplotlib.rcParams['text.usetex'] = True; matplotlib.rcParams['font.family'] = 
 __author__ = 'alba granados'; __email__ = "alba.granados@crg.eu"; __project__ = 'voronoi analysis'
 
 # set working directory
-parent_dir = '/home/alba/DropboxCRG/postdoc_CRG/coding/cellviewer/voronoi'
-os.chdir(parent_dir)
+parent_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis'; os.chdir(parent_dir)
+source_dir = parent_dir + '/src/'; sys.path.insert(0, source_dir)
 output_dir = parent_dir + '/output/'  # set output directory
 if not os.path.exists(output_dir): os.makedirs(output_dir)
 
+# my_modules
+import vprocessing as vproc
+import iprocessing as iproc  # image processings
+import statistics as stat
+import utilities as util
 
 # # =========== READ INPUT FILE =================
 # # ================================================
@@ -38,8 +36,9 @@ experiment_author = ''; fileDir = ''; fileName = ''
 # fileDir = '/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/'
 # fileName = 'pp_triangle'
 
-fileDir = '/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp'
-fileName = 'pp_sample2.txt'
+
+fileDir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/pabloguillaume/'
+fileName = 'Cell2_000_no_bg_indiv_multi_SVC_list_Drift_corrected_crop_AND_lyso_list_dc_woch9_crop2'
 points = util.read_points(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=2, out_channel='all',
                           save_output_dir=None, plot=True)
 
@@ -143,7 +142,7 @@ if dict_inputfile.get('ispp'):
         print 'Plotting Voronoi zero-rank densities point pattern...',
         threshold = None  # float(2*vor.densities_average)
         vproc.plot_densities(vor, threshold=threshold, show_points=True, cmap='jet', norm='log', plot_axis='on')
-        plt.savefig(output_dir + 'densities_pp.pdf', bbox_inches='tight'); print 'Saved.'
+        # plt.savefig(output_dir + 'densities_pp.pdf', bbox_inches='tight'); print 'Saved.'
 
         # print 'Plotting Voronoi areas...'
         # threshold = float((2*vor.densities_average)**-1)
@@ -205,7 +204,7 @@ print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 reload(vproc)
 print 'Plotting intensity-dependent Voronoi features on Voronoi...'; start_time = time.time()
 vproc.plot_feature(vor, feature, dict_sift, show_points=True, cmap='jet', norm='log', plot_axis='on')
-plt.savefig(output_dir + 'features_pp.pdf', bbox_inches='tight')
+# plt.savefig(output_dir + 'features_pp.pdf', bbox_inches='tight')
 print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 
 
