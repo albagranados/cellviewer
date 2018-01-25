@@ -29,37 +29,22 @@ import utilities as util
 # # ================================================
 experiment_author = ''; fileDir = ''; fileName = ''
 
-# experiment_author = 'petra'
-# fileDir = '/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/petra/'
-# fileName = '110716_c1_NB_pl3_84.8_data_to20000_small'
-
-# fileDir = '/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/'
-# fileName = 'pp_triangle'
-
-
 fileDir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/pabloguillaume/'
 fileName = 'Cell2_000_no_bg_indiv_multi_SVC_list_Drift_corrected_crop_AND_lyso_list_dc_woch9_crop2'
 points = util.read_points(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=2, out_channel='all',
                           save_output_dir=None, plot=True)
 
-
-# experiment_author = 'victoria'
-# fileDir = '/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated/'
-# points = util.read_points(fileDir, fileName=None, fileExt='.txt', storm=True, channels_num=2, save_output_dir=output_dir,
-#                          plot=True)
-
-# image = cv2.imread('../data/test/pixelated_triangle_square', 0).astype(float) # inputfile_ispp = False
-# image = image.T
+image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T # inputfile_ispp = False
 
 
 # # ============== INPUT PARAMETERS ========
 # # ========================================
 dict_inputfile = {'filename': fileName,
-                  'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [0, 30, 85, 125],
+                  'ispp': 0, 'compute_ROI': 0, 'crop': 1, 'crop_range': [0, 30, 85, 125],
                              'pixelate': 1,
                              'tessellate': 0,
                   'original_pixel_size': 1, 'photonconv': 0.14}   # [nm]/[pixel], e.g. STORM
-analysis_pixel_size = 0.2  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+analysis_pixel_size = 1  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
 scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
 dict_image = {'scale_pixel_size': scale_pixel_size, 'resolution': 1, # resolution=10??
               'original_pixel_size': dict_inputfile.get('original_pixel_size'),
@@ -136,7 +121,7 @@ if dict_inputfile.get('ispp'):
         image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
                                             interpolate_method=dict_image.get('interpolate_method'), fill_value=0.0)
         print 'Plotting Voronoi zero-rank densities image...',
-        iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
+        iproc.plot_image(image, cmap='gray', norm='linear', plot_axis='on')
         plt.savefig(output_dir + 'densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
         print 'Plotting Voronoi zero-rank densities point pattern...',
@@ -174,19 +159,19 @@ dict_sift = {'scale_pixel_size': scale_pixel_size, 'resolution': 1, # resolution
 
               # feature detection
              't': 10, 'feature_name': 'blob',
-             'thresholding': True, 'threshold_percent': 0.99,
-             'scale_range_is': 'pixel', 'scale_ini': 10, 'scale_end': 40, 'scale_spacing': 'lin',
-             'automatic_nscales': 8,
+             'thresholding': 0, 'threshold_percent': 0.99,
+             'scale_range_is': 'pixel', 'scale_ini': 14, 'scale_end': 50, 'scale_spacing': 'lin',
+             'automatic_nscales': 10,
 
-             'max_filter_width': 9, 'max_filter_depth': 7, # [scale pixel size]
+             'max_filter_width': 3, 'max_filter_depth': 3, # [scale pixel size]
 
              # feature description [main orientation(s)]
-             'compute_orientation': True, 'n_bins_ori': 36, 'peak_ratio': 0.7, 'sigma_ori_times': 1.5,
+             'compute_orientation': False, 'n_bins_ori': 36, 'peak_ratio': 0.7, 'sigma_ori_times': 1.5,
              'window_ori_radtimes': 2, 'smooth_cycles': 2,
 
              # feature description [histograms]
              'compute_sift_descr': True, 'sigma_descr_times': 1.5, 'window_descr_radtimes': 2, 'n_hist': 16,
-             'n_bins_descr': 8, 'threshold_sat': 0.2, 'plot_graphics': False}
+             'n_bins_descr': 8, 'threshold_sat': 0.2, 'plot_graphics': 0}
 
 util.saveparameters(output_dir + 'parameters.txt', dict1=dict_inputfile, dict2=dict_image, dict3=dict_sift)
 
@@ -197,7 +182,8 @@ print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 print "\tnumber of (thresholded) features detected = %d" % feature.get('argmaxgrad')[0].shape
 
 print 'Plotting intensity-dependent Voronoi features... ...'; start_time = time.time()
-iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='jet', norm='log', plot_axis='on')
+iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='gray', norm='linear',
+                   plot_axis='on')
 plt.savefig(output_dir + 'features_image.pdf', bbox_inches='tight')
 print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 

@@ -382,8 +382,11 @@ def get_blob(image, kwargs):
         local_maxima_locations = np.where(strength > featurestrength_dila)
 
         argmaxgrad = local_maxima_locations[1:]  # tuple, true values
-        featurestrength = np.zeros(shape=image.shape)  # 2d array
-        featurestrength[argmaxgrad] = strength[local_maxima_locations]
+        # featurestrength = np.zeros(shape=image.shape)  # 2d array
+        # featurestrength[argmaxgrad] = strength[local_maxima_locations]
+        featurestrength = strength[local_maxima_locations]
+
+        plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,326,244], 'k.-'); plt.hold(0)
 
         tnew = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
@@ -392,19 +395,26 @@ def get_blob(image, kwargs):
         if thresholding:
             print '\tThresholding...',
             threshold_percent = kwargs.get('threshold_percent', 0.4)  # default 40% down the maximum response
-            threshold = np.max(featurestrength[argmaxgrad]) - threshold_percent * (np.max(featurestrength[argmaxgrad]) -
-                                                                                   np.min(featurestrength[argmaxgrad]))
+            # threshold = np.max(featurestrength[argmaxgrad]) - threshold_percent * (np.max(featurestrength[argmaxgrad]) -
+            #                                                                        np.min(featurestrength[argmaxgrad]))
+            #
+            # temp = np.where(featurestrength[argmaxgrad] > threshold)  # tuple
+            # argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
+            # argmaxgrad = argmaxgrad_threshold
+            threshold = np.max(featurestrength) - threshold_percent * (np.max(featurestrength) -
+                                                                       np.min(featurestrength))
+
+            temp = np.where(featurestrength > threshold)  # tuple
+            argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
+            argmaxgrad = argmaxgrad_threshold
+            tnew_threshold = tnew[temp[0]]
+            tnew = tnew_threshold
             print 'Done.'
         else:
             threshold = -float('inf')
 
-        temp = np.where(featurestrength[argmaxgrad] > threshold)  # tuple
-        argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
-        argmaxgrad = argmaxgrad_threshold
-        tnew_threshold = tnew[temp[0]]
-        tnew = tnew_threshold
         image_roi = np.zeros(image.shape)
-        image_roi[argmaxgrad_threshold] = 1
+        image_roi[argmaxgrad] = 1
         image_roi = flood_fill(image_roi)
         # end
 
@@ -616,7 +626,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
 
     if blob_color is None:
         cmap = plt.cm.gray
-        values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
+        # values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
+        values = featurestrength  # range(argmaxgrad[0].shape[0])
         # values = np.sqrt(tnew) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values)) #colors.Normalize(vmin=0, vmax=np.max(values))
         #
@@ -643,12 +654,14 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                 # # if strength < 1:
                 if scalarmap is not None:
                     # strength = np.sqrt(tnew[ii]) * 2 * 1.5
-                    strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
-                    blob_color = scalarmap.to_rgba(strength)  # values[ii])
+                    # strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
+                    strength = featurestrength[ii]
+                    blob_color = 'r'#scalarmap.to_rgba(strength)  # values[ii])
                 ax.plot(ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx, ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 +
                         by, color=blob_color, linewidth=1.5)
                 # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
                 #         color='k')
+                # ax.text( bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='k')
                 if len(orientation) > 0:
                     for jj in orientation[ii]:
                         if cluster_color is not None:
