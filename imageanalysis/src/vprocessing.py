@@ -195,12 +195,12 @@ def compute_areas(vor, original_pixel_size):
             intersec_x, intersec_y = intersec.exterior.xy
             areas[p1] = 0.5 * np.abs(np.dot(polygon_vertices[:, 0], np.roll(polygon_vertices[:, 1], -1))
                                      - np.dot(polygon_vertices[:, 1], np.roll(polygon_vertices[:, 0], -1)))
-            # if set(list(poly_x)) == set(list(intersec_x)) and set(list(poly_y)) == set(list(intersec_y)):
-            #     # Shoelace formula
-            #     areas[p1] = 0.5*np.abs(np.dot(polygon_vertices[:, 0], np.roll(polygon_vertices[:, 1], -1))
-            #                            - np.dot(polygon_vertices[:, 1], np.roll(polygon_vertices[:, 0], -1)))
-            # else:  # polygon intersection convex hull is not polygon
-            #     areas[p1] = None #-1  # area -1 means voronoi region outside the convex hull (~ROI)
+            if set(list(poly_x)) == set(list(intersec_x)) and set(list(poly_y)) == set(list(intersec_y)):
+                # Shoelace formula
+                areas[p1] = 0.5*np.abs(np.dot(polygon_vertices[:, 0], np.roll(polygon_vertices[:, 1], -1))
+                                       - np.dot(polygon_vertices[:, 1], np.roll(polygon_vertices[:, 0], -1)))
+            else:  # polygon intersection convex hull is not polygon
+                areas[p1] = float('inf') #-1  # area -1 means voronoi region outside the convex hull (~ROI)
 
     vor.areas = original_pixel_size**2*areas   # in nm2
     vor.areas_total = float(np.sum(vor.areas[vor.areas > 0]))  # in nm2
@@ -358,7 +358,7 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     return densities_image
 
 
-def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cmap='jet', norm=None,
+def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cmap='jet', norm=None,
                  blob_color=None, cluster_color=None):
     """
     Function for plotting scale-space feature on Vornoi tessellation (STORM pixel size)
@@ -376,8 +376,8 @@ def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cm
     """
     import matplotlib.colors as colors
 
-    feature_name = dict_image.get('feature_name')
-    scale_pixel_size = dict_image.get('scale_pixel_size')
+    feature_name = dict_sift.get('feature_name')
+    scale_pixel_size = dict_sift.get('scale_pixel_size')
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     tnew = feature.get('tnew')  # 1d-array
     featurestrength = feature.get('featurestrength')
@@ -388,8 +388,8 @@ def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cm
 
     if blob_color is None:
         cmap = plt.cm.gray
-        # values = np.sqrt(tnew) * 2*1.5
-        values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
+        values = np.sqrt(tnew) * 2*1.5*scale_pixel_size
+        # values = featurestrength # range(argmaxgrad[0].shape[0])
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
         scalarMap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
         scalarMap.set_array(values)
@@ -411,8 +411,8 @@ def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cm
                 bx = argmaxgrad[0][ii]
                 # if strength < 1:
                 if scalarMap is not None:
-                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5
-                    strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
+                    strength = np.sqrt(tnew[ii]) * 2 * 1.5*scale_pixel_size
+                    # strength = featurestrength[ii]
                     blob_color = scalarMap.to_rgba(strength)
                 ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
                               oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
@@ -429,8 +429,8 @@ def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cm
                                   np.sqrt(tnew[ii]) * 1 * 1.5 * np.sin(jj)*scale_pixel_size,
                                   head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.1)
 
-        fig.colorbar(scalarMap, label='max$_t\{\Delta_{\gamma-norm}\}$')
-        # fig.colorbar(scalarMap, label='3$\sqrt{t}$')
+        # fig.colorbar(scalarMap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+        fig.colorbar(scalarMap, label='3$\sqrt{t}$ [pixel - original]')
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -442,7 +442,7 @@ def plot_feature(vor, feature, dict_image, plot_axis='on', show_points=False, cm
     return ax
 
 
-def localizations_feature(vor, feature, dict_densities_image):
+def localizations_feature(vor, feature, dict_sift):
     """
     Count number of localizations within intensity-dependent and feature-based clusters (default: blobs)
 
@@ -455,8 +455,8 @@ def localizations_feature(vor, feature, dict_densities_image):
     localizations within that feature (e.g., blob with radius 2*\sqrt{t})
     """
 
-    feature_name = dict_densities_image.get('feature_name')
-    scale_pixel_size = dict_densities_image.get('scale_pixel_size')
+    feature_name = dict_sift.get('feature_name')
+    scale_pixel_size = dict_sift.get('scale_pixel_size')
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     tnew = feature.get('tnew')  # 1d-array
 
@@ -478,38 +478,39 @@ def localizations_feature(vor, feature, dict_densities_image):
     return number_localizations
 
 
-def nnd_feature(feature, dict_densities_image):
+def nnd_feature(feature, dict_sift):
 
     from sklearn.neighbors import NearestNeighbors
+    import statistics as stat
+    import utilities as util
 
-    feature_name = dict_densities_image.get('feature_name')
-    scale_pixel_size = dict_densities_image.get('scale_pixel_size')
+    feature_name = dict_sift.get('feature_name')
+    pixel_size = dict_sift.get('scale_pixel_size') * dict_sift.get('original_pixel_size', 1)
+
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     tnew = feature.get('tnew')  # 1d-array
 
     scales = np.unique(np.append(tnew, float('inf')))
     number_features = np.histogram(tnew, bins=scales)
 
-
     if feature_name == 'blob':
         num_ini = 0
+        dist_all_features = []
+        fig, ax = plt.subplots()
         for ii, num in enumerate(number_features[0]):
             t = tnew[num_ini]
-            print t
             x = argmaxgrad[0][num_ini:num_ini+num]
             y = argmaxgrad[1][num_ini:num_ini+num]
             blobs_xy = np.array([x, y]).T
             nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
             distances, indices = nbrs.kneighbors(blobs_xy)
-            print distances
             num_ini = num_ini + num
-            plt.figure()
-            plt.boxplot(distances[1]*scale_pixel_size,t)
-        # plt.hold(True)
-    #
-    # #    return nnd_localizations
-    #
-    #
+            dist_all_features.append(3*np.sqrt(distances[:, 1])*pixel_size)
+            # ax.boxplot(distances[1]*scale_pixel_size, 3*np.sqrt(t)*scale_pixel_size)
+            # ax.hold(True)
+
+    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*pixel_size, bp=1)
+
     # x = argmaxgrad[0]
     # y = argmaxgrad[1]
     # blobs_xy = np.array([x, y]).T
@@ -517,3 +518,5 @@ def nnd_feature(feature, dict_densities_image):
     # distances, indices = nbrs.kneighbors(blobs_xy)
     #
     # stat.plot_hist(distances[1]*scale_pixel_size)
+
+    # return nnd_localizations

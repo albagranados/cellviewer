@@ -29,26 +29,25 @@ import utilities as util
 # # ================================================
 experiment_author = ''; fileDir = ''; fileName = ''
 
-fileDir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/pabloguillaume/'
-fileName = 'Cell2_000_no_bg_indiv_multi_SVC_list_Drift_corrected_crop_AND_lyso_list_dc_woch9_crop2'
-points = util.read_points(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=2, out_channel='all',
+fileDir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/petra/'
+fileName = '110716_c1_NB_pl3_84.8_data_to20000_crop'
+points = util.read_points(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=1, out_channel='all',
                           save_output_dir=None, plot=True)
 
-image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T # inputfile_ispp = False
-
+# image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T # inputfile_ispp = False
 
 # # ============== INPUT PARAMETERS ========
 # # ========================================
 dict_inputfile = {'filename': fileName,
-                  'ispp': 0, 'compute_ROI': 0, 'crop': 1, 'crop_range': [0, 30, 85, 125],
-                             'pixelate': 1,
-                             'tessellate': 0,
-                  'original_pixel_size': 1, 'photonconv': 0.14}   # [nm]/[pixel], e.g. STORM
-analysis_pixel_size = 1  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+                  'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [102, 121, 147, 165],
+                             'pixelate': 0,
+                             'tessellate': 1,
+                  'original_pixel_size': 160, 'photonconv': 0.14, 'resolution': 20}   # [nm]/[pixel], e.g. STORM
+analysis_pixel_size = 5  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
 scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
-dict_image = {'scale_pixel_size': scale_pixel_size, 'resolution': 1, # resolution=10??
+dict_image = {'scale_pixel_size': scale_pixel_size,
               'original_pixel_size': dict_inputfile.get('original_pixel_size'),
-              'interpolate_method': 'linear'}
+              'interpolate_method': 'nearest'}
 util.saveparameters(output_dir + 'parameters.txt', dict1=dict_inputfile, dict2=dict_image)
 
 if dict_inputfile.get('ispp'):
@@ -121,7 +120,7 @@ if dict_inputfile.get('ispp'):
         image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
                                             interpolate_method=dict_image.get('interpolate_method'), fill_value=0.0)
         print 'Plotting Voronoi zero-rank densities image...',
-        iproc.plot_image(image, cmap='gray', norm='linear', plot_axis='on')
+        iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
         plt.savefig(output_dir + 'densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
         print 'Plotting Voronoi zero-rank densities point pattern...',
@@ -159,9 +158,10 @@ dict_sift = {'scale_pixel_size': scale_pixel_size, 'resolution': 1, # resolution
 
               # feature detection
              't': 10, 'feature_name': 'blob',
-             'thresholding': 0, 'threshold_percent': 0.99,
-             'scale_range_is': 'pixel', 'scale_ini': 14, 'scale_end': 50, 'scale_spacing': 'lin',
-             'automatic_nscales': 10,
+             'thresholding': 1, 'threshold_percent': 0.8,
+             'scale_range_is': 'nm', 'scale_ini': 40, 'scale_end': 640, 'scale_spacing': 'odd',
+             'nscales': 150, #'scale_resolution': 1, # (radius) in scale_range_is (if [nm] and STORM -> min. 20nm)
+                             'scale_resolution': 2*dict_inputfile.get('resolution'),
 
              'max_filter_width': 3, 'max_filter_depth': 3, # [scale pixel size]
 
@@ -182,12 +182,11 @@ print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 print "\tnumber of (thresholded) features detected = %d" % feature.get('argmaxgrad')[0].shape
 
 print 'Plotting intensity-dependent Voronoi features... ...'; start_time = time.time()
-iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='gray', norm='linear',
+iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='jet', norm='log',
                    plot_axis='on')
 plt.savefig(output_dir + 'features_image.pdf', bbox_inches='tight')
 print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 
-reload(vproc)
 print 'Plotting intensity-dependent Voronoi features on Voronoi...'; start_time = time.time()
 vproc.plot_feature(vor, feature, dict_sift, show_points=True, cmap='jet', norm='log', plot_axis='on')
 # plt.savefig(output_dir + 'features_pp.pdf', bbox_inches='tight')
@@ -196,32 +195,29 @@ print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 
 # # ====== IMAGE PROCESSING - SAMPLE STATISTICS
 # # ===========================================
+print '\n _______SAMPLE STATISTICS_______'
+reload(vproc); reload(iproc); reload(stat); reload(util)
+print 'Computing intensity-dependent Voronoi features...'
+number_localizations = vproc.localizations_feature(vor, feature, dict_sift)
+print '\tNumber of localizations per cluster: Done.'
+nnd_localizations = vproc.nnd_feature(feature, dict_sift)
+print '\tNearest neighbor distance: Done.'
 
-# print 'sample statistics:'
-# print '\nCalculating number of localizations per intensity-dependent (blob) cluster...'; start_time = time.time()
-# number_localizations = vproc.localizations_feature(vor, feature, dict_sift)
-# print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
-#
-# print '\nCalculating nnd for intensity-dependent cluster...'; start_time = time.time()
-# nnd_localizations = vproc.nnd_feature(feature, dict_image)
-# print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
-#
-# blob_diameters = analysis_pixel_size*3*np.sqrt(feature.get('tnew'))
-# densities = number_localizations/((0.5*blob_diameters)**2*np.pi)
-#
-# vareas_statistics = stat.sample_statistics(vor.areas*dict_inputfile.get('original_pixel_size')**2)
-# feature_statistics = stat.sample_statistics(number_localizations)
-# densities_statistics = stat.sample_statistics(10**3*densities)
-# print 'Voronoi polygon areas [nm2]: \t', vareas_statistics
-# print 'number of loc. per (blob) feature: \t', feature_statistics
-# print 'local (blob) feature densities: \t', densities_statistics, ' [*10(-3) loc/nm2]'
-# # print 'Synthetic data info: \n', dict_synthetic_data
+blob_diameters = analysis_pixel_size*3*np.sqrt(feature.get('tnew'))
+densities = number_localizations/((0.5*blob_diameters)**2*np.pi)
 
-# print 'Plotting histograms of intensity-dependent Voronoi features...'
-# stat.plot_hist(blob_diameters, bins=analysis_pixel_size*3*np.sqrt(feature.get('scale_range')))
-# plt.xlabel(r'blob diameter [nm]')
-# stat.plot_hist(feature.get('tnew'), bins=feature.get('scale_range'))
-# plt.xlabel(r'scale t [=$\sigma^2$]')
+vareas_statistics = stat.sample_statistics(vor.areas*dict_inputfile.get('original_pixel_size')**2)
+feature_statistics = stat.sample_statistics(number_localizations)
+densities_statistics = stat.sample_statistics(10**3*densities)
+print 'Voronoi polygon areas [nm2]: \t', vareas_statistics
+print 'number of loc. per blob: \t', feature_statistics
+print 'local blob densities: \t', densities_statistics, ' [*10(-3) loc/nm2]'
+
+print 'Plotting histograms of intensity-dependent Voronoi features...'
+stat.plot_hist(blob_diameters, bins=analysis_pixel_size*3*np.sqrt(feature.get('scale_range')))
+plt.xlabel(r'blob diameter [nm]')
+stat.plot_hist(feature.get('tnew'), bins=feature.get('scale_range'))
+plt.xlabel(r'scale t [=$\sigma^2$]')
 
 # plt.figure(); plt.hist(blob_diameters, bins=analysis_pixel_size*3*np.sqrt(feature.get(
 #     'scale_range')))
@@ -252,7 +248,7 @@ print ("\n _______IMAGE PROCESSING: DONE (total time =  %.2f seconds)" % (time.t
 plt.close('all'); reload(stat); reload(iproc)
 print '\n _______ DESCRIPTORS ANALYSIS_______'; ini_time = time.time()
 fig2, ax2 = plt.subplots()
-for ii in range(3, 4):
+for ii in range(2, 3):
     fig1, ax1 = plt.subplots()
     kmeans = stat.siftdescr_analysis(feature, dict_sift, n_cluster=ii,  max_iter=300, n_jobs=-1,
                                      compute_pca=True, plot_graphics=True, fig=fig1, ax=ax1)
@@ -287,7 +283,7 @@ dict_sift = {'scale_pixel_size': scale_pixel_size, 'resolution': 1, # resolution
              'original_pixel_size': dict_inputfile.get('original_pixel_size'),
              't': 10, 'feature_name': 'blob',
              'thresholding': False, 'threshold_percent': 0.9, 'interpolate_method': 'cubic',
-             'scale_ini': 2, 'scale_end': 10, 'automatic_nscales': 150,
+             'scale_ini': 2, 'scale_end': 10, 'nscales': 150,
              'scale_spacing': 'odd', 'scale_range_is': 'pixel', 'max_filter_width': 9,
              'max_filter_depth': 100,
              'compute_orientation': False, 'n_bins_ori': 36, 'peak_ratio': 0.9, 'sigma_ori_times': 1.5,

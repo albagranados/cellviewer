@@ -215,10 +215,10 @@ def find_feature(image, kwargs):
     t = kwargs.get('t', 10)
     feature_name = kwargs.get('feature_name', 'blob')
     thresholding = kwargs.get('thresholding', False)
-    automatic_nscales = kwargs.get('automatic_nscales', 1)
+    nscales = kwargs.get('nscales', 1)
 
     if feature_name == 'edge':
-        feature = get_edge(image, t, automatic_nscales)
+        feature = get_edge(image, t, nscales)
 
     if feature_name == 'blob':
         feature = get_blob(image, kwargs)
@@ -303,10 +303,10 @@ def get_blob(image, kwargs):
     original_pixel_size = kwargs.get('original_pixel_size', 1)
     scale_pixel_size = kwargs.get('scale_pixel_size', 1)
     pixel_size = scale_pixel_size * original_pixel_size
-    resolution = kwargs.get('resolution', 1)
-    automatic_nscales = kwargs.get('automatic_nscales', 1)
+    nscales = kwargs.get('nscales', 1)
+    scale_resolution = kwargs.get('scale_resolution', 1) # only for odd spacing
     max_filter_width = kwargs.get('max_filter_width', 3)
-    max_filter_depth = kwargs.get('max_filter_depth', max_filter_width)
+    max_filter_depth = kwargs.get('max_filter_depth', None)
     scale_spacing = kwargs.get('scale_spacing', 'log')
     scale_ini = kwargs.get('scale_ini', 1)
     scale_end = kwargs.get('scale_end', 10)
@@ -315,7 +315,7 @@ def get_blob(image, kwargs):
     plot_graphics = kwargs.get('plot_graphics', False)
 
     gamma = 1  # parameter normalized derivatives
-    if automatic_nscales == 1:
+    if nscales == 1:
         scalespace = compute_space_derivatives(image, t)
         lxx = scalespace.get('lxx')
         lyy = scalespace.get('lyy')
@@ -330,40 +330,46 @@ def get_blob(image, kwargs):
         tnew = np.ones(len(argmaxgrad[0])) * t
         scale_range = tnew
     else:
+        print '\tComputing scale range...'
         if scale_spacing is 'odd':
             if kwargs.get('scale_range_is') is 'nm':
-                scale_ini = np.ceil((scale_ini / pixel_size * pixel_size / resolution - 1) / 2.)
-                scale_end = np.ceil((scale_end / pixel_size * pixel_size / resolution - 1) / 2.)
-                automatic_nscales = int(scale_end - scale_ini) + 1
-                max_filter_depth = automatic_nscales + 1
-            elif kwargs.get('scale_range_is') is 'pixel':
-                scale_ini = np.ceil((scale_ini - 1) / 2.)
-                scale_end = np.ceil((scale_end - 1) / 2.)
-                automatic_nscales = int(scale_end - scale_ini) + 1
-                max_filter_depth = automatic_nscales + 1
-            scale_range = (3 ** -2) * (resolution / pixel_size * (2 * np.linspace(scale_ini, scale_end,
-                                                                                  num=automatic_nscales) + 1)) ** 2
-        elif scale_spacing is 'log':
+                scale_ini = int(scale_ini/pixel_size)
+                scale_end = int(scale_end/pixel_size)
+                scale_resolution = np.ceil(scale_resolution/pixel_size)
+                print '\t\tWarning: if scale_resolution [nm] < analysis_pixel_size [nm], then scale_resolution = ' \
+                      'analysis_pixel_size:'
+                print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' %(scale_resolution,
+                                                                                             pixel_size)
+            scale_ini = np.ceil((scale_ini - 1) / 2.)
+            scale_end = np.ceil((scale_end - 1) / 2.)
+            if max_filter_depth is None: max_filter_depth = nscales + 1
+            scale_range = (3 ** -2) * ((2 * np.arange(scale_ini, scale_end+1, step=scale_resolution) + 1)) ** 2
+            nscales = len(scale_range)
+        elif scale_spacing is 'log': 
+            print '\Warning in building scale range: with log spacing and arbitrary nscales, maximum in Laplacian ' \
+                  'direction can give many false positive -> noisy! Better use odd- spacing with a resolution.'
             if kwargs.get('scale_range_is') is 'pixel':
-                scale_range = (3**-2)*(np.logspace(np.log10(scale_ini), np.log10(scale_end), num=automatic_nscales))**2
+                scale_range = (3**-2)*(np.logspace(np.log10(scale_ini), np.log10(scale_end), num=nscales))**2
             if kwargs.get('scale_range_is') is 'nm':
-                scale_range = (3**-2)*(resolution/pixel_size*np.logspace(np.log10(scale_ini), np.log10(scale_end),
-                                                                          num=automatic_nscales))**2
+                scale_range = (3**-2)*(1./pixel_size*np.logspace(np.log10(scale_ini), np.log10(scale_end),
+                                                                          num=nscales))**2
         elif scale_spacing is 'lin':
+            print '\Warning in building scale range: with log spacing and arbitrary nscales, maximum in Laplacian ' \
+                  'direction can give many false positive - noisy! Better use odd- spacing with a resolution.'
             if kwargs.get('scale_range_is') is 'pixel':
-                scale_range = (3**-2)*(np.linspace(scale_ini, scale_end, num=automatic_nscales))**2
+                scale_range = (3**-2)*(np.linspace(scale_ini, scale_end, num=nscales))**2
             if kwargs.get('scale_range_is') is 'nm':
-                scale_range = (3**-2)*(resolution/pixel_size*np.linspace(scale_ini, scale_end,
-                                                                     num=automatic_nscales))**2
-
-        print '\tAnalyzing', automatic_nscales, 'scales (from t=%.2f to t=%.2f):\n' %(scale_range[0], scale_range[1])
-        strength = np.zeros(shape=(automatic_nscales, image.shape[0], image.shape[1]), dtype=float)
-        l = np.zeros(shape=(automatic_nscales, image.shape[0], image.shape[1]), dtype=float)
-        lx = np.zeros(shape=(automatic_nscales, image.shape[0], image.shape[1]), dtype=float)
-        ly = np.zeros(shape=(automatic_nscales, image.shape[0], image.shape[1]), dtype=float)
-        for n in range(1, automatic_nscales+1):
+                scale_range = (3**-2)*(1./pixel_size*np.linspace(scale_ini, scale_end,
+                                                                     num=nscales))**2
+        print '\tAnalyzing', nscales, 'scales (from t = %.2f to t = %.2f):' %(scale_range[0],
+                                                                          scale_range[len(scale_range)-1])
+        strength = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
+        l = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
+        lx = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
+        ly = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
+        for n in range(1, nscales+1):
             t = scale_range[n-1]
-            print '\t\tt = %.2f (blob diameter = %.1f pixels(analysis) = %.1f nm(pysical units))' % (t, 3*np.sqrt(t),
+            print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(pysical units))' % (t, 3*np.sqrt(t),
                                                                             3*np.sqrt(t)*pixel_size)
             scalespace = compute_space_derivatives(image, t)
             lxx = scalespace.get('lxx')
@@ -379,14 +385,15 @@ def get_blob(image, kwargs):
         dila = np.ones(shape=(max_filter_depth, max_filter_width, max_filter_width), dtype=float)
         dila[max_filter_depth/2, max_filter_width/2, max_filter_width/2] = 0
         featurestrength_dila = maximum_filter(strength, footprint=dila, mode='constant', cval=0)  # -float('inf'))
-        local_maxima_locations = np.where(strength > featurestrength_dila)
+        local_maxima_locations = np.where(strength >= featurestrength_dila)
 
         argmaxgrad = local_maxima_locations[1:]  # tuple, true values
         # featurestrength = np.zeros(shape=image.shape)  # 2d array
         # featurestrength[argmaxgrad] = strength[local_maxima_locations]
         featurestrength = strength[local_maxima_locations]
 
-        plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,326,244], 'k.-'); plt.hold(0)
+        # plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,202,151], 'k.-');
+        # plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (202,151)'); plt.hold(0)
 
         tnew = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
@@ -409,6 +416,7 @@ def get_blob(image, kwargs):
             argmaxgrad = argmaxgrad_threshold
             tnew_threshold = tnew[temp[0]]
             tnew = tnew_threshold
+            featurestrength = featurestrength[temp[0]]
             print 'Done.'
         else:
             threshold = -float('inf')
@@ -463,14 +471,14 @@ def get_blob(image, kwargs):
             'image_roi': image_roi}
 
 
-def get_edge(image, t=1, automatic_nscales=1):
+def get_edge(image, t=1, nscales=1):
     """
     From FindCluster, in fact: The factor to further reduce the analysis_pixel_size once you have a region to start
     finding clusters in e.g., if factor = 5 and analysis_pixel_size = 10nm then the program looks for clusters
     with each pixel size being 2nm params.precision: double The precision of a localization, in nm.
     This value is used as the sigma value in a 2D Gaussian point - spread function
 
-    If automatic_nscales>1, then automatic scale selection procedure is performed.
+    If nscales>1, then automatic scale selection procedure is performed.
 
     Input:
     ---------
@@ -488,7 +496,7 @@ def get_edge(image, t=1, automatic_nscales=1):
 
     gamma = 0.5  # parameter to normalize derivatives (automatic scale selection, strongest response)
 
-    if automatic_nscales == 1:
+    if nscales == 1:
         scalespace = compute_space_derivatives(image, t)
         lx = scalespace.get('lx'); ly = scalespace.get('ly')
         lxx = scalespace.get('lxx'); lxy = scalespace.get('lxy'); lyy = scalespace.get('lyy')
@@ -627,8 +635,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     if blob_color is None:
         cmap = plt.cm.gray
         # values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
-        values = featurestrength  # range(argmaxgrad[0].shape[0])
-        # values = np.sqrt(tnew) * 2*1.5
+        # values = featurestrength  # range(argmaxgrad[0].shape[0])
+        values = np.sqrt(tnew) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values)) #colors.Normalize(vmin=0, vmax=np.max(values))
         #
         # vmax=values[-1]) . LogNorm, Normalize
@@ -653,10 +661,10 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                 bx = argmaxgrad[0][ii]
                 # # if strength < 1:
                 if scalarmap is not None:
-                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5
+                    strength = np.sqrt(tnew[ii]) * 2 * 1.5
                     # strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
-                    strength = featurestrength[ii]
-                    blob_color = 'r'#scalarmap.to_rgba(strength)  # values[ii])
+                    # strength = featurestrength[ii]
+                    blob_color = scalarmap.to_rgba(strength)  # values[ii])
                 ax.plot(ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx, ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 +
                         by, color=blob_color, linewidth=1.5)
                 # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
@@ -673,7 +681,7 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                                   np.sqrt(tnew[ii]) * 1*1.5 * np.cos(jj), np.sqrt(tnew[ii]) * 1*1.5 * np.sin(jj),
                                   head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.2)
         # fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
-        # fig.colorbar(scalarmap, label='3$\sqrt{t}$')
+        fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - analysis]')
 
     ax.set_xlim(0, image.T.shape[1])
     ax.set_ylim(0, image.T.shape[0])
