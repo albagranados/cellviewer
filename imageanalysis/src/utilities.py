@@ -1,10 +1,7 @@
-import matplotlib
+import os, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-# configure latex plots
-matplotlib.rcParams['text.usetex'] = True  # uselatex labels
-matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
 
 def read_points(fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
@@ -26,7 +23,6 @@ def read_points(fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2,
     points: points (if multiple data sets, the last one) stored in a nx2 matrix
 
     """
-
     if fileName is not None:
         fileNames = [fileName]
     else:
@@ -34,7 +30,7 @@ def read_points(fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2,
 
     for ii in range(len(fileNames)):
         fileName = fileNames[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
-        print('Reading data set: ', fileName)
+        print 'Reading data set: "', fileName, '"...',
 
         path = os.path.join(fileDir, fileName + fileExt)  # if we want to run in the Python Console
 
@@ -62,12 +58,11 @@ def read_points(fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2,
 
         if plot:
             fig, ax = plt.subplots()
-            ax.plot(points[:, 0], points[:, 1], 'k.', markersize=2); plt.show(); plt.hold(True)
-
+            ax.plot(points[:, 0], points[:, 1], 'k.', markersize=2); ax.hold(True)
             ax.set_xlim(points[:, 0].min(), points[:, 0].max()); ax.set_ylim(points[:, 1].min(), points[:, 1].max())
             ax.set_aspect('equal', adjustable='box')
-
-            plt.hold(False)
+            ax.hold(False)
+        print 'Done.'
 
     return points
 
@@ -338,10 +333,9 @@ def generate_image():
 
 
 def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False):
-
-    '''
+    """
     create violin plots on an axis
-    '''
+    """
 
     from scipy.stats import gaussian_kde
 
@@ -356,8 +350,8 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False):
         x = np.arange(m,M,(M-m)/100.) # support for violin
         v = k.evaluate(x) #violin profile (density curve)
         v = v/v.max()*w #scaling the violin to the available space
-        ax.fill_betweenx(x,p,v+p,facecolor='lightskyblue',edgecolor='gray',alpha=0.3)
-        ax.fill_betweenx(x,p,-v+p,facecolor='lightskyblue',edgecolor='gray', alpha=0.3)
+        ax.fill_betweenx(x,p,v+p,facecolor='lightgray',edgecolor='gray',alpha=0.3)
+        ax.fill_betweenx(x,p,-v+p,facecolor='lightgray',edgecolor='gray', alpha=0.3)
 
     # dist = max(pos2) - min(pos2)
     # w = min(0.15 * max(dist, 1.0), 0.5)

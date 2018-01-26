@@ -1,9 +1,7 @@
-import matplotlib
+import os, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-# configure latex plots
-matplotlib.rcParams['text.usetex'] = True  # uselatex labels
-matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
 
 def _adjust_bounds(ax, points):
@@ -106,18 +104,18 @@ def plot_points(points, title='', plot_axis='on'):
 
     fig, ax = plt.subplots()
     ax.plot(points[:, 0], points[:, 1], 'k.', markersize=1)
-    plt.show(); plt.hold(True)
+    fig.show(); ax.hold(True)
 
     plt.title(title)
     ax.set_xlim(points[:, 0].min(), points[:, 0].max()); ax.set_ylim(points[:, 1].min(), points[:, 1].max())
     ax.set_aspect('equal', adjustable='box')
 
     if plot_axis is 'off':
-        plt.axis(plot_axis)
+        fig.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])
         ax.axes.get_yaxis().set_ticks([])
 
-    plt.hold(False)
+    ax.hold(False)
 
 
 def compute_parameters(vor, dict_inputfile):
@@ -304,7 +302,7 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
     coll.set_facecolors(colour)
     # cbar = fig.colorbar(coll, ax=ax)   # Add a colorbar for the PolyCollection
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
-    plt.show(); plt.hold(True)
+    fig.hold(True)
     if show_points is True:
         ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=2)
 
@@ -313,7 +311,7 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
         polygons_th = [polygons[i] for i in polygons_thresholded]
         coll_th = PolyCollection(polygons_th, color='grey', edgecolors='none')
         ax_th.add_collection(coll_th)  # , ax_th.autoscale_view()
-        plt.show(); plt.axis('equal')
+        ax.show(); plt.axis('equal')
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -323,7 +321,7 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
     ax.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max())
     ax.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
     ax.set_aspect('equal', adjustable='box')
-    plt.hold(hold)
+    fig.hold(hold)
 
     return fig, ax #.figure
 
@@ -476,47 +474,3 @@ def localizations_feature(vor, feature, dict_sift):
             number_localizations[ii] = len(count[0])
 
     return number_localizations
-
-
-def nnd_feature(feature, dict_sift):
-
-    from sklearn.neighbors import NearestNeighbors
-    import statistics as stat
-    import utilities as util
-
-    feature_name = dict_sift.get('feature_name')
-    pixel_size = dict_sift.get('scale_pixel_size') * dict_sift.get('original_pixel_size', 1)
-
-    argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    tnew = feature.get('tnew')  # 1d-array
-
-    scales = np.unique(np.append(tnew, float('inf')))
-    number_features = np.histogram(tnew, bins=scales)
-
-    if feature_name == 'blob':
-        num_ini = 0
-        dist_all_features = []
-        fig, ax = plt.subplots()
-        for ii, num in enumerate(number_features[0]):
-            t = tnew[num_ini]
-            x = argmaxgrad[0][num_ini:num_ini+num]
-            y = argmaxgrad[1][num_ini:num_ini+num]
-            blobs_xy = np.array([x, y]).T
-            nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
-            distances, indices = nbrs.kneighbors(blobs_xy)
-            num_ini = num_ini + num
-            dist_all_features.append(3*np.sqrt(distances[:, 1])*pixel_size)
-            # ax.boxplot(distances[1]*scale_pixel_size, 3*np.sqrt(t)*scale_pixel_size)
-            # ax.hold(True)
-
-    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*pixel_size, bp=1)
-
-    # x = argmaxgrad[0]
-    # y = argmaxgrad[1]
-    # blobs_xy = np.array([x, y]).T
-    # nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
-    # distances, indices = nbrs.kneighbors(blobs_xy)
-    #
-    # stat.plot_hist(distances[1]*scale_pixel_size)
-
-    # return nnd_localizations

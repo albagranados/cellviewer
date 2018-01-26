@@ -1,10 +1,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-
-# configure latex plots
-matplotlib.rcParams['text.usetex'] = True  # uselatex labels
-matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
 
 def pattern2image(points, pixel_size):
@@ -967,3 +964,47 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
 
     return histogram
+
+
+def nnd_feature(feature, dict_sift):
+
+    from sklearn.neighbors import NearestNeighbors
+    import statistics as stat
+    import utilities as util
+
+    feature_name = dict_sift.get('feature_name')
+    analysis_pixel_size = dict_sift.get('scale_pixel_size') * dict_sift.get('original_pixel_size', 1)
+
+    argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
+    tnew = feature.get('tnew')  # 1d-array
+
+    scales = np.unique(np.append(tnew, float('inf')))
+    number_features = np.histogram(tnew, bins=scales)
+
+    if feature_name == 'blob':
+        num_ini = 0
+        dist_all_features = []
+        fig, ax = plt.subplots()
+        for ii, num in enumerate(number_features[0]):
+            t = tnew[num_ini]
+            x = argmaxgrad[0][num_ini:num_ini+num]
+            y = argmaxgrad[1][num_ini:num_ini+num]
+            blobs_xy = np.array([x, y]).T
+            nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
+            distances, indices = nbrs.kneighbors(blobs_xy)
+            num_ini = num_ini + num
+            dist_all_features.append(3*np.sqrt(distances[:, 1])*analysis_pixel_size)
+            # ax.boxplot(distances[1]*scale_pixel_size, 3*np.sqrt(t)*scale_pixel_size)
+            # ax.hold(True)
+
+    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*analysis_pixel_size, bp=1)
+
+    # x = argmaxgrad[0]
+    # y = argmaxgrad[1]
+    # blobs_xy = np.array([x, y]).T
+    # nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
+    # distances, indices = nbrs.kneighbors(blobs_xy)
+    #
+    # stat.plot_hist(distances[1]*scale_pixel_size)
+
+    # return nnd_localizations

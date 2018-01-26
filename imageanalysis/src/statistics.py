@@ -1,13 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
-# configure latex plots
-matplotlib.rcParams['text.usetex'] = True  # uselatex labels
-matplotlib.rcParams['font.family'] = 'serif'
 
-
-def plot_hist(data, hist_scale='log', num_bins=100, bins=None):
+def plot_hist(data, bins=None, hist_scale='log', xlabel={}, num_bins=100):
     """
     This function plots histograms. Range: min-max of data.
 
@@ -20,30 +17,23 @@ def plot_hist(data, hist_scale='log', num_bins=100, bins=None):
     bins (1d array): if it is not None, then bins=bins and 'lin' scale
 
     """
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    ini = np.min(data)
-
     if bins is not None:
         plt.figure(), plt.hist(data, bins=bins, histtype='step',
                                weights=np.zeros_like(data) + 1. / data.size, color='k')
-        # plt.gca().set_xscale("log")
-        plt.ylabel(r'frequency')
-        return
-
-    if hist_scale is 'log':
-        if ini <= 0: ini = 1
-        plt.figure(), plt.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
-                               histtype='step', weights=np.zeros_like(data) + 1. / data.size, color='k')
-        # plt.xlim(1, 10**3)
-        plt.gca().set_xscale("log")
-        plt.ylabel(r'frequency')
     else:
-        if ini < 0: ini = 0
-        plt.figure(), plt.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
-                               weights=np.zeros_like(data) + 1. / data.size, color='k')
-        plt.ylabel(r'frequency')
+        ini = np.min(data)
+        if hist_scale is 'log':
+            if ini <= 0: ini = 1
+            plt.figure(), plt.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
+                                   histtype='step', weights=np.zeros_like(data) + 1. / data.size, color='k')
+            plt.gca().set_xscale("log")
+        else:
+            if ini < 0: ini = 0
+            plt.figure(), plt.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
+                                   weights=np.zeros_like(data) + 1. / data.size, color='k')
+    plt.ylabel(r'frequency'); plt.xlabel(xlabel); plt.hold(0)
+
+    # plt.hist(densities, bins='rice', histtype='step',  color='k'); plt.ylabel(r'counts')
 
 
 def sample_statistics(data):
@@ -55,7 +45,7 @@ def sample_statistics(data):
     return {'mean': mean, 'std': std, 'median': median}
 
 
-def errorbar_featureresponse(feature, dict_analysis):
+def errorbar_featureresponse(feature, dict_sift, xlabel={}):
     """
     Plot the error bar strength response vs blob diameter
 
@@ -65,28 +55,27 @@ def errorbar_featureresponse(feature, dict_analysis):
     dict_analysis (dictionary)
 
     """
-
     import math
 
     featurestrength = feature.get('featurestrength')
     argmaxgrad = feature.get('argmaxgrad')
     tnew = feature.get('tnew')
     scale_range = feature.get('scale_range')
+    analysis_pixel_size = dict_sift.get('scale_pixel_size')*dict_sift.get('original_pixel_size')
 
     err = np.zeros(shape=scale_range.shape)
     y = np.zeros(shape=scale_range.shape)
 
     for ii in range(len(scale_range)):
         pos_equal_scale = np.where(tnew == scale_range[ii])
-        strength = featurestrength[argmaxgrad[0][pos_equal_scale], argmaxgrad[1][pos_equal_scale]]
+        strength = featurestrength[pos_equal_scale]
         y[ii] = np.median(strength)
         if math.isnan(y[ii]): y[ii] = 0
         err[ii] = np.std(strength)
 
-    plt.figure(); plt.errorbar(dict_analysis.get('analysis_pixel_size')*4*np.sqrt(scale_range), y, err, fmt='ko')
-    plt.xlabel(r'blob diameter [nm]'); plt.ylabel('max$_t\{\Delta_{\gamma-norm}\}$')
-
-    return y
+    x = 3*np.sqrt(scale_range)*analysis_pixel_size
+    plt.figure(); plt.errorbar(x, y, err, fmt='ko')
+    plt.xlabel(xlabel); plt.ylabel('max$_t\{\Delta_{\gamma-norm}\}$')
 
 
 def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=False):
@@ -148,7 +137,7 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     histogram_descr = feature.get('histogram_descr')
     histogram = np.asarray([hist for allhist_feature in histogram_descr for hist in allhist_feature])
     if len(histogram) == 0:
-        print 'warning: please, compute orientation and descriptors histograms for SIFT'
+        print 'error: please, compute orientation and descriptors histograms for SIFT'
         return None
 
     n_bins_descr = kwargs_sift.get('n_bins_descr', 4)
