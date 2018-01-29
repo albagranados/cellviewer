@@ -16,7 +16,7 @@ library(knitr) # class. statistics
 graphics.off()
 
 # set working directory
-setwd("/home/alba/DropboxCRG/postdoc_CRG/coding/cellviewer/point_pattern_analysis/src_clean") 
+setwd("/home/alba/DropboxCRG/postdoc_CRG/coding/cellviewer/point_pattern_analysis/src") 
 
 source("utilities.R")
 
