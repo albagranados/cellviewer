@@ -155,13 +155,13 @@ def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='o
     else:
         plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower')
 
-    plt.show()
+    fig.hold(1)
     if plot_axis is 'off':
         plt.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])
         ax.axes.get_yaxis().set_ticks([])
 
-    plt.hold(hold)
+    fig.hold(hold)
     return fig, ax
 
 
