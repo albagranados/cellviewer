@@ -20,21 +20,26 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; fileDir = ''; fileName = ''
 
-fileDir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/'
-fileName = 'pp_triangle_square'
-points = util.read_points(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=1, out_channel='all',
+fileDir = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_H3K4me2/' \
+          'SMC1_H3K4me2 in ActD Treated/'
+fileName = 'K4me2_SMC1_ActD_006_list_drift_1869-1083_allChs'
+data = util.pointpattern()
+data.read(fileDir, fileName=fileName, fileExt='.txt', storm=1, channels_num=1, out_channel=[1, 2],
                           save_output_dir=None, plot=True)
+points = data.points
 
 # image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T  # recall: inputfile_ispp = False
 
 # # ============== INPUT PARAMETERS ========
 # # ========================================
+# cell_no = str(0) + str(0);
 dict_inputfile = {'filename': fileName,
-                  'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [102, 121, 147, 165],
+                  'ispp': 1, 'compute_ROI': 1, 'crop': 1,
+                  'crop_range': [60, 75, 110, 125],
                              'pixelate': 0,
-                             'tessellate': 1,
-                  'original_pixel_size': 1, 'photonconv': 0.14, 'resolution': 0.1}   # [nm]/[pixel], e.g. STORM
-analysis_pixel_size = 0.1  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+                             'tessellate': 0,
+                  'original_pixel_size': 160, 'photonconv': 0.14, 'resolution': 0.1}   # [nm]/[pixel], e.g. STORM
+analysis_pixel_size = 20  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
 scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
 dict_image = {'scale_pixel_size': scale_pixel_size,
               'original_pixel_size': dict_inputfile.get('original_pixel_size'),
@@ -44,7 +49,6 @@ util.saveparameters(output_dir + 'parameters.txt', dict1=dict_inputfile, dict2=d
 if dict_inputfile.get('ispp'):
 
     print '\ttotal number of localizations = %d\n' % points.shape[0]
-
     # vproc.plot_points(points)
     # plt.savefig(output_dir + 'pp.pdf', bbox_inches='tight')
 
@@ -56,30 +60,35 @@ if dict_inputfile.get('ispp'):
     if dict_inputfile.get('compute_ROI'):
         if not dict_inputfile.get('crop'):
             print '\nComputing ROI (scale-space)...'; start_time = time.time()
-            roi_scale_pixel_size = 80. / 160  # [pixel] w.r.t original pixel size = [pixel]
-            dict_roi = {'scale_pixel_size': roi_scale_pixel_size, 't': 100, 'feature_name': 'edge',
+            roi_scale_pixel_size = 200. / 160  # [pixel] w.r.t original pixel size = [pixel]
+            dict_roi = {'scale_pixel_size': roi_scale_pixel_size, 't': 40, 'feature_name': 'edge',
                         'thresholding': False, 'threshold_percent': 0.6}
 
             image, image_ptslabel = iproc.pattern2image(points, dict_roi.get('scale_pixel_size'))
-            image_blurred = iproc.blur_image(image, dict_roi.get('t'))  # filter image & plot
-            feature = iproc.find_feature(image, dict_roi)   # detect feature for ROI extraction & plot
+            image_blurred = iproc.blur_image(image, dict_roi.get('t'))
+            feature = iproc.find_feature(image, dict_roi)
             points_roi = iproc.image2pattern(feature.get('image_roi'), points, image_ptslabel)
 
             # # visualization
-            iproc.plot_image(image), plt.title(r"pixelated image")  # plot low resolution image
-            # iproc.plot_image(image_blurred, plot_axis='off'), plt.title(r"blurred pixelated image") # plot blurred image
-            iproc.plot_feature(image, feature, dict_roi.get('feature_name'))  # plot detected feature (low-reso image)
-            # iproc.plot_image(feature.get('image_roi'))  # plot ROI (image)
+            iproc.plot_image(image, cmap='gray', norm='lin'), plt.title(r"pixelated image")
+            iproc.plot_image(image_blurred, cmap='gray', norm='lin'), plt.title(r"blurred pixelated image")
+            iproc.plot_feature(image, feature, cmap='gray', norm='lin', feature_name=dict_roi.get('feature_name'))
+            iproc.plot_image(feature.get('image_roi'), cmap='gray', norm='lin'), plt.title('ROI')
             print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
         else:
-            points_roi = iproc.points_2dcrop(points, dict_inputfile.get('crop_range'))
-            np.savetxt(output_dir + fileName + '_crop.txt', points_roi)
+            crop_range = dict_inputfile.get('crop_range')
+            points_roi = iproc.points_2dcrop(data.points, crop_range)
+            fileName_crop = fileName + '_' + \
+                            str(crop_range[0])+str(crop_range[1]) + '_' +\
+                            str(crop_range[2]) + str(crop_range[3])
+            np.savetxt(output_dir + fileName_crop + '.txt', points_roi)
     else:
         print '\nNo ROI computations required.'
         points_roi = points  # points_roi = iproc.compute_roi(compute_ROI, points)
 
     vproc.plot_points(points_roi)
-    plt.savefig(output_dir + 'pp_roi.pdf', bbox_inches='tight')
+
+    plt.savefig(output_dir + 'pp_roi' + '.pdf', bbox_inches='tight')
     print '\tnumber of localizations in the analysis = %d\n' % points_roi.shape[0]
 
     # # ====== IMAGE GENERATION ===================

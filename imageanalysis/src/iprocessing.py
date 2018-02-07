@@ -209,13 +209,13 @@ def find_feature(image, kwargs):
     edgemat (dictionary)
 
     """
-    t = kwargs.get('t', 10)
     feature_name = kwargs.get('feature_name', 'blob')
-    thresholding = kwargs.get('thresholding', False)
-    nscales = kwargs.get('nscales', 1)
+    # t = kwargs.get('t', 10)
+    # thresholding = kwargs.get('thresholding', False)
+    # nscales = kwargs.get('nscales', 1)
 
     if feature_name == 'edge':
-        feature = get_edge(image, t, nscales)
+        feature = get_edge(image, kwargs)
 
     if feature_name == 'blob':
         feature = get_blob(image, kwargs)
@@ -462,13 +462,9 @@ def get_blob(image, kwargs):
 
     # return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew, 'scale_range': scale_range,
     #         'orientation': orientation, 'histogram_descr': histogram_descr}
-    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew,
-            'scale_range': scale_range,
-            'orientation': orientation, 'histogram_descr': histogram_descr, 'threshold': threshold,
-            'image_roi': image_roi}
 
 
-def get_edge(image, t=1, nscales=1):
+def get_edge(image, kwargs):
     """
     From FindCluster, in fact: The factor to further reduce the analysis_pixel_size once you have a region to start
     finding clusters in e.g., if factor = 5 and analysis_pixel_size = 10nm then the program looks for clusters
@@ -492,6 +488,8 @@ def get_edge(image, t=1, nscales=1):
     """
 
     gamma = 0.5  # parameter to normalize derivatives (automatic scale selection, strongest response)
+    t = kwargs.get('t')
+    nscales = kwargs.get('nscales', 1)
 
     if nscales == 1:
         scalespace = compute_space_derivatives(image, t)
@@ -514,7 +512,30 @@ def get_edge(image, t=1, nscales=1):
 
         tnew = np.ones(len(argmaxgrad[0])) * t
 
-    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew}  # tuple, 2d-array and 1d-array
+    thresholding = kwargs.get('thresholding', False)
+    if thresholding:
+        print '\tThresholding...',
+        threshold_percent = kwargs.get('threshold_percent', 0.4)
+        threshold = np.max(featurestrength) - threshold_percent * (np.max(featurestrength) -
+                                                                   np.min(featurestrength))
+
+        temp = np.where(featurestrength > threshold)  # tuple
+        argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
+        argmaxgrad = argmaxgrad_threshold
+        tnew_threshold = tnew[temp[0]]
+        tnew = tnew_threshold
+        featurestrength = featurestrength[temp[0]]
+        print 'Done.'
+    else:
+        threshold = -float('inf')
+
+    image_roi = np.zeros(image.shape)
+    image_roi[argmaxgrad] = 1
+    image_roi = flood_fill(image_roi)
+
+    # return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew}  # tuple, 2d-array and 1d-array
+    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew,
+            'image_roi': image_roi}
 
 
 def compute_space_derivatives(image, t=10):

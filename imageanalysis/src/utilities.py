@@ -3,68 +3,76 @@ import matplotlib.pyplot as plt
 import numpy as np
 matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
+class pointpattern():
 
-def read_points(fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
+    #     """
+    #     This function reads point pattern(s) stored in fileDir
+    #
+    #     Input:
+    #     ----------------------------------
+    #     fileDir (string): file(s) directory
+    #     fileName (string): if not None, then read multple data sets in fileDir
+    #     fileExt (string): extension of the pointpattern files
+    #     storm (boolean): if the datafile is in storm format (precision, coordinates...)
+    #     save_output_dir (string): if not None, then save the point pattern(s) in a txt files as a nx2 matrix in the output
+    #                                 directory (string)
+    #
+    #     Output:
+    #     ----------------------------------
+    #     points: points (if multiple data sets, the last one) stored in a nx2 matrix
+    #     points1, points2 (if more than 1 channel): stored in a nx2 matrix
+
+    def read(self, fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
                 save_output_dir=None, plot=1):
-    """
-    This function reads point pattern(s) stored in fileDir
 
-    Input:
-    ----------------------------------
-    fileDir (string): file(s) directory
-    fileName (string): if not None, then read multple data sets in fileDir
-    fileExt (string): extension of the pointpattern files
-    storm (boolean): if the datafile is in storm format (precision, coordinates...)
-    save_output_dir (string): if not None, then save the point pattern(s) in a txt files as a nx2 matrix in the output
-                                directory (string)
+        if fileName is not None:
+            fileNames = [fileName]
+        else:
+            fileNames = os.listdir(fileDir)
 
-    Output:
-    ----------------------------------
-    points: points (if multiple data sets, the last one) stored in a nx2 matrix
+        for ii in range(len(fileNames)):
+            fileName = fileNames[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
+            print 'Reading data set: "', fileName, '"...'
 
-    """
-    if fileName is not None:
-        fileNames = [fileName]
-    else:
-        fileNames = os.listdir(fileDir)
+            path = os.path.join(fileDir, fileName + fileExt)  # if we want to run in the Python Console
 
-    for ii in range(len(fileNames)):
-        fileName = fileNames[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
-        print 'Reading data set: "', fileName, '"...',
+            if storm:
+                self.points = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(3, 4))  # export x_c and y_c
+                print '\tAll channels in .points.'
+                self.channels = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(0,))  # export x_c and y_c
+                # self.area = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=6)  # export x_c and y_c
+                # self.width = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=7)  # export x_c and y_c
+                # self.aspect_ratio = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=9)
+                # self.bg = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=10)
+                self.frame_no = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=12)
 
-        path = os.path.join(fileDir, fileName + fileExt)  # if we want to run in the Python Console
+                if len(np.unique(self.channels)) > 2:
+                    print '\tSTORM file with more than 2 channels. Please, double check.'
+                for ii in out_channel:
+                    if ii == 1:
+                       self.points1 = self.points[np.where(self.channels == ii)]
+                       print '\tChannel 1 in .points1.'
+                    if ii == 2:
+                        self.points2 = self.points[np.where(self.channels == ii)]
+                        print '\tChannel 2 in .points2.'
 
-        if storm:
-            points = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(3, 4))  # export x_c and y_c
-            channels = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(0,))  # export x_c and y_c
-            # area = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=6)  # export x_c and y_c
-            # width = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=7)  # export x_c and y_c
-            # aspect_ratio = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=9)
-            # bg = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=10)
+            if not storm:
+                self.points = np.loadtxt(path, skiprows=0, usecols=(0, 1))  # Petra/DNA_Paint
 
-        if not storm:
-            points = np.loadtxt(path, skiprows=0, usecols=(0, 1))  # Petra/DNA_Paint
+            if save_output_dir is not None:
+                if channels_num == 2:
+                    np.savetxt(save_output_dir + fileName + '_Ch1' + fileExt, self.points[np.where(channels == 1)])
+                    np.savetxt(save_output_dir + fileName + '_Ch2' + fileExt, self.points[np.where(channels == 2)])
+                if channels_num == 1:
+                    np.savetxt(save_output_dir + fileName + fileExt, self.points)
 
-        if save_output_dir is not None:
-            if channels_num == 2:
-                np.savetxt(save_output_dir + fileName + '_Ch1' + fileExt, points[np.where(channels == 1)])
-                np.savetxt(save_output_dir + fileName + '_Ch2' + fileExt, points[np.where(channels == 2)])
-            if channels_num == 1:
-                np.savetxt(save_output_dir + fileName + fileExt, points)
-
-        if out_channel is not 'all':
-            points = points[np.where(channels == out_channel)]
-            print 'output points in channel %d' %out_channel
-
-        if plot:
-            fig, ax = plt.subplots()
-            ax.plot(points[:, 0], points[:, 1], 'k.', markersize=2); ax.hold(True)
-            ax.set_xlim(points[:, 0].min(), points[:, 0].max()); ax.set_ylim(points[:, 1].min(), points[:, 1].max())
-            ax.set_aspect('equal', adjustable='box')
-            ax.hold(False)
-        print 'Done.'
-
-    return points
+            if plot:
+                fig, ax = plt.subplots()
+                ax.plot(self.points[:, 0], self.points[:, 1], 'k.', markersize=2); ax.hold(True)
+                ax.set_xlim(self.points[:, 0].min(), self.points[:, 0].max())
+                ax.set_ylim(self.points[:, 1].min(), self.points[:, 1].max())
+                ax.set_aspect('equal', adjustable='box'); ax.hold(False)
+            print 'Done.'
 
 
 def saveparameters(fileName, dict1={}, dict2={}, dict3={}):
