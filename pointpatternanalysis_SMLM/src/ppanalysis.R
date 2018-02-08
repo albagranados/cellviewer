@@ -16,94 +16,59 @@ library(knitr) # class. statistics
 graphics.off()
 
 # set working directory
-setwd("/home/alba/DropboxCRG/postdoc_CRG/coding/cellviewer/point_pattern_analysis/src") 
+setwd("/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/src") 
 
 source("utilities.R")
 
 ### select data
 
-# # SMC1 - H3K4m2e
-# pptype='marked'; units = 'pixels'; unit_size=160 #nm/px
+# # dual
+# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 # exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'SMC1'; levels2 = 'CTCF'
-# path_to_experiment1 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in DMSO Controls"
-# path_to_experiment2 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in ActD Treated"
-# levels1 = 'SMC1'; levels2 = 'H3K4me2'
-# path_to_experiment1 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-06-18_HeLa_DualColor_SMC1_H3K4me2/SMC1_H3K4me2 in DMSO Controls"
-# path_to_experiment2 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-06-18_HeLa_DualColor_SMC1_H3K4me2/SMC1_H3K4me2 in ActD Treated"
 # levels1 = 'SMC1'; levels2 = 'SMC3'
-# path_to_experiment1 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls"
-# path_to_experiment2 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated"
-# levels1 = 'RNApolII'; levels2 = 'SMC1'
-# path_to_experiment1 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls"
-# path_to_experiment2 <- "/home/alba/Dropbox (CRG)/Shared files Victoria-Alba/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated"
+# path_to_experiment1 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'
+# path_to_experiment2 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated'
 # 
 # storm_file=0
 # exp_names <- c(exp_name1, exp_name2)
 # path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
-# synthetic PP
-pptype='unmarked'; units = 'a.u.'; unit_size=1
-levels1 = 'AU'; levels2='*'
-# exp_name1 <- "NT400"; exp_name2 <- "NT2000"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/cnt_r_cnt_R/NT500"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/cnt_r_cnt_R/NT2000"
-
-# exp_name1 <- "R10"; exp_name2 <- "R30"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/cnt_r_var_R/R10"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/cnt_r_var_R/R30"
-
-# exp_name1 <- "r0.5"; exp_name2 <- "r1.5"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_cnt_R/r05"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_cnt_R/r15"
-
-# exp_name1 <- "r0.5R20"; exp_name2 <- "r1.5R60"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_var_R/r05_R20"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_var_R/r15_R60"
-
-# exp_name1 <- "r0.5R253"; exp_name2 <- "r1.5R27"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_var_R_cnt_nC_cnt_nT/r05_R253"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_var_R_cnt_nC_cnt_nT/r15_R27"
-
-# exp_name1 <- "r0.5"; exp_name2 <- "r1.5"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_cnt_R_cnt_nC_var_nT/r05"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/var_r_cnt_R_cnt_nC_var_nT/r15"
-
-# exp_name1 <- "lin"; exp_name2 <- "exp"  # NA
-# path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/lin_exp/lin"
-# path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/lin_exp/exp"
-
-exp_name1 <- "exp1"; exp_name2 <- "exp2"  # NA
-path_to_experiment1 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/exp_lambda/lambda1"
-path_to_experiment2 = "/home/alba/Dropbox (CRG)/postdoc_CRG/coding/cellviewer/data/test/synthetic_pp/exp_lambda/lambda2"
+# mono
+pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
+levels1 = 'SMC3'; levels2='_'
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+path_to_experiment1 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiSMC3_DMSO_ActD/2017-06-15_HeLa_antiSMC3_DMSO"
+path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiSMC3_DMSO_ActD/2017-06-15_HeLa_antiSMC3_ActD"
 
 storm_file = 0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ### compute
-compute_ppsummaries <- data.frame(run=1, 
+compute_ppsummaries <- data.frame(run=0, 
                                   nearestneighbour=0,
                                   Kfunction=1,
-                                  Lfunction=0,
+                                    Lfunction=1,
                                   crosscorrelation=1, 
                                   markconnection=0,
                                   envelopes=0,
                                   plot_functions=0)
 longitudinal_dataset <- data.frame(run=1,
-                                   generate = 1,
-                                   stat_rrange_probs = 0.1,
-                                   plot_2experiments = 1,
-                                   save=1,
-                                   fitting = 'exp',
-                                   statanalysis = 1)
+                                    generate = 0,
+                                      stat_rrange_probs = 0.1,
+                                      units = units_out,
+                                      plot_2experiments = 1,
+                                      save=1,
+                                    statanalysis = 1,
+                                      fitting = 'exp'
+                                   )
 
 ### parameters
-r_eval = seq(0, 5, length.out=200) 
+r_eval = seq(0, 4, length.out=200) 
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
 # ------------------------------------------------------------
-if (pptype %in% c("marked")){
+if (pptype == "marked"){
 
   if (compute_ppsummaries$run){
     for (ii in 1:length(path_to_experiments)){
@@ -113,13 +78,6 @@ if (pptype %in% c("marked")){
       dirs_channels <- list.dirs(path = path_to_experiment, full.names = TRUE, recursive = FALSE)  # Ch1&Ch2 of experiment
       
       cat('\n********* Point pattern analysis of experiment ', exp_name, '************\n')
-      
-      # initialize
-      r0_all <- c()
-      G_all <- list(); K_all <- list(); L12_all <- list();
-      g_all <- list(); p12_all <- list(); M11_all <- list();
-      
-      cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
     
       # read files in each channel
       fileNamesCh1 <- list.files(path = dirs_channels[1], pattern = "\\.txt$", all.files = FALSE,
@@ -130,8 +88,26 @@ if (pptype %in% c("marked")){
                                  ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
       num_files = 1:length(fileNamesCh1)
       
+      # initialize
+      g12_r0_all <- c(); g_r0_all <- c()
+      
+      G12_all <- list(); K12_all <- list(); L12_all <- list();
+      g12_all <- list(); p12_all <- list(); M12_all <- list();
+      G22_all <- list(); K22_all <- list(); L22_all <- list();
+      g22_all <- list(); p22_all <- list(); M22_all <- list();
+      
+      intensities <- matrix(nrow = length(fileNamesCh1), ncol = 2)
+      
+      cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
+      
+      # if multiple crops of a cell, this variable should contain the reference to the cell.
+      cellName_previous <- paste(unlist(strsplit(fileNamesCh1[1], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
+                                collapse='_')
+      cell_nos <- c(); no <- 1
       for (j in num_files){
         
+        cellName_current <- paste(unlist(strsplit(fileNamesCh1[j], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
+                                   collapse='_')
         ### read & build point pattern
         cat("Analyzing file ", j, ' [name =', fileNamesCh1[j], ']... \n')
         path_to_file1 = paste(c(dirs_channels[1],fileNamesCh1[j]), collapse='/')
@@ -158,7 +134,8 @@ if (pptype %in% c("marked")){
           if(compute_ppsummaries$envelopes){ 
             G_env <- envelope(points, Gcross, i=levels1, j=levels2, r=NULL, correction="rs", nsim=99, global=F, savepatterns=TRUE)
           }
-          G_all[[j]] <- data.frame(r=G_12$r, G=G_12$iso)
+          G12_all[[j]] <- data.frame(r=G_12$r, G12=G_12$iso)
+          G22_all[[j]] <- data.frame(r=G_22$r, G22=G_22$iso)
           cat('Done.\n')
       
           if (compute_ppsummaries$plot_functions){
@@ -168,7 +145,7 @@ if (pptype %in% c("marked")){
             lines(G_22$r, G_22$rs, col="black", lty=6)
             lines(G_12$r, G_12$rs, col="black", lty=3)
             lines(G_12$r, G_12$theo, col="grey50", lty=2)
-            if(compute_ppsummaries$envelopes){ 
+            if(compute_ppsummaries$envelopes){
               polygon(c(0, G_env$r, rev(G_env$r), 0), c(c(0, G_env$lo), rev(c(0,G_env$hi))), col=rgb(0.5, 0.5, 0.5,0.5), lty=0)
             }
             legend("bottomright", legend=c(expression(G[11]), expression(G[22]), expression(G[12]),
@@ -182,11 +159,12 @@ if (pptype %in% c("marked")){
           cat('Computing K-function... ')
           K_12 <- Kcross(points, i=levels1, j=levels2, r=r_eval, breaks=NULL, correction="border", ratio=FALSE)
           # K_11 <- Kcross(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="border", ratio=FALSE) 
-          # K_22 <- Kcross(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="border", ratio=FALSE)
+          K_22 <- Kcross(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="border", ratio=FALSE)
           if(compute_ppsummaries$envelopes){ 
               K_env <- envelope(points, Kcross, i=levels1, j=levels2, r=r_eval, nsim=20, global=F)
           }
-          K_all[[j]] <- data.frame(r=r_eval, K=K_12$border)
+          K12_all[[j]] <- data.frame(r=r_eval, K12=K_12$border)
+          K22_all[[j]] <- data.frame(r=r_eval, K22=K_22$border)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -210,6 +188,8 @@ if (pptype %in% c("marked")){
           if(compute_ppsummaries$envelopes){ 
             L_env <- envelope(points, Lcross, i=levels1, j=levels2, correction="isotropic", nsim=20, global=F)
           }
+          L12_all[[j]] <- data.frame(r=r_eval, L12=sqrt(K_12$border/pi)-r_eval)
+          L22_all[[j]] <- data.frame(r=r_eval, L22=sqrt(K_22$border/pi)-r_eval)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -233,14 +213,17 @@ if (pptype %in% c("marked")){
         if(compute_ppsummaries$crosscorrelation){
           cat('Computing pair-correlation function... ')
           # g_11 <- pcfcross(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="isotropic")
-          # g_22 <- pcfcross(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
+          g_22 <- pcfcross(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
           g_12 <- pcfcross(points, i=levels1, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
           if(compute_ppsummaries$envelopes){ 
             g_env <- envelope(points, pcfcross, i=levels1, j=levels2, nsim=5, global=F)
           }
-          cluster_size = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
-          g_all[[j]] <- data.frame(r=r_eval, g=g_12$iso)
-          r0_all[j] = cluster_size
+          cluster_size_12 = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
+          cluster_size_22 = r_eval[which(c(0,diff(sign(g_22$iso-1)))!=0)[1]]  # brut force
+          g12_all[[j]] <- data.frame(r=r_eval, g12=g_12$iso)
+          g22_all[[j]] <- data.frame(r=r_eval, g22=g_22$iso)
+          g12_r0_all[j] = cluster_size_12
+          g22_r0_all[j] = cluster_size_22
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -265,7 +248,8 @@ if (pptype %in% c("marked")){
           M_11 <- markconnect(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="isotropic")
           M_22 <- markconnect(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
           M_12 <- markconnect(points, i=levels1, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
-          M_all[[j]] <- data.frame(r=r_eval, M=M_12$iso)
+          M12_all[[j]] <- data.frame(r=r_eval, M12=M_12$iso)
+          M22_all[[j]] <- data.frame(r=r_eval, M22=M_12$iso)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -284,23 +268,41 @@ if (pptype %in% c("marked")){
             closepdf("markconnection.pdf")
           }
         }
+        
+        intensities[j,] <- intensity(points)
+        
+        if (cellName_current != cellName_previous){ no = no + 1 }
+        cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
       }
+      # save txt file with name of analyzed file
+      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
+                                     collapse='/'), '.txt'), collapse = ''), "w")
+      cat(fileNamesCh1, file=textfile, sep='\n')
+      close(textfile)
+      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch2_fileNames'), collapse = '')),
+                                     collapse='/'), '.txt'), collapse = ''), "w")
+      cat(fileNamesCh2, file=textfile, sep='\n')
+      close(textfile)
+      
       # save:
       path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                      collapse='/'), '.RData'), collapse = '')
       save(path_to_experiments, exp_name, levels1, levels2, 
-           G_all, K_all, L_all, g_all, p_all, r0_all, r_eval,
+           G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g12_r0_all, g22_r0_all, 
+           r_eval, cell_nos, intensities,
            file=path_to_RData)
     }
   }
 
   if(longitudinal_dataset$run){
     if (longitudinal_dataset$generate){
-      generate_longitudinal_data(path_to_experiments, exp_names, levels1, levels2, plot_2experiments=longitudinal_dataset$plot_2experiments,
+      generate_longitudinal_data(path_to_experiments, pptype, exp_names, levels1, levels2, 
+                                 units=longitudinal_dataset$units, unit_size = unit_size,
+                                 plot_2experiments=longitudinal_dataset$plot_2experiments,
                                  save=longitudinal_dataset$save, stat_rrange_probs=longitudinal_dataset$stat_rrange_probs)
     }
     if (longitudinal_dataset$statanalysis){
-      statistical_analysis(path_to_experiments, unit_size=unit_size, fitting='exp')
+      statistical_analysis(path_to_experiments, pptype, fitting='exp')
     }
   }
 }
@@ -319,9 +321,11 @@ if (pptype %in% c("unmarked")){
       cat('\n********* Point pattern analysis of experiment ', exp_name, '************\n')
       
       # initialize
-      r0_all <- c()
-      G_all <- list(); K_all <- list(); L_all <- list();
-      g_all <- list(); p_all <- list(); M_all <- list();
+      g11_r0_all <- c()
+      G11_all <- list(); K11_all <- list(); L11_all <- list();
+      g11_all <- list(); p11_all <- list(); M11_all <- list();
+      
+      intensities <- matrix(nrow = 6, ncol = 1)
       
       cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
       
@@ -329,9 +333,16 @@ if (pptype %in% c("unmarked")){
       fileNamesCh1 <- list.files(path = dirs_channels[1], pattern = "\\.txt$", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE,
                                  ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-      num_files = 1:length(fileNamesCh1)
+      num_files = 1:6#length(fileNamesCh1)
       
+      # if multiple crops of a cell, this variable should contain the reference to the cell.
+      cellName_previous <- paste(unlist(strsplit(fileNamesCh1[1], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
+                                 collapse='_')
+      cell_nos <- c(); no <- 1
       for (j in num_files){
+        
+        cellName_current <- paste(unlist(strsplit(fileNamesCh1[j], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
+                                  collapse='_')
         
         ### read & build point pattern
         cat("Analyzing file ", j, ' [name =', fileNamesCh1[j], ']... \n')
@@ -356,7 +367,7 @@ if (pptype %in% c("unmarked")){
           if(compute_ppsummaries$envelopes){ 
             G_env <- envelope(points, Gcross, i=levels1, j=levels1, r=NULL, correction="rs", nsim=99, global=F, savepatterns=TRUE)
           }
-          G_all[[j]] <- data.frame(r=G_11$r, G=G_11$rs)
+          G11_all[[j]] <- data.frame(r=G_11$r, G11=G_11$rs)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -379,7 +390,7 @@ if (pptype %in% c("unmarked")){
           if(compute_ppsummaries$envelopes){ 
             K_env <- envelope(points, Kcross, i=levels1, j=levels1, r=r_eval, nsim=20, global=F)
           }
-          K_all[[j]] <- data.frame(r=r_eval, K=K_11$border)
+          K11_all[[j]] <- data.frame(r=r_eval, K11=K_11$border)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -426,8 +437,8 @@ if (pptype %in% c("unmarked")){
             g_env <- envelope(points, pcfcross, i=levels1, j=levels1, nsim=5, global=F)
           }
           cluster_size = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
-          g_all[[j]] <- data.frame(r=r_eval, g=g_11$iso)
-          r0_all[j] = cluster_size
+          g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
+          g11_r0_all[j] = cluster_size
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -447,7 +458,7 @@ if (pptype %in% c("unmarked")){
         if(compute_ppsummaries$markconnection){
           cat('Computing mark connection function... ')
           M_11 <- markconnect(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="isotropic")
-          M11_all[[j]] <- data.frame(r=r_eval, M_cross=M_11$iso)
+          M11_all[[j]] <- data.frame(r=r_eval, M11=M_11$iso)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -463,23 +474,35 @@ if (pptype %in% c("unmarked")){
             closepdf("markconnection.pdf")
           }
         }
+        intensities[j,] <- intensity(points)
+        
+        if (cellName_current != cellName_previous){ no = no + 1 }
+        cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
       }
+      # save txt file with name of analyzed file
+      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
+                                     collapse='/'), '.txt'), collapse = ''), "w")
+      cat(fileNamesCh1, file=textfile, sep='\n')
+      close(textfile)
+
       # save:
       path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                      collapse='/'), '.RData'), collapse = '')
       save(path_to_experiments, exp_name, levels1, levels2, 
-           G_all, K_all, L_all, g_all, p_all, r0_all, r_eval,
+           G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities,
            file=path_to_RData)
     }
   }
   
   if(longitudinal_dataset$run){
     if (longitudinal_dataset$generate){
-      generate_longitudinal_data(path_to_experiments, exp_names, levels1, levels2, plot_2experiments=longitudinal_dataset$plot_2experiments,
+      generate_longitudinal_data(path_to_experiments, pptype, exp_names, levels1, levels2, 
+                                 units=longitudinal_dataset$units, unit_size = unit_size,
+                                 plot_2experiments=longitudinal_dataset$plot_2experiments,
                                  save=longitudinal_dataset$save, stat_rrange_probs=longitudinal_dataset$stat_rrange_probs)
     }
     if (longitudinal_dataset$statanalysis){
-      statistical_analysis(path_to_experiments, unit_size=unit_size, fitting=longitudinal_dataset$fitting)
+      statistical_analysis(path_to_experiments, pptype, fitting=longitudinal_dataset$fitting)
     }
   }
 }
