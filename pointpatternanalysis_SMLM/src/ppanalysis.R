@@ -22,27 +22,27 @@ source("utilities.R")
 
 ### select data
 
-# # dual
-# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'SMC1'; levels2 = 'SMC3'
-# path_to_experiment1 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'
-# path_to_experiment2 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated'
-# 
-# storm_file=0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# mono
-pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
-levels1 = 'SMC3'; levels2='_'
+# dual
+pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-path_to_experiment1 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiSMC3_DMSO_ActD/2017-06-15_HeLa_antiSMC3_DMSO"
-path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiSMC3_DMSO_ActD/2017-06-15_HeLa_antiSMC3_ActD"
+levels1 = 'SMC1'; levels2 = 'PolII'
+path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls'
+path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated"
 
-storm_file = 0
+storm_file=0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# # # mono
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
+# levels1 = 'H3'; levels2 = '_'
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# path_to_experiment1 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_DMSO"
+# path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_ActD"
+# 
+# storm_file = 0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ### compute
 compute_ppsummaries <- data.frame(run=0, 
@@ -89,12 +89,13 @@ if (pptype == "marked"){
       num_files = 1:length(fileNamesCh1)
       
       # initialize
-      g12_r0_all <- c(); g_r0_all <- c()
+      g12_r0_all <- c(); g22_r0_all <- c(); g11_r0_all <- c(); g_r0_all <- c()
       
       G12_all <- list(); K12_all <- list(); L12_all <- list();
       g12_all <- list(); p12_all <- list(); M12_all <- list();
       G22_all <- list(); K22_all <- list(); L22_all <- list();
       g22_all <- list(); p22_all <- list(); M22_all <- list();
+      g11_all <- list();
       
       intensities <- matrix(nrow = length(fileNamesCh1), ncol = 2)
       
@@ -170,7 +171,7 @@ if (pptype == "marked"){
           if (compute_ppsummaries$plot_functions){
             openpdf("Kfunction.pdf")
             plot(r_eval, K_11$border, col="black", xlab=paste('r ','[', units,']', sep = ''), 
-                 ylab=expression(K(r)), type='l', lty=1) 
+                 ylab=expression(K(r)), type='l', lty=1)
             lines(r_eval, K_22$border, col="black", lty=6)
             lines(r_eval, K_12$border, col="black", lty=3)
             lines(r_eval, K_12$theo, col="grey50", lty=2)
@@ -212,7 +213,7 @@ if (pptype == "marked"){
         
         if(compute_ppsummaries$crosscorrelation){
           cat('Computing pair-correlation function... ')
-          # g_11 <- pcfcross(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="isotropic")
+          g_11 <- pcfcross(points, i=levels1, j=levels1, r=r_eval, breaks=NULL, correction="isotropic")
           g_22 <- pcfcross(points, i=levels2, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
           g_12 <- pcfcross(points, i=levels1, j=levels2, r=r_eval, breaks=NULL, correction="isotropic")
           if(compute_ppsummaries$envelopes){ 
@@ -220,10 +221,13 @@ if (pptype == "marked"){
           }
           cluster_size_12 = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
           cluster_size_22 = r_eval[which(c(0,diff(sign(g_22$iso-1)))!=0)[1]]  # brut force
+          cluster_size_11 = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
           g12_all[[j]] <- data.frame(r=r_eval, g12=g_12$iso)
           g22_all[[j]] <- data.frame(r=r_eval, g22=g_22$iso)
+          g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
           g12_r0_all[j] = cluster_size_12
           g22_r0_all[j] = cluster_size_22
+          g11_r0_all[j] = cluster_size_11
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -288,7 +292,8 @@ if (pptype == "marked"){
       path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                      collapse='/'), '.RData'), collapse = '')
       save(path_to_experiments, exp_name, levels1, levels2, 
-           G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g12_r0_all, g22_r0_all, 
+           G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g11_all, 
+           g12_r0_all, g22_r0_all, g11_r0_all,  
            r_eval, cell_nos, intensities,
            file=path_to_RData)
     }
@@ -319,21 +324,21 @@ if (pptype %in% c("unmarked")){
       dirs_channels <- list.dirs(path = path_to_experiment, full.names = TRUE, recursive = FALSE)  # Ch1&Ch2 of experiment
       
       cat('\n********* Point pattern analysis of experiment ', exp_name, '************\n')
+
+      # read files in each channel
+      fileNamesCh1 <- list.files(path = dirs_channels[1], pattern = "\\.txt$", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+      num_files = 1:length(fileNamesCh1)
       
       # initialize
       g11_r0_all <- c()
       G11_all <- list(); K11_all <- list(); L11_all <- list();
       g11_all <- list(); p11_all <- list(); M11_all <- list();
       
-      intensities <- matrix(nrow = 6, ncol = 1)
+      intensities <- matrix(nrow = length(fileNamesCh1), ncol = 1)
       
       cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
-      
-      # read files in each channel
-      fileNamesCh1 <- list.files(path = dirs_channels[1], pattern = "\\.txt$", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-      num_files = 1:6#length(fileNamesCh1)
       
       # if multiple crops of a cell, this variable should contain the reference to the cell.
       cellName_previous <- paste(unlist(strsplit(fileNamesCh1[1], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 

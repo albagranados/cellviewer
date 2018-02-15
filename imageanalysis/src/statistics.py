@@ -108,7 +108,7 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
         for ii in range(len(points)):
             deviation = rms[ii]
             blob_color = scalarMap.to_rgba(deviation)
-            ax = plt.plot(points[ii][0], points[ii][1], color=deviation, markersize=1)
+            ax = plt.plot(points[ii][0], points[ii][1], color=blob_color, markersize=1)
             plt.hold(True)
         plt.colorbar(scalarMap, label='$\sqrt{2\mu_x}$')
         plt.hold(False)
@@ -205,4 +205,26 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     return kmeans
 
 #  kmeans.predict([[0, 0], [4, 4]])
+
+
+def plot_frameno(points, frame_no):
+    import matplotlib.colors as colors
+    import matplotlib.cm as cmx
+
+    cmap = plt.cm.jet
+    cNorm = colors.Normalize(vmin=np.min(frame_no), vmax=np.max(frame_no))  # vmax=values[-1]) . LogNorm,
+    # Normalize
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)  # norm=cNorm
+    scalarMap.set_array(frame_no)
+
+    fig, ax = plt.subplots()
+
+    for ii in range(data.frame_no.shape[0]):
+        deviation = frame_no[ii]
+        blob_color = scalarMap.to_rgba(deviation)
+        ax.plot(points[ii][0], points[ii][1], marker='o', fillstyle='full', color=blob_color, markersize=3,
+                markeredgewidth=0.0)
+        plt.hold(True)
+    plt.colorbar(scalarMap, label='Frame number')
+    plt.hold(False)
 

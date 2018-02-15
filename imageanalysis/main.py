@@ -20,24 +20,24 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; fileDir = ''; fileName = ''
 
-fileDir = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_H3K4me2/' \
-          'SMC1_H3K4me2 in ActD Treated/'
-fileName = 'K4me2_SMC1_ActD_006_list_drift_1869-1083_allChs'
+fileDir = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-05-22_HeLacells_antiSMC1_WAPLkd&Controls_DMSO&ActDtreatment/WAPLkd_ActD/'
+fileName = 'WAPLkd_ActD_007_list_drift_1080-2493_allChs'
 data = util.pointpattern()
-data.read(fileDir, fileName=fileName, fileExt='.txt', storm=1, channels_num=1, out_channel=[1, 2],
+data.read(fileDir, fileName=fileName, fileExt='.txt', storm=1, channels_num=1, out_channel=[0, 1],
                           save_output_dir=None, plot=True)
 points = data.points
 
 # image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T  # recall: inputfile_ispp = False
 
+stat.plot_frameno(data.points, data.frame_no)
+
 # # ============== INPUT PARAMETERS ========
 # # ========================================
-# cell_no = str(0) + str(0);
+cell_no = str(0) + str(2)
 dict_inputfile = {'filename': fileName,
-                  'ispp': 1, 'compute_ROI': 1, 'crop': 1,
-                  'crop_range': [60, 75, 110, 125],
+                  'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [174, 188, 100, 110],
                              'pixelate': 0,
-                             'tessellate': 0,
+                             'tessellate': 1,
                   'original_pixel_size': 160, 'photonconv': 0.14, 'resolution': 0.1}   # [nm]/[pixel], e.g. STORM
 analysis_pixel_size = 20  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
 scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
@@ -78,7 +78,7 @@ if dict_inputfile.get('ispp'):
         else:
             crop_range = dict_inputfile.get('crop_range')
             points_roi = iproc.points_2dcrop(data.points, crop_range)
-            fileName_crop = fileName + '_' + \
+            fileName_crop = fileName + '_' + cell_no + '_' + \
                             str(crop_range[0])+str(crop_range[1]) + '_' +\
                             str(crop_range[2]) + str(crop_range[3])
             np.savetxt(output_dir + fileName_crop + '.txt', points_roi)

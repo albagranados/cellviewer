@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 
+
 class pointpattern():
 
     #     """

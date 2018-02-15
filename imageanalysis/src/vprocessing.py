@@ -201,7 +201,7 @@ def compute_areas(vor, original_pixel_size):
                 areas[p1] = float('inf') #-1  # area -1 means voronoi region outside the convex hull (~ROI)
 
     vor.areas = original_pixel_size**2*areas   # in nm2
-    vor.areas_total = float(np.sum(vor.areas[vor.areas > 0]))  # in nm2
+    vor.areas_total = float(np.sum(vor.areas[(vor.areas > 0) & (vor.areas < float('inf'))]))  # in nm2
 
 
 def plot_areas(vor, threshold=None, show_points=False, plot_axis=True):

@@ -663,7 +663,7 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     if cluster_color is not None:
         cmap = plt.get_cmap('Set1', np.max(cluster_color) - np.min(cluster_color) + 1)
         scalarmap_clusters = plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=np.max(cluster_color)),
-                                                cmap=cmap)
+                                                   cmap=cmap)
         scalarmap_clusters.set_array(cluster_color)
 
     if feature_name == 'edge':
