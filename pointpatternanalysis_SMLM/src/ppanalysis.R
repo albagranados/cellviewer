@@ -22,30 +22,30 @@ source("utilities.R")
 
 ### select data
 
-# dual
-pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-levels1 = 'SMC1'; levels2 = 'PolII'
-path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls'
-path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated"
-
-storm_file=0
-exp_names <- c(exp_name1, exp_name2)
-path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # # mono
-# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
-# levels1 = 'H3'; levels2 = '_'
+# # dual
+# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 # exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# path_to_experiment1 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_DMSO"
-# path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_ActD"
+# levels1 = 'SMC1'; levels2 = 'PolII'
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls'
+# path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated"
 # 
-# storm_file = 0
+# storm_file=0
 # exp_names <- c(exp_name1, exp_name2)
 # path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
+# # mono
+pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
+levels1 = '1'; levels2 = ''
+exp_name1 <- "r50"; exp_name2 <- "r100"
+path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
+path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+
+storm_file = 0
+exp_names <- c(exp_name1, exp_name2)
+path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
 ### compute
-compute_ppsummaries <- data.frame(run=0, 
+compute_ppsummaries <- data.frame(run=1, 
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
@@ -54,7 +54,7 @@ compute_ppsummaries <- data.frame(run=0,
                                   envelopes=0,
                                   plot_functions=0)
 longitudinal_dataset <- data.frame(run=1,
-                                    generate = 0,
+                                    generate = 1,
                                       stat_rrange_probs = 0.1,
                                       units = units_out,
                                       plot_2experiments = 1,
@@ -64,7 +64,8 @@ longitudinal_dataset <- data.frame(run=1,
                                    )
 
 ### parameters
-r_eval = seq(0, 4, length.out=200) 
+# r_eval = seq(0, 2, length.out=200) # 300
+r_eval = seq(0, 300, length.out=200) 
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
 # ------------------------------------------------------------
@@ -355,9 +356,7 @@ if (pptype %in% c("unmarked")){
         
         res <- build_pp(pptype=pptype, fn1=path_to_file1, pn1=levels1, units=units, storm_file=storm_file)
         points = res$first
-        
-        summary(points)
-        
+
         ### plot pp
         if(j==num_files[1]){  # plot only first point pattern
           openpdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))

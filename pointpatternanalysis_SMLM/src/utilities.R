@@ -76,14 +76,16 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
   path_to_RData1 <- paste(c(path_to_experiment1,paste(c(levels1,levels2,'_',exp_name1, '.RData'), collapse = '')), collapse='/')
   path_to_RData2 <- paste(c(path_to_experiment2,paste(c(levels1,levels2,'_',exp_name2, '.RData'), collapse = '')), collapse='/')
   
+  reso_r <- 5
+  
   if (pptype == "marked"){
     load(path_to_RData1)
     r_eval <- r_eval*unit_size
-    data.g12.exp1 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.g22.exp1 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K12.exp1 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K22.exp1 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=20)[1]:(length(r_eval))]
+    data.g12.exp1 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=resol_r)[1]:(length(r_eval))]
+    data.g22.exp1 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K12.exp1 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K22.exp1 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     g12_r0_exp1 <- unit_size*g12_r0_all
     g12_rend_exp1 <- which(r_eval>=quantile(g12_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g22_r0_exp1 <- unit_size*g22_r0_all
@@ -95,11 +97,11 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
     cat('for statistical analysis, fill with NA function values above r = ', r_eval[g12_rend_exp1], '\n')
     load(path_to_RData2)
     r_eval <- r_eval*unit_size
-    data.g12.exp2 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.g22.exp2 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K12.exp2 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K22.exp2 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=20)[1]:(length(r_eval))]
+    data.g12.exp2 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.g22.exp2 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K12.exp2 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K22.exp2 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     g12_r0_exp2 <- unit_size*g12_r0_all
     g12_rend_exp2 <- which(r_eval>=quantile(g12_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g22_r0_exp2 <- unit_size*g22_r0_all
@@ -173,9 +175,9 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
                     v.names=c('g12', 'g22', 'g11', 'K12', 'K22'))
     data$experiment <- relevel(data_allrange$experiment,ref=exp_name1)
     
-    r_eval_plot <- which(r_eval>=20)[1]:(0.8*length(r_eval))
+    r_eval_plot <- which(r_eval>=reso_r)[1]:(0.8*length(r_eval))
     ylim=c(0.5,5)
-    # r_eval_plot <- which(r_eval>=20)[1]:(0.5*length(r_eval)); ylim=c(0.5,2.8)
+    # r_eval_plot <- which(r_eval>=reso_r)[1]:(0.5*length(r_eval)); ylim=c(0.5,2.8)
     if (plot_2experiments & (length(g12_all)>0)){
       openpdf("g12_2experiments.pdf")
       # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
@@ -266,8 +268,8 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
   if (pptype == "unmarked"){
     load(path_to_RData1)
     r_eval <- r_eval*unit_size
-    data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K11.exp1 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=20)[1]:(length(r_eval))]
+    data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K11.exp1 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     g11_r0_exp1 <- unit_size*g11_r0_all
     g11_rend_exp1 <- which(r_eval>=quantile(g11_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp1 <- intensities/(unit_size^2)
@@ -275,8 +277,8 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
 
     load(path_to_RData2)
     r_eval <- r_eval*unit_size
-    data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=20)[1]:(length(r_eval))]
-    data.K11.exp2 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=20)[1]:(length(r_eval))]
+    data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K11.exp2 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     g11_r0_exp2 <- unit_size*g11_r0_all
     g11_rend_exp2 <- which(r_eval>=quantile(g11_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp2 <- intensities/(unit_size^2)
@@ -318,9 +320,9 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
                     v.names=c('g11', 'K11'))
     data$experiment <- relevel(data_allrange$experiment,ref=exp_name1)
     
-    r_eval_plot <- which(r_eval>=20)[1]:(0.8*length(r_eval))
+    r_eval_plot <- which(r_eval>=reso_r)[1]:(0.8*length(r_eval))
     ylim=c(0.5,5)
-    # r_eval_plot <- which(r_eval>=20)[1]:(0.5*length(r_eval)); ylim=c(0.5,2.8)
+    # r_eval_plot <- which(r_eval>=reso_r)[1]:(0.5*length(r_eval)); ylim=c(0.5,2.8)
     if (plot_2experiments & (length(g11_all)>0)){
       openpdf("g11_2experiments.pdf")
       # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
@@ -383,6 +385,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
   load(paste(c(path_to_experiments[1], RData_2experiments), collapse='/'))
   attach(data)
   
+  reso_r <- data$r[1]
   exp1_name <- levels(data$experiment)[1]; exp2_name <- levels(data$experiment)[2];
   
   data$r <- data$r
@@ -446,17 +449,17 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
     }
     if(fitting %in% c('exp')){
       amplitude_g12 <- exp(parameters_g12$beta0)
-      amplitudeAtr0_g12 <- exp(parameters_g12$beta0*parameters_g12$beta1*20)+1
+      amplitudeAtr0_g12 <- exp(parameters_g12$beta0*parameters_g12$beta1*reso_r)+1
       length_scale_g12 <- -parameters_g12$beta1^(-1)
       area_g12 <- -length_scale_g12*amplitude_g12*(exp(-1/(length_scale_g12)*parameters_g12$r0)-1)
     
       amplitude_g22 <- exp(parameters_g22$beta0)
-      amplitudeAtr0_g22 <- exp(parameters_g22$beta0*parameters_g22$beta1*20)+1
+      amplitudeAtr0_g22 <- exp(parameters_g22$beta0*parameters_g22$beta1*reso_r)+1
       length_scale_g22 <- -parameters_g22$beta1^(-1)
       area_g22 <- -length_scale_g22*amplitude_g22*(exp(-1/(length_scale_g22)*parameters_g22$r0)-1)
       
       amplitude_g11 <- exp(parameters_g11$beta0)
-      amplitudeAtr0_g11 <- exp(parameters_g11$beta0*parameters_g11$beta1*20)+1
+      amplitudeAtr0_g11 <- exp(parameters_g11$beta0*parameters_g11$beta1*reso_r)+1
       length_scale_g11 <- -parameters_g11$beta1^(-1)
       area_g11 <- -length_scale_g11*amplitude_g11*(exp(-1/(length_scale_g11)*parameters_g11$r0)-1)
       
@@ -740,9 +743,35 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       length_scale_g11 <- -parameters_g11$beta1^(-1)
       area_g11 <- -length_scale_g11*amplitude_g11*(exp(-1/(length_scale_g11)*parameters_g11$r0)-1)
       
+      pexp <- data$experiment[match(1:nlevels(data$id),data$id)]
+      
+      openpdf("g11_2experiments.pdf")
+      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
+      r_eval_plot <- which(r_eval>=reso_r)[1]:(0.8*length(r_eval))
+      xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
+      ylim=c(0.5,50)
+      plot(1, xlim=xlim, xlab=paste('r ','[', units,']', sep = ''),
+           ylab=eval(bquote(expression(g[.(levels1)][','][.(levels1)](r)))), type='n', ylim = ylim)
+      for (ii in  1:length(levels(data$experiment))){
+        exp_name <- levels(data$experiment)[ii]
+        print(exp_name)
+        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        for (jj in unique(subset$id)){
+          with(subset[which(subset$id == jj), ], lines(r[r_eval_plot], g11[r_eval_plot], lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
+        }
+        meanr0 <- mean(parameters_g11$r0[which(parameters_g11$experiment == exp_name)], na.rm=TRUE)
+        meanlengthscale <- mean(length_scale_g11[pexp==exp_name], na.rm=TRUE)
+        meanamplitude <- mean(amplitude_g11[pexp==exp_name], na.rm=TRUE)
+        lines(seq(0, meanr0, by=0.5),
+              1+meanamplitude*exp(-seq(0, meanr0, by=0.5)/meanlengthscale), col='dimgray', lty=1)
+        abline(h=1, lty=2, col='black')
+        legend("topright", legend=exp_names, lty=lty, col=col_palette)
+      }
+      closepdf("g11_2experiments.pdf")
+      cat('\t\'g11_2experiments.pdf\' created.\n')
+      
       # tests (experiments)
       cat('Running tests... ')
-      pexp <- data$experiment[match(1:nlevels(data$id),data$id)]
       parameters_g11_r0.test <- t.test(parameters_g11$r0[which(parameters_g11$experiment == exp1_name)], parameters_g11$r0[which(parameters_g11$experiment == exp2_name)])
       density_level1.test <- t.test(density$level1[pexp==exp1_name],density$level1[pexp==exp2_name])
       amplitudeAtr0_g11.test <- t.test(amplitudeAtr0_g11[pexp==exp1_name],amplitudeAtr0_g11[pexp==exp2_name])
@@ -803,7 +832,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g11.pdf"), collapse = "_"))
       # ylim <- c(10,1.2*max(parameters_g11$R2, na.rm=TRUE))
       bp <- boxplot(split(parameters_g11$R2,pexp), ylab=expression(R^2), names=c(exp1_name, exp2_name))
-      text(bp$group, bp$out, parameters_g11$id[which(parameters_g11$R2 %in% bp$out)], cex=0.5, pos = 4)
+      # text(bp$group, bp$out, parameters_g11$id[which(parameters_g11$R2 %in% bp$out)], cex=0.5, pos = 4)
       segments(x0 = 1, x1 = 2, y0 = 1.04*max(parameters_g11$R2, na.rm=TRUE), y1 = 1.04*max(parameters_g11$R2, na.rm=TRUE), col = "black")
       text( 1.5 , 1.09*max(parameters_g11$R2, na.rm=TRUE) ,  get_asterisk(parameters_g11_R2.test) , cex=1)
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g11.pdf"), collapse = "_"))
