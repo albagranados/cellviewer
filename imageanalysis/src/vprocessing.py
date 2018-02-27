@@ -184,7 +184,7 @@ def compute_areas(vor, original_pixel_size):
         vertices_label = vor.regions[region]  # labels of the voronoi vertex forming the boundary of that region,
         # containing point p1
         if -1 in vertices_label:  # vertex label -1 means infinite region
-            areas[p1] = float('inf') # None #-1  # None area -1 means unbounded region
+            areas[p1] = float('inf')  # None #-1  # None area -1 means unbounded region
         else:
             polygon_vertices = vor.vertices[vertices_label]
             poly = Polygon(polygon_vertices)
@@ -255,7 +255,7 @@ def plot_areas(vor, threshold=None, show_points=False, plot_axis=True):
         plt.show()
 
 
-def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='jet', norm='linear', hold=False):
+def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', norm='linear', hold=False):
     """
     This function plots:
     1) the zero-rank densities of the bounded voronoi regions within ROI, contained in
@@ -283,7 +283,7 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
             vertices_label = vor.regions[vor.point_region[p1]]
             polygons.append([(x, y) for x, y in vor.vertices[vertices_label]])
             p += 1
-            if density >= threshold:
+            if density >= thr:
                 polygons_thresholded.append(p-1)
     fig, ax = plt.subplots()
 
@@ -306,13 +306,6 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
     if show_points is True:
         ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=2)
 
-    if threshold is not None:
-        fig_th, ax_th = plt.subplots()
-        polygons_th = [polygons[i] for i in polygons_thresholded]
-        coll_th = PolyCollection(polygons_th, color='grey', edgecolors='none')
-        ax_th.add_collection(coll_th)  # , ax_th.autoscale_view()
-        ax.show(); plt.axis('equal')
-
     if plot_axis is 'off':
         plt.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])
@@ -323,7 +316,42 @@ def plot_densities(vor, threshold=None, plot_axis='on', show_points=True, cmap='
     ax.set_aspect('equal', adjustable='box')
     fig.hold(hold)
 
-    return fig, ax #.figure
+    if thr is not None:
+        fig_th, ax_th = plt.subplots()
+        polygons_th = [polygons[i] for i in polygons_thresholded]
+        coll_th = PolyCollection(polygons_th, color='grey', edgecolors='none')
+        ax_th.add_collection(coll_th)  # , ax_th.autoscale_view()
+        ax_th.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max())
+        ax_th.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
+        ax_th.set_aspect('equal', adjustable='box')
+
+    return fig, ax  #.figure
+
+
+def threshold(vor, thr=None):
+    """
+    This function thresholds the point pattern based on the voronoi densities:
+
+    Input:
+    -----------------------------
+    threshold (float): optional minimum density (in nm-2) to generate a thresholded voronoi
+
+    Outpu:
+    ----------------------------
+    new attribute vor.points_thresholded = vor.points with densities larger than threshold
+
+    """
+    if not hasattr(vor, 'densities_zero'):
+        raise ValueError("Requires vor.densities_zero attribute! Please, run vprocessing.compute_densities(vor).")
+
+    points_thresholded = []
+    for p1, density in enumerate(vor.densities_zero):  # p1 is region index, no point
+        if density > 0 and density >= thr:
+            points_thresholded.append(vor.points[p1])
+
+    vor.points_thresholded = np.asarray(points_thresholded)
+
+    return vor
 
 
 def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', fill_value=0.0):

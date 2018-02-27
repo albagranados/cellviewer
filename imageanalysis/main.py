@@ -20,126 +20,134 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; fileDir = ''; fileName = ''
 
-fileDir = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-05-22_HeLacells_antiSMC1_WAPLkd&Controls_DMSO&ActDtreatment/WAPLkd_ActD/'
-fileName = 'WAPLkd_ActD_007_list_drift_1080-2493_allChs'
-data = util.pointpattern()
-data.read(fileDir, fileName=fileName, fileExt='.txt', storm=1, channels_num=1, out_channel=[0, 1],
-                          save_output_dir=None, plot=True)
-points = data.points
+fileDir = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/2017-06-15_HeLa_antiCTCF_ActD/Ch1/'
+fileName = 'CTCF_DMSO_000_list_m1000drift_00_85105_120140'
 
-# image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T  # recall: inputfile_ispp = False
+for file in os.listdir(fileDir):
+    fileName = file.split(".txt")[0]
 
-stat.plot_frameno(data.points, data.frame_no)
+    data = util.pointpattern()
+    data.read(fileDir, fileName=fileName, fileExt='.txt', storm=0, channels_num=1, out_channel=[0, 1],
+                              save_output_dir=None, plot=True)
+    points = data.points
 
-# # ============== INPUT PARAMETERS ========
-# # ========================================
-cell_no = str(0) + str(2)
-dict_inputfile = {'filename': fileName,
-                  'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [174, 188, 100, 110],
-                             'pixelate': 0,
-                             'tessellate': 1,
-                  'original_pixel_size': 160, 'photonconv': 0.14, 'resolution': 0.1}   # [nm]/[pixel], e.g. STORM
-analysis_pixel_size = 20  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
-scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
-dict_image = {'scale_pixel_size': scale_pixel_size,
-              'original_pixel_size': dict_inputfile.get('original_pixel_size'),
-              'interpolate_method': 'nearest'}
-util.saveparameters(output_dir + 'parameters.txt', dict1=dict_inputfile, dict2=dict_image)
+    # image = (cv2.imread('../data/test/myshape00.png', 0).astype(float)).T  # recall: inputfile_ispp = False
 
-if dict_inputfile.get('ispp'):
+    # stat.plot_frameno(data.points, data.frame_no)
 
-    print '\ttotal number of localizations = %d\n' % points.shape[0]
-    # vproc.plot_points(points)
-    # plt.savefig(output_dir + 'pp.pdf', bbox_inches='tight')
+    # # ============== INPUT PARAMETERS ========
+    # # ========================================
+    # cell_no = str(0) + str(2)
+    dict_inputfile = {'filename': fileName,
+                      'ispp': 1, 'compute_ROI': 0, 'crop': 1, 'crop_range': [174, 188, 100, 110],
+                                 'pixelate': 0,
+                                 'tessellate': 1,
+                      'original_pixel_size': 160, 'photonconv': 0.14, 'resolution': 0.1}   # [nm]/[pixel], e.g. STORM
+    analysis_pixel_size = 20  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+    scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
+    dict_image = {'scale_pixel_size': scale_pixel_size,
+                  'original_pixel_size': dict_inputfile.get('original_pixel_size'),
+                  'interpolate_method': 'nearest'}
+    util.saveparameters(output_dir + 'parameters.txt', dict1=dict_inputfile, dict2=dict_image)
 
-    # # ============== ROI =============================
-    # # ================================================
-    print '\n _______PRE-PROCESSING_______'
-    reload(iproc); reload(stat); reload(vproc)
+    if dict_inputfile.get('ispp'):
 
-    if dict_inputfile.get('compute_ROI'):
-        if not dict_inputfile.get('crop'):
-            print '\nComputing ROI (scale-space)...'; start_time = time.time()
-            roi_scale_pixel_size = 200. / 160  # [pixel] w.r.t original pixel size = [pixel]
-            dict_roi = {'scale_pixel_size': roi_scale_pixel_size, 't': 40, 'feature_name': 'edge',
-                        'thresholding': False, 'threshold_percent': 0.6}
+        print '\ttotal number of localizations = %d\n' % points.shape[0]
+        # vproc.plot_points(points)
+        # plt.savefig(output_dir + 'pp.pdf', bbox_inches='tight')
 
-            image, image_ptslabel = iproc.pattern2image(points, dict_roi.get('scale_pixel_size'))
-            image_blurred = iproc.blur_image(image, dict_roi.get('t'))
-            feature = iproc.find_feature(image, dict_roi)
-            points_roi = iproc.image2pattern(feature.get('image_roi'), points, image_ptslabel)
+        # # ============== ROI =============================
+        # # ================================================
+        print '\n _______PRE-PROCESSING_______'
+        reload(iproc); reload(stat); reload(vproc)
 
-            # # visualization
-            iproc.plot_image(image, cmap='gray', norm='lin'), plt.title(r"pixelated image")
-            iproc.plot_image(image_blurred, cmap='gray', norm='lin'), plt.title(r"blurred pixelated image")
-            iproc.plot_feature(image, feature, cmap='gray', norm='lin', feature_name=dict_roi.get('feature_name'))
-            iproc.plot_image(feature.get('image_roi'), cmap='gray', norm='lin'), plt.title('ROI')
-            print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
+        if dict_inputfile.get('compute_ROI'):
+            if not dict_inputfile.get('crop'):
+                print '\nComputing ROI (scale-space)...'; start_time = time.time()
+                roi_scale_pixel_size = 200. / 160  # [pixel] w.r.t original pixel size = [pixel]
+                dict_roi = {'scale_pixel_size': roi_scale_pixel_size, 't': 40, 'feature_name': 'edge',
+                            'thresholding': False, 'threshold_percent': 0.6}
+
+                image, image_ptslabel = iproc.pattern2image(points, dict_roi.get('scale_pixel_size'))
+                image_blurred = iproc.blur_image(image, dict_roi.get('t'))
+                feature = iproc.find_feature(image, dict_roi)
+                points_roi = iproc.image2pattern(feature.get('image_roi'), points, image_ptslabel)
+
+                # # visualization
+                iproc.plot_image(image, cmap='gray', norm='lin'), plt.title(r"pixelated image")
+                iproc.plot_image(image_blurred, cmap='gray', norm='lin'), plt.title(r"blurred pixelated image")
+                iproc.plot_feature(image, feature, cmap='gray', norm='lin', feature_name=dict_roi.get('feature_name'))
+                iproc.plot_image(feature.get('image_roi'), cmap='gray', norm='lin'), plt.title('ROI')
+                print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
+            else:
+                crop_range = dict_inputfile.get('crop_range')
+                points_roi = iproc.points_2dcrop(data.points, crop_range)
+                # fileName_crop = fileName + '_' + cell_no + '_' + \
+                #                 str(crop_range[0])+str(crop_range[1]) + '_' +\
+                #                 str(crop_range[2]) + str(crop_range[3])
+                # np.savetxt(output_dir + fileName_crop + '.txt', points_roi)
         else:
-            crop_range = dict_inputfile.get('crop_range')
-            points_roi = iproc.points_2dcrop(data.points, crop_range)
-            fileName_crop = fileName + '_' + cell_no + '_' + \
-                            str(crop_range[0])+str(crop_range[1]) + '_' +\
-                            str(crop_range[2]) + str(crop_range[3])
-            np.savetxt(output_dir + fileName_crop + '.txt', points_roi)
-    else:
-        print '\nNo ROI computations required.'
-        points_roi = points  # points_roi = iproc.compute_roi(compute_ROI, points)
+            print '\nNo ROI computations required.'
+            points_roi = points  # points_roi = iproc.compute_roi(compute_ROI, points)
 
-    vproc.plot_points(points_roi)
+        vproc.plot_points(points_roi)
 
-    plt.savefig(output_dir + 'pp_roi' + '.pdf', bbox_inches='tight')
-    print '\tnumber of localizations in the analysis = %d\n' % points_roi.shape[0]
+        plt.savefig(output_dir + 'pp_roi' + '.pdf', bbox_inches='tight')
+        print '\tnumber of localizations in the analysis = %d\n' % points_roi.shape[0]
 
-    # # ====== IMAGE GENERATION ===================
-    # # ===========================================
-    if dict_inputfile.get('pixelate'):
-        print 'Pixelating...',
-        image = iproc.pattern2image(points, pixel_size=analysis_pixel_size)[0]
-        iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
-        plt.savefig(output_dir + 'pixelated_pp.pdf', bbox_inches='tight')
-        print 'Done.'
+        # # ====== IMAGE GENERATION ===================
+        # # ===========================================
+        if dict_inputfile.get('pixelate'):
+            print 'Pixelating...',
+            image = iproc.pattern2image(points, pixel_size=analysis_pixel_size)[0]
+            iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
+            plt.savefig(output_dir + 'pixelated_pp.pdf', bbox_inches='tight')
+            print 'Done.'
 
-    if dict_inputfile.get('tessellate'):
-        plt.close('all')
-        print '\n _______VORONOI ANALYSIS_______'; ini_time = time.time()
-        reload(vproc); reload(iproc)
+        if dict_inputfile.get('tessellate'):
+            plt.close('all')
+            print '\n _______VORONOI ANALYSIS_______'; ini_time = time.time()
+            reload(vproc); reload(iproc)
 
-        print 'scale pixel size for intensity-dependent Voronoi analysis = ', scale_pixel_size
+            print 'scale pixel size for intensity-dependent Voronoi analysis = ', scale_pixel_size
 
-        print '\nComputing Voronoi tessellation... '; start_time = time.time()
-        vor = Voronoi(points_roi)  # compute Voronoi tessellation
-        print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
+            print '\nComputing Voronoi tessellation... '; start_time = time.time()
+            vor = Voronoi(points_roi)  # compute Voronoi tessellation
+            print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 
-        print '\nComputing Voronoi descriptors...'; start_time = time.time()
-        vproc.compute_parameters(vor, dict_inputfile)   # new attribute in vor object: vor.areas
-        print "\tnuclear area = %.0f" % float(vor.areas_total), '[o. pixel size]2'
-        print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
+            print '\nComputing Voronoi descriptors...'; start_time = time.time()
+            vproc.compute_parameters(vor, dict_inputfile)   # new attribute in vor object: vor.areas
+            print "\tnuclear area = %.0f" % float(vor.areas_total), '[o. pixel size]2'
+            print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
 
-        print 'Converting Voronoi tessellation into image (i.e., interpolate)...',
-        image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
-                                      interpolate_method=dict_image.get('interpolate_method'), fill_value=0.0)
-        print 'Plotting Voronoi zero-rank densities image...',
-        iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
-        plt.savefig(output_dir + 'densities_image.pdf', bbox_inches='tight'); print 'Saved.'
+            print 'Converting Voronoi tessellation into image (i.e., interpolate)...',
+            image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
+                                          interpolate_method=dict_image.get('interpolate_method'), fill_value=0.0)
+            print 'Plotting Voronoi zero-rank densities image...',
+            iproc.plot_image(image, cmap='jet', norm='log', plot_axis='on')
+            plt.savefig(output_dir + 'densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
-        print 'Plotting Voronoi zero-rank densities point pattern...'
-        threshold = None  # float(2*vor.densities_average)
-        vproc.plot_densities(vor, threshold=threshold, show_points=True, cmap='jet', norm='log', plot_axis='on')
-        # plt.savefig(output_dir + 'densities_pp.pdf', bbox_inches='tight'); print 'Saved.'
+            print 'Plotting Voronoi zero-rank densities point pattern...'
+            threshold = float(2*vor.densities_average)
+            vproc.threshold(vor, thr=threshold)
+            vproc.plot_densities(vor, thr=threshold, show_points=True, cmap='jet', norm='log', plot_axis='on')
+            plt.savefig(output_dir + 'densities_pp.pdf', bbox_inches='tight'); print 'Saved.'
 
-        # print 'Plotting Voronoi areas...'
-        # threshold = float((2*vor.densities_average)**-1)
-        # vproc.plot_areas(vor, threshold=threshold, show_points=False, plot_axis='off')
-        # plt.savefig(output_dir + 'areas_pp.pdf', bbox_inches='tight')
+            fileName_crop = fileName + '_' + 'nonoise'
+            np.savetxt(output_dir + fileName_crop + '.txt', vor.points_thresholded)
 
-        # print '\nPlotting Voronoi tessellation... '
-        # dict_plotvoronoi2d = {'show_vertices': 'True', 'show_points': 'True', 'line_width': '0.5',
-        #                       'show_unbounded_cells': 'True'}
-        # vproc.voronoi_plot_2d(vor, **dict_plotvoronoi2d), plt.title(r"Voronoi tessellation")
-        # plt.savefig(output_dir + 'tessellation_pp.pdf', bbox_inches='tight')
+            # print 'Plotting Voronoi areas...'
+            # threshold = float((2*vor.densities_average)**-1)
+            # vproc.plot_areas(vor, threshold=threshold, show_points=False, plot_axis='off')
+            # plt.savefig(output_dir + 'areas_pp.pdf', bbox_inches='tight')
 
-        print (" _______VORONOI ANALYSIS: DONE (total time =  %.2f seconds)" % (time.time() - ini_time))
+            # print '\nPlotting Voronoi tessellation... '
+            # dict_plotvoronoi2d = {'show_vertices': 'True', 'show_points': 'True', 'line_width': '0.5',
+            #                       'show_unbounded_cells': 'True'}
+            # vproc.voronoi_plot_2d(vor, **dict_plotvoronoi2d), plt.title(r"Voronoi tessellation")
+            # plt.savefig(output_dir + 'tessellation_pp.pdf', bbox_inches='tight')
+
+            print (" _______VORONOI ANALYSIS: DONE (total time =  %.2f seconds)" % (time.time() - ini_time))
 
 
 # # ====== IMAGE PROCESSING ===================
