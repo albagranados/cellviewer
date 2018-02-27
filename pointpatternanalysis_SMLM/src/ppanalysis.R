@@ -22,37 +22,49 @@ source("utilities.R")
 
 ### select data
 
-# # dual
-# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'SMC1'; levels2 = 'PolII'
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls'
-# path_to_experiment2 = "/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated"
-# 
-# storm_file=0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # mono
-pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
-levels1 = '1'; levels2 = ''
-exp_name1 <- "r50"; exp_name2 <- "r100"
-path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
-path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+# dual
+pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+levels1 = 'SMC1'; levels2 = 'CTCF'
+path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in DMSO Controls'
+path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in ActD Treated'
 
 storm_file = 0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
+# # single
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# levels1 = 'H3'; levels2 = '_'
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_DMSO'
+# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_ActD'
+# 
+# storm_file=0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# # # mono
+# pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
+# levels1 = 'SMC1'; levels2 = ''
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
+# path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
+# path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+# 
+# storm_file = 0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
 ### compute
-compute_ppsummaries <- data.frame(run=1, 
+compute_ppsummaries <- data.frame(run=0, 
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
                                   crosscorrelation=1, 
                                   markconnection=0,
                                   envelopes=0,
-                                  plot_functions=0)
+                                  plot_functions=0,
+                                  save = 1)
 longitudinal_dataset <- data.frame(run=1,
                                     generate = 1,
                                       stat_rrange_probs = 0.1,
@@ -64,8 +76,8 @@ longitudinal_dataset <- data.frame(run=1,
                                    )
 
 ### parameters
-# r_eval = seq(0, 2, length.out=200) # 300
-r_eval = seq(0, 300, length.out=200) 
+r_eval = seq(0, 4, length.out=200) # 300
+# r_eval = seq(0, 300, length.out=200)
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
 # ------------------------------------------------------------
@@ -87,7 +99,8 @@ if (pptype == "marked"){
       fileNamesCh2 <- list.files(path = dirs_channels[2], pattern = "\\.txt$", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE,
                                  ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-      num_files = 1:length(fileNamesCh1)
+      num_files = length(fileNamesCh1)
+      range_files = 1:num_files
       
       # initialize
       g12_r0_all <- c(); g22_r0_all <- c(); g11_r0_all <- c(); g_r0_all <- c()
@@ -106,7 +119,7 @@ if (pptype == "marked"){
       cellName_previous <- paste(unlist(strsplit(fileNamesCh1[1], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
                                 collapse='_')
       cell_nos <- c(); no <- 1
-      for (j in num_files){
+      for (j in range_files){
         
         cellName_current <- paste(unlist(strsplit(fileNamesCh1[j], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
                                    collapse='_')
@@ -118,12 +131,10 @@ if (pptype == "marked"){
         res <- build_pp(pptype=pptype, fn1=path_to_file1, fn2=path_to_file2, pn1=levels1, pn2=levels2, storm_file=storm_file)
         points1 = res$first; points2 = res$second; points = res$all; points_unmarked = res$all_unmarked
       
-        summary(points)
-      
         ### plot pp
         if(j==num_files[1]){  # plot only first point pattern
           openpdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
-          plot(points, cex=0.2, main='', pch=16, cols=c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)), 
+          plot(points, cex=0.2, main='', pch=16, cols=c(rgb(173,216,230,max = 255,alpha=125), rgb(255,165,0,max = 255,alpha=125)), 
                use.marks=TRUE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
           closepdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
         }
@@ -279,24 +290,27 @@ if (pptype == "marked"){
         if (cellName_current != cellName_previous){ no = no + 1 }
         cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
       }
-      # save txt file with name of analyzed file
-      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
-                                     collapse='/'), '.txt'), collapse = ''), "w")
-      cat(fileNamesCh1, file=textfile, sep='\n')
-      close(textfile)
-      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch2_fileNames'), collapse = '')),
-                                     collapse='/'), '.txt'), collapse = ''), "w")
-      cat(fileNamesCh2, file=textfile, sep='\n')
-      close(textfile)
       
-      # save:
-      path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
-                                     collapse='/'), '.RData'), collapse = '')
-      save(path_to_experiments, exp_name, levels1, levels2, 
-           G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g11_all, 
-           g12_r0_all, g22_r0_all, g11_r0_all,  
-           r_eval, cell_nos, intensities,
-           file=path_to_RData)
+      if (compute_ppsummaries$save == 1){
+        # save txt file with name of analyzed file
+        textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
+                                       collapse='/'), '.txt'), collapse = ''), "w")
+        cat(fileNamesCh1, file=textfile, sep='\n')
+        close(textfile)
+        textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch2_fileNames'), collapse = '')),
+                                       collapse='/'), '.txt'), collapse = ''), "w")
+        cat(fileNamesCh2, file=textfile, sep='\n')
+        close(textfile)
+        
+        # save:
+        path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
+                                       collapse='/'), '.RData'), collapse = '')
+        save(path_to_experiments, exp_name, levels1, levels2,
+             G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g11_all, 
+             g12_r0_all, g22_r0_all, g11_r0_all,  
+             r_eval, cell_nos, intensities,
+             file=path_to_RData)
+      }
     }
   }
 
@@ -330,7 +344,8 @@ if (pptype %in% c("unmarked")){
       fileNamesCh1 <- list.files(path = dirs_channels[1], pattern = "\\.txt$", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE,
                                  ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-      num_files = 1:length(fileNamesCh1)
+      num_files = length(fileNamesCh1)
+      range_files = 1:num_files
       
       # initialize
       g11_r0_all <- c()
@@ -345,7 +360,7 @@ if (pptype %in% c("unmarked")){
       cellName_previous <- paste(unlist(strsplit(fileNamesCh1[1], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
                                  collapse='_')
       cell_nos <- c(); no <- 1
-      for (j in num_files){
+      for (j in range_files){
         
         cellName_current <- paste(unlist(strsplit(fileNamesCh1[j], '_'))[1:(length(unlist(strsplit(fileNamesCh1[1], '_')))-2)], 
                                   collapse='_')
@@ -356,14 +371,23 @@ if (pptype %in% c("unmarked")){
         
         res <- build_pp(pptype=pptype, fn1=path_to_file1, pn1=levels1, units=units, storm_file=storm_file)
         points = res$first
-
+    
         ### plot pp
         if(j==num_files[1]){  # plot only first point pattern
           openpdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
-          plot(points, cex=0.2, main='', pch=16, cols="black", 
+          plot(points, cex=0.2, main='', pch=16, cols="black",
                use.marks=TRUE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
           closepdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
         }
+        
+        # fitting <- kppm(points ~ 1, "Thomas", statistic="pcf")
+        # print(fitting)
+        # plot(fitting)
+        # points_sim <- simulate(fitting, nsim=1)$`Simulation 1`
+        # openpdf(paste("simpointpattern_", exp_name, ".pdf", sep = ''))
+        # plot(points_sim, cex=0.2, main='', pch=16, cols="black",
+        #      use.marks=TRUE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+        # closepdf(paste("simpointpattern_", exp_name, ".pdf", sep = ''))
         
         if(compute_ppsummaries$nearestneighbour){
           cat('Computing nearest-neighbour distance d.f. ... ')
@@ -483,18 +507,21 @@ if (pptype %in% c("unmarked")){
         if (cellName_current != cellName_previous){ no = no + 1 }
         cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
       }
-      # save txt file with name of analyzed file
-      textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
-                                     collapse='/'), '.txt'), collapse = ''), "w")
-      cat(fileNamesCh1, file=textfile, sep='\n')
-      close(textfile)
-
-      # save:
-      path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
-                                     collapse='/'), '.RData'), collapse = '')
-      save(path_to_experiments, exp_name, levels1, levels2, 
-           G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities,
-           file=path_to_RData)
+      
+      if (compute_ppsummaries$save==1){
+        # save txt file with name of analyzed file
+        textfile <- file(paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name, '_Ch1_fileNames'), collapse = '')),
+                                       collapse='/'), '.txt'), collapse = ''), "w")
+        cat(fileNamesCh1, file=textfile, sep='\n')
+        close(textfile)
+  
+        # save:
+        path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
+                                       collapse='/'), '.RData'), collapse = '')
+        save(path_to_experiments, exp_name, levels1, levels2, 
+             G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities,
+             file=path_to_RData)
+      }
     }
   }
   
