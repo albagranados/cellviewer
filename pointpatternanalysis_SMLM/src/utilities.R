@@ -849,7 +849,6 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
            ylab=eval(bquote(expression(g[.(levels1)][','][.(levels1)](r)))), type='n', ylim = ylim)
       for (ii in  1:length(levels(data$experiment))){
         exp_name <- levels(data$experiment)[ii]
-        print(exp_name)
         subset <- subset(data_allrange, data$experiment %in% exp_name)
         for (jj in unique(subset$id)){
           with(subset[which(subset$id == jj), ], lines(r, g11, lty=lty[ii], main='', lwd=1, col=col_palette[ii]))

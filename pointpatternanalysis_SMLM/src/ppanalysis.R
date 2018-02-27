@@ -22,27 +22,27 @@ source("utilities.R")
 
 ### select data
 
-# dual
-pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-levels1 = 'SMC1'; levels2 = 'CTCF'
-path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in DMSO Controls'
-path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in ActD Treated'
-
-storm_file = 0
-exp_names <- c(exp_name1, exp_name2)
-path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # single
-# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+# # dual
+# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 # exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'H3'; levels2 = '_'
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_DMSO'
-# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_ActD'
+# levels1 = 'SMC1'; levels2 = 'CTCF'
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in DMSO Controls'
+# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in ActD Treated'
 # 
-# storm_file=0
+# storm_file = 0
 # exp_names <- c(exp_name1, exp_name2)
 # path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# single
+pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+levels1 = 'CTCF'; levels2 = ''
+path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
+path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
+
+storm_file=0
+exp_names <- c(exp_name1, exp_name2)
+path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 # # # mono
 # pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
@@ -305,7 +305,7 @@ if (pptype == "marked"){
         # save:
         path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                        collapse='/'), '.RData'), collapse = '')
-        save(path_to_experiments, exp_name, levels1, levels2,
+        save(path_to_experiment1, path_to_experiment2, exp_name, levels1, levels2,
              G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g11_all, 
              g12_r0_all, g22_r0_all, g11_r0_all,  
              r_eval, cell_nos, intensities,
@@ -518,7 +518,7 @@ if (pptype %in% c("unmarked")){
         # save:
         path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                        collapse='/'), '.RData'), collapse = '')
-        save(path_to_experiments, exp_name, levels1, levels2, 
+        save(path_to_experiment1, path_to_experiment2, exp_name, levels1, levels2, 
              G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities,
              file=path_to_RData)
       }
