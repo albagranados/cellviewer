@@ -17,123 +17,36 @@ setwd("/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanal
 
 source("utilities.R")
 
-rotate <- function(alpha){
-  alpha <- alpha*pi/180
-  R <- matrix(c(cos(alpha), -sin(alpha), sin(alpha), cos(alpha)), # the data elements 
-              nrow=2,              # number of rows 
-              ncol=2,              # number of columns 
-              byrow = TRUE)  
-  return(R)
-}
-
-savetext <- function(pp, file, dir="../output/", ncolumns=2)
-{
-  dir.create(file.path(dir), showWarnings = FALSE)
-  fname <- paste(dir,file, sep="")
-  write(t(pp),fname,ncolumns)
-}
-
-triangle <- function(cenx, ceny, rot, height, gamma)
-{
-  Ax <- - height*tan(gamma*pi/180); Ay <- - height/3
-  Bx <- height*tan(gamma*pi/180); By <- - height/3
-  Cx <- 0; Cy <- height - height/3
-  vertex <- list(x=c(Ax,Bx,Cx),y=c(Ay, By, Cy))
-  vertex_rot <- rotate(alpha=rot)%*%t(matrix(c(vertex$x,vertex$y), nrow=3, ncol=2))
-  vertex_rot_trans <- vertex_rot + c(cenx, ceny) 
-  shape <- owin(poly=list(x=vertex_rot_trans[1,], y=vertex_rot_trans[2,]))
-  return(shape)  
-}
-
-quadrilateral <- function(cenx, ceny, rot, height, width)
-{
-  Ax <- - width/2; Ay <- - height/2
-  Bx <- width/2; By <- - height/2
-  Cx <- width/2; Cy <- height/2
-  Dx <- - width/2; Dy <- height/2
-  vertex <- list(x=c(Ax,Bx,Cx,Dx),y=c(Ay, By, Cy, Dy))
-  vertex_rot <- rotate(alpha=rot)%*%t(matrix(c(vertex$x,vertex$y), nrow=4, ncol=2))
-  vertex_rot_trans <- vertex_rot + c(cenx,ceny)
-  shape <- owin(poly=list(x=vertex_rot_trans[1,], y=vertex_rot_trans[2,]))
-  return(shape)  
-}
-
-circle <- function(distribution, n=Nclusters, radius=radius, centre=centre, sig=sig){
-  
-  if (distribution=='uniform'){
-    points <- runifdisc(n=n, radius=radius, centre=centre) 
-    return(points)
-  }
-  if (distribution=='matern'){
-    # npoints <- rpoispp(n)
-    npoints <- rpois(1, lambda=Nclusters)
-    points <- runifdisc(n=npoints, radius=radius, centre=centre) 
-    return(points)
-  }
-  if (distribution=='thomas'){
-    npoints <- rpois(1, lambda=Nclusters)
-    p <- mvrnorm(n=npoints, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
-    p[,1] <- p[,1] + centre[1]
-    p[,2] <- p[,2] + centre[2]
-    points <- as.ppp(p, c(centre[1]-radius, centre[1]+radius, centre[2]-radius, centre[2]+radius))
-    return(points)
-  }
-  if (distribution=='gaussian_truncated'){
-    p <- mvrnorm(n=3*n, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
-    out <- which((abs(p[,1])>radius) | (abs(p[,2])>radius))
-    print(out)
-    if (length(out)>0){
-      p_constrained <- p[-out,] 
-    }
-    else{ p_constrained <- p }
-    if (n < dim(p_constrained)[1]){ p_reduced <- p_constrained[1:n,]}
-    else{ p_reduced <- p_constrained}
-    p_reduced[,1] <- p_reduced[,1] + centre[1]
-    p_reduced[,2] <- p_reduced[,2] + centre[2]
-    points <- as.ppp(p_reduced, c(centre[1]-radius, centre[1]+radius, centre[2]-radius, centre[2]+radius))
-    return(points)
-  }
-  if (distribution=='gaussian'){
-    p <- mvrnorm(n=n, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
-    p[,1] <- p[,1] + centre[1]
-    p[,2] <- p[,2] + centre[2]
-    points <- as.ppp(p, c(centre[1]-radius, centre[1]+radius, centre[2]-radius, centre[2]+radius))
-    return(points)
-  }
-}
-
-levels1 = 'SMC1'; levels2 = 'CTCF'
-levels = c(levels1, levels2)
+levels1 = 'CTCF'; levels2 = ''; levels = c(levels1, levels2)
 
 ## input parameters
 num_realizations <- 10
 cluster_type <- 'thomas'
-area <- c(10*10*160^2, NA) # 20*20*160^2  # nm2
-ntotal <- area*c(8*10^(-4), NA)
-rho_av <- ntotal/area  # average density
-# # exp fitting, estimated parameters
-# A <- c(8, NA)
-# lambda <- c(240/2, NA)
-# # cluster point pattern
-# num_clusters <- c(2, NA)  # number of clusters
-# rcluster <- lambda  # average radius clusters [nm]
-# 
-# Nclusters <- round(2*A*pi*(c(rcluster[1], rcluster[2]))^2*rho_av) # average number of proteins per cluster
-# rho_cluster <-  Nclusters/(pi*rcluster^2)
+area <- c(20*20*160^2, NA) # 20*20*160^2  # nm2
+rho_av <- c(12*10^(-4),NA)  # average density
+ntotal <- round(area*rho_av)
 
 # exp fitting, estimated parameters
-num_clusters <- c(2, NA)  # number of clusters
-kappa <- num_clusters/area
-lambda <- c(240/2, NA)
-sigma <- lambda/4
-A <- c(1/(4*pi*kappa*sigma^2), NA)  # c(8, NA)
-# cluster point pattern
+A <- c(10, NA)
+lambda <- c(21, NA)
 rcluster <- lambda  # average radius clusters [nm]
-rho_cluster <- rho_av/kappa
-Nclusters <- round(rho_cluster*pi*(c(rcluster[1], rcluster[2]))^2) # average number of proteins per cluster
+Nclusters <- round(2*A*pi*rcluster^2*rho_av) # average number of proteins per cluster
+rho_cluster <-  Nclusters/(pi*rcluster^2)
+num_clusters <- round(ntotal/Nclusters)  # number of clusters
+
+# # expsq fitting, estimated parameters
+# A <- c(7, NA)
+# lambda <- c(2550, NA)
+# sigma <- sqrt(lambda)/2
+# kappa <- 1/(A*pi*lambda)
+# num_clusters <- round(kappa*area)  # number of clusters
+# # cluster point pattern
+# rcluster <- 2*sqrt(lambda)  # average radius clusters [nm]
+# Nclusters <- rho_av/kappa
+# rho_cluster <- Nclusters/(pi*rcluster^2)
 
 # background point pattern
-nbackground <- ntotal - Nclusters*num_clusters
+nbackground <- 0#round(ntotal - Nclusters*num_clusters)
 
 phi <- rho_cluster/rho_av  # increased density of points in clusters
 
@@ -146,23 +59,23 @@ for (j in 1:num_realizations){
   # points <- rpoispp(Lambda)
   
   radii <- rnorm(num_clusters[1], mean = rcluster[1], sd = 0)
-  centreclusters <- cbind(runif(num_clusters[1], min = 3*max(radii), max = sqrt(area[1])-3*max(radii)),
-                          runif(num_clusters[1], min = 3*max(radii), max = sqrt(area[1])-3*max(radii)))
+  centreclusters <- cbind(runif(num_clusters[1], min = max(radii), max = sqrt(area[1])-max(radii)),
+                          runif(num_clusters[1], min = max(radii), max = sqrt(area[1])-max(radii)))
   pp_background <- rpoint(nbackground[1], win=owin(c(0,sqrt(area[1])), c(0,sqrt(area[1]))))
   points <- pp_background
-
+  
   for (i in 1:num_clusters[1]){
-    pp_cluster <- circle(cluster_type, n=Nclusters[1], radius=rcluster[1], centre=centreclusters[i,], sig=rcluster[1]/3)
+    pp_cluster <- circle(cluster_type, n=Nclusters[1], radius=rcluster[1], centre=centreclusters[i,], sig=rcluster[1]/4)
     points <- superimpose(pp_cluster,points)
   }
   plot(points, cex=0.2, main='', pch=16, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
-  
-  if (~is.na(levels[2])){
+
+  if (levels[2] != ''){
     points1 <- points %mark% factor(sample(c(levels[1],levels[2]), npoints(points), replace=TRUE, prob=c(2,3)/5))
 
     radii <- rnorm(num_clusters[1], mean = rcluster[1], sd = 0)
-    centreclusters <- cbind(runif(num_clusters[1], min = 3*max(radii), max = sqrt(area)-3*max(radii)),
-                            runif(num_clusters[1], min = 3*max(radii), max = sqrt(area)-3*max(radii)))
+    centreclusters <- cbind(runif(num_clusters[1], min = max(radii), max = sqrt(area)-max(radii)),
+                            runif(num_clusters[1], min = max(radii), max = sqrt(area)-max(radii)))
     pp_background <- rpoint(nbackground[1], win=owin(c(0,sqrt(area[1])), c(0,sqrt(area))))
     points2 <- pp_background
     for (i in 1:num_clusters){
@@ -173,10 +86,10 @@ for (j in 1:num_realizations){
     points <- superimpose(levels1=points1, levels2=points2)
   }
   
-  fileName <- paste(c('synthetic_', cluster_type, '_A', A, '_lambda', lambda, '_nt', ntotal, '_numclusters', 
-                      num_clusters, '_', j), collapse='')
+  fileName <- paste(c('synthetic_', cluster_type, '_A', round(A), '_lambda', round(lambda), '_nt', ntotal, '_numclusters', 
+                      round(num_clusters), '_', j), collapse='')
   openpdf(paste(fileName, ".pdf", sep = ''))
-  plot(points, cex=0.13, main='', pch=16, cols="black", cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+  plot(points, cex=0.2, main='', pch=16, cols="black", use.marks=FALSE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
   closepdf(paste(fileName, ".pdf", sep = ''))
   savetext(matrix(c(points$x,points$y), nrow=points$n, ncol=2), paste(fileName, ".txt", sep = ''))
 }

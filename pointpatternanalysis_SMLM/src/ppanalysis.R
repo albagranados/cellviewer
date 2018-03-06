@@ -33,58 +33,60 @@ source("utilities.R")
 # exp_names <- c(exp_name1, exp_name2)
 # path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
-# single
-pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-levels1 = 'CTCF'; levels2 = ''
-path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
-path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
-
-storm_file=0
-exp_names <- c(exp_name1, exp_name2)
-path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # # mono
-# pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
-# levels1 = 'SMC1'; levels2 = ''
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
-# path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
-# path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+# # single
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# levels1 = 'CTCF'; levels2 = ''
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
+# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
 # 
-# storm_file = 0
+# storm_file=0
 # exp_names <- c(exp_name1, exp_name2)
 # path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# # mono
+pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
+levels1 = 'CTCF'; levels2 = ''
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"
+path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
+path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+
+storm_file = 0
+exp_names <- c(exp_name1, exp_name2)
+path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ### compute
 compute_ppsummaries <- data.frame(run=0, 
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
-                                  crosscorrelation=1, 
+                                  crosscorrelation=1,
                                   markconnection=0,
                                   envelopes=0,
                                   plot_functions=0,
-                                  save = 1)
+                                  save = 0)
 longitudinal_dataset <- data.frame(run=1,
                                     generate = 1,
+                                      reso_r = 5,
                                       stat_rrange_probs = 0.1,
                                       units = units_out,
                                       plot_2experiments = 1,
-                                      save=1,
+                                      save = 1,
                                     statanalysis = 1,
                                       fitting = 'exp'
                                    )
+longitudinal_dataset$fitting <- as.character(longitudinal_dataset$fitting)
 
 ### parameters
-r_eval = seq(0, 4, length.out=200) # 300
-# r_eval = seq(0, 300, length.out=200)
+# r_eval = seq(0, 4, length.out=200) # 300
+r_eval = seq(0, 640, length.out=200)
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
 # ------------------------------------------------------------
 if (pptype == "marked"){
 
   if (compute_ppsummaries$run){
-    for (ii in 1:length(path_to_experiments)){
+    for (ii in 2:2){#length(path_to_experiments)){
     
       exp_name <- exp_names[ii]
       path_to_experiment <- path_to_experiments[ii]
@@ -231,15 +233,15 @@ if (pptype == "marked"){
           if(compute_ppsummaries$envelopes){ 
             g_env <- envelope(points, pcfcross, i=levels1, j=levels2, nsim=5, global=F)
           }
-          cluster_size_12 = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
-          cluster_size_22 = r_eval[which(c(0,diff(sign(g_22$iso-1)))!=0)[1]]  # brut force
-          cluster_size_11 = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
+          correlationrange_12 = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
+          correlationrange_22 = r_eval[which(c(0,diff(sign(g_22$iso-1)))!=0)[1]]  # brut force
+          correlationrange_11 = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
           g12_all[[j]] <- data.frame(r=r_eval, g12=g_12$iso)
           g22_all[[j]] <- data.frame(r=r_eval, g22=g_22$iso)
           g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
-          g12_r0_all[j] = cluster_size_12
-          g22_r0_all[j] = cluster_size_22
-          g11_r0_all[j] = cluster_size_11
+          g12_r0_all[j] = correlationrange_12
+          g22_r0_all[j] = correlationrange_22
+          g11_r0_all[j] = correlationrange_11
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -317,12 +319,12 @@ if (pptype == "marked"){
   if(longitudinal_dataset$run){
     if (longitudinal_dataset$generate){
       generate_longitudinal_data(path_to_experiments, pptype, exp_names, levels1, levels2, 
-                                 units=longitudinal_dataset$units, unit_size = unit_size,
+                                 units=longitudinal_dataset$units, unit_size = unit_size, reso_r=longitudinal_dataset$reso_r,
                                  plot_2experiments=longitudinal_dataset$plot_2experiments,
                                  save=longitudinal_dataset$save, stat_rrange_probs=longitudinal_dataset$stat_rrange_probs)
     }
     if (longitudinal_dataset$statanalysis){
-      statistical_analysis(path_to_experiments, pptype, fitting='exp')
+      statistical_analysis(path_to_experiments, pptype, fitting=longitudinal_dataset$fitting)
     }
   }
 }
@@ -373,16 +375,16 @@ if (pptype %in% c("unmarked")){
         points = res$first
     
         ### plot pp
-        if(j==num_files[1]){  # plot only first point pattern
+        if(j==range_files[1]){  # plot only first point pattern
           openpdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
           plot(points, cex=0.2, main='', pch=16, cols="black",
-               use.marks=TRUE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+               use.marks=FALSE, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
           closepdf(paste("pointpattern_", exp_name, ".pdf", sep = ''))
         }
         
-        # fitting <- kppm(points ~ 1, "Thomas", statistic="pcf")
+        # print(summary(points))
+        # fitting <- kppm(unmark(points) ~ 1, "Thomas", statistic="pcf")
         # print(fitting)
-        # plot(fitting)
         # points_sim <- simulate(fitting, nsim=1)$`Simulation 1`
         # openpdf(paste("simpointpattern_", exp_name, ".pdf", sep = ''))
         # plot(points_sim, cex=0.2, main='', pch=16, cols="black",
@@ -464,9 +466,9 @@ if (pptype %in% c("unmarked")){
           if(compute_ppsummaries$envelopes){ 
             g_env <- envelope(points, pcfcross, i=levels1, j=levels1, nsim=5, global=F)
           }
-          cluster_size = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
+          correlationrange = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
           g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
-          g11_r0_all[j] = cluster_size
+          g11_r0_all[j] = correlationrange
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -528,7 +530,7 @@ if (pptype %in% c("unmarked")){
   if(longitudinal_dataset$run){
     if (longitudinal_dataset$generate){
       generate_longitudinal_data(path_to_experiments, pptype, exp_names, levels1, levels2, 
-                                 units=longitudinal_dataset$units, unit_size = unit_size,
+                                 units=longitudinal_dataset$units, unit_size = unit_size, reso_r=longitudinal_dataset$reso_r,
                                  plot_2experiments=longitudinal_dataset$plot_2experiments,
                                  save=longitudinal_dataset$save, stat_rrange_probs=longitudinal_dataset$stat_rrange_probs)
     }
