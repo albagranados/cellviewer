@@ -38,9 +38,9 @@ def plot_hist(data, bins=None, hist_scale='log', xlabel={}, num_bins=100):
 
 def sample_statistics(data):
 
-    mean = round(np.average(data), 2)
-    std = round(np.std(data, ddof=1), 2)  # sum()/(N-ddof)
-    median = round(np.median(data), 2)
+    mean = round(np.nanmean(data), 2)
+    std = round(np.nanstd(data, ddof=1), 2)  # sum()/(N-ddof)
+    median = round(np.nanmedian(data), 2)
 
     return {'mean': mean, 'std': std, 'median': median}
 
@@ -219,7 +219,7 @@ def plot_frameno(points, frame_no):
 
     fig, ax = plt.subplots()
 
-    for ii in range(data.frame_no.shape[0]):
+    for ii in range(frame_no.shape[0]):
         deviation = frame_no[ii]
         blob_color = scalarMap.to_rgba(deviation)
         ax.plot(points[ii][0], points[ii][1], marker='o', fillstyle='full', color=blob_color, markersize=3,

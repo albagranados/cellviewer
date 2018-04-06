@@ -301,11 +301,11 @@ def get_blob(image, kwargs):
     scale_pixel_size = kwargs.get('scale_pixel_size', 1)
     pixel_size = scale_pixel_size * original_pixel_size
     nscales = kwargs.get('nscales', 1)
-    scale_resolution = kwargs.get('scale_resolution', 1) # only for odd spacing
+    scale_resolution = kwargs.get('scale_resolution', 1)  # only for odd spacing
     max_filter_width = kwargs.get('max_filter_width', 3)
     max_filter_depth = kwargs.get('max_filter_depth', None)
     scale_spacing = kwargs.get('scale_spacing', 'log')
-    scale_ini = kwargs.get('scale_ini', 1)
+    scale_ini = kwargs.get('scale_ini', 1)  # initial radius of search
     scale_end = kwargs.get('scale_end', 10)
     compute_orientation = kwargs.get('compute_orientation', False); orientation = []
     compute_sift_descr = kwargs.get('compute_sift_descr', False); histogram_descr = []
@@ -366,7 +366,7 @@ def get_blob(image, kwargs):
         ly = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         for n in range(1, nscales+1):
             t = scale_range[n-1]
-            print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(pysical units))' % (t, 3*np.sqrt(t),
+            print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(physical unit))' % (t, 3*np.sqrt(t),
                                                                             3*np.sqrt(t)*pixel_size)
             scalespace = compute_space_derivatives(image, t)
             lxx = scalespace.get('lxx')
@@ -460,8 +460,8 @@ def get_blob(image, kwargs):
                     print 'Done.'
             print '\t\tDONE'
 
-    # return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew, 'scale_range': scale_range,
-    #         'orientation': orientation, 'histogram_descr': histogram_descr}
+    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew, 'scale_range': scale_range,
+            'orientation': orientation, 'histogram_descr': histogram_descr}
 
 
 def get_edge(image, kwargs):
@@ -644,7 +644,7 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     import matplotlib.colors as colors
 
     fig, ax = plot_image(image, cmap=cmap, interpolation=interpolation, norm=norm, plot_axis=plot_axis, hold=True)
-
+    plt.hold(1)
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     tnew = feature.get('tnew')  # 1d-array
     featurestrength = feature.get('featurestrength')
@@ -1014,11 +1014,14 @@ def nnd_feature(feature, dict_sift):
             nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
             distances, indices = nbrs.kneighbors(blobs_xy)
             num_ini = num_ini + num
-            dist_all_features.append(3*np.sqrt(distances[:, 1])*analysis_pixel_size)
+            # dist_all_features.append(3*np.sqrt(distances[:, 1])*analysis_pixel_size)
+            dist_all_features.append(distances[:, 1]*analysis_pixel_size)
             # ax.boxplot(distances[1]*scale_pixel_size, 3*np.sqrt(t)*scale_pixel_size)
             # ax.hold(True)
 
-    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*analysis_pixel_size, bp=1)
+    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*analysis_pixel_size, bp=1,
+                     xlabel='scale - diameter [nm(physical unit)]',
+                     ylabel='nearest neighbor distance [nm(physical unit)]')
 
     # x = argmaxgrad[0]
     # y = argmaxgrad[1]

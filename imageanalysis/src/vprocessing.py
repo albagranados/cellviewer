@@ -204,15 +204,15 @@ def compute_areas(vor, original_pixel_size):
     vor.areas_total = float(np.sum(vor.areas[(vor.areas > 0) & (vor.areas < float('inf'))]))  # in nm2
 
 
-def plot_areas(vor, threshold=None, show_points=False, plot_axis=True):
+def plot_areas(vor, thr=None, plot_axis='on', show_points=True, hold=False):
     """
     This function plots:
     1) the areas of the bounded voronoi regions within ROI, contained in vor.areas.
-    2) if threshold is given, it also plots voronoi pologons with area smaller than threshold.
+    2) if threshold (thr) is given, it also plots voronoi pologons with area smaller than threshold.
 
     Input:
     -----------------------------
-    threshold (float): optional maximum area (in nm2) to generate a thresholded voronoi
+    thr (float): optional maximum area (in nm2) to generate a thresholded voronoi
 
     """
     from matplotlib.collections import PolyCollection
@@ -220,23 +220,25 @@ def plot_areas(vor, threshold=None, show_points=False, plot_axis=True):
     if not hasattr(vor, 'areas'):
         raise ValueError("Requires vor.areas attribute! Please, run vprocessing.compute_areas(vor).")
 
-    max_area = np.max(vor.areas)
+    max_area = np.max(vor.areas[vor.areas < float('inf')])
+    print(max_area)
     polygons, polygons_thresholded = [], []
     p = 0
     for p1, area in enumerate(vor.areas):
-        if area >= 0:
+        if area >= 0 and area < float('inf'):
             vertices_label = vor.regions[vor.point_region[p1]]
             polygons.append([(x, y) for x, y in vor.vertices[vertices_label]])
             p += 1
-            if area < threshold:
+            if area < thr:
                 polygons_thresholded.append(p-1)
     fig, ax = plt.subplots()
+
     lsc = 1 / 1e-04    # Jerome's colour:
     sc = 999 / np.log10(max_area * lsc)
-    colour = (1000-sc*np.log10(lsc*vor.areas[vor.areas >= 0]))
+    colour = (1000-sc*np.log10(lsc*vor.areas[(vor.areas >= 0) & (vor.areas < float('inf'))]))
     # colour = 1-np.log10(vor.areas[vor.areas >= 0])   # my colour:
     coll = PolyCollection(polygons, array=colour, edgecolors='none'); ax.add_collection(coll), ax.autoscale_view()
-    # fig.colorbar(coll, ax=ax)   # Add a colorbar for the PolyCollection
+    fig.colorbar(coll, ax=ax)   # Add a colorbar for the PolyCollection
     plt.hold(True)
     if show_points is True:
         ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=2)
@@ -244,15 +246,24 @@ def plot_areas(vor, threshold=None, show_points=False, plot_axis=True):
         plt.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])
         ax.axes.get_yaxis().set_ticks([])
-    plt.show()
-    if threshold is not None:
+
+    ax.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max())
+    ax.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
+    ax.set_aspect('equal', adjustable='box')
+    fig.hold(hold)
+
+    if thr is not None:
         fig_th, ax_th = plt.subplots()
         polygons_th = [polygons[i] for i in polygons_thresholded]
-        colour_th = np.array([colour[i] for i in polygons_thresholded])
         import matplotlib.colors as colors
         coll_th = PolyCollection(polygons_th, color='grey', edgecolors='none')
-        ax_th.add_collection(coll_th), ax_th.autoscale_view()
-        plt.show()
+        ax_th.add_collection(coll_th)
+        ax_th.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max())
+        ax_th.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
+        ax_th.set_aspect('equal', adjustable='box')
+
+
+    return fig, ax  # .figure
 
 
 def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', norm='linear', hold=False):
@@ -297,12 +308,11 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
     cNorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
     scalarMap = cm.ScalarMappable(norm=cNorm, cmap=cmap); scalarMap.set_array(values)
     colour = [scalarMap.to_rgba(ii) for ii in values]
-
     coll = PolyCollection(polygons, edgecolors='none'); ax.add_collection(coll), ax.autoscale_view()
     coll.set_facecolors(colour)
     # cbar = fig.colorbar(coll, ax=ax)   # Add a colorbar for the PolyCollection
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
-    fig.hold(True)
+    plt.hold(True)
     if show_points is True:
         ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=2)
 

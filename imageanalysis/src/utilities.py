@@ -341,26 +341,27 @@ def generate_image():
     return image
 
 
-def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False):
+def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False, xlabel='', ylabel=''):
     """
     create violin plots on an axis
     """
 
     from scipy.stats import gaussian_kde
 
-    pos = np.arange(0,len(pos1))
+    pos = np.arange(0, len(pos1))
     dist = max(pos)-min(pos)
 
     w = min(0.15*max(dist,1.0),0.5)
+    print data1
     for p, d in enumerate(data1):
-        k = gaussian_kde(d) #calculates the kernel density
-        m = k.dataset.min() #lower bound of violin
-        M = k.dataset.max() #upper bound of violin
+        k = gaussian_kde(d)  # calculates the kernel density
+        m = k.dataset.min()  # lower bound of violin
+        M = k.dataset.max()  # upper bound of violin
         x = np.arange(m,M,(M-m)/100.) # support for violin
-        v = k.evaluate(x) #violin profile (density curve)
-        v = v/v.max()*w #scaling the violin to the available space
-        ax.fill_betweenx(x,p,v+p,facecolor='lightgray',edgecolor='gray',alpha=0.3)
-        ax.fill_betweenx(x,p,-v+p,facecolor='lightgray',edgecolor='gray', alpha=0.3)
+        v = k.evaluate(x)  # violin profile (density curve)
+        v = v/v.max()*w  # scaling the violin to the available space
+        ax.fill_betweenx(x, p, v+p, facecolor='lightgray', edgecolor='gray', alpha=0.3)
+        ax.fill_betweenx(x, p, -v+p, facecolor='lightgray', edgecolor='gray', alpha=0.3)
 
     # dist = max(pos2) - min(pos2)
     # w = min(0.15 * max(dist, 1.0), 0.5)
@@ -381,5 +382,5 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False):
         plt.xticks(pos, pos1)
         # plt.yticks([0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], size=16)
         # plt.xlim([-0.5,5.5])
-        ax.set_xlabel('scale - diameter [nm(physical unit)]')
-        ax.set_ylabel('nearest neighbor distance [nm(physical unit)]')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
