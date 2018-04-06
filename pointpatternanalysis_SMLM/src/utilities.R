@@ -83,33 +83,39 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
     data.g12.exp1 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     data.g22.exp1 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K12.exp1 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K22.exp1 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K12.exp1 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
+    data.K22.exp1 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
     g12_r0_exp1 <- unit_size*g12_r0_all
-    g12_rend_exp1 <- which(r_eval>=quantile(g12_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g12_rend_exp1 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g12_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g22_r0_exp1 <- unit_size*g22_r0_all
-    g22_rend_exp1 <- which(r_eval>=quantile(g22_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g22_rend_exp1 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g22_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g11_r0_exp1 <- unit_size*g11_r0_all
-    g11_rend_exp1 <- which(r_eval>=quantile(g11_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g11_rend_exp1 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g11_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp1 <- intensities/(unit_size^2)
+    npoints.exp1 <- npoints
     
-    cat('for statistical analysis, fill g12 with NA function values above r = ', r_eval[g12_rend_exp1], '\n')
+    cat('for statistical analysis (exp1), fill g12 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g12_rend_exp1], '\n')
+    cat('for statistical analysis (exp1), fill g22 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g22_rend_exp1], '\n')
+    cat('for statistical analysis (exp1), fill g11 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g11_rend_exp1], '\n')
     load(path_to_RData2)
     r_eval <- r_eval*unit_size
     data.g12.exp2 <- t(sapply(g12_all, `[[`, 'g12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     data.g22.exp2 <- t(sapply(g22_all, `[[`, 'g22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
     data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K12.exp2 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K22.exp2 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K12.exp2 <- t(sapply(K12_all, `[[`, 'K12'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
+    data.K22.exp2 <- t(sapply(K22_all, `[[`, 'K22'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
     g12_r0_exp2 <- unit_size*g12_r0_all
-    g12_rend_exp2 <- which(r_eval>=quantile(g12_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g12_rend_exp2 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g12_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g22_r0_exp2 <- unit_size*g22_r0_all
-    g22_rend_exp2 <- which(r_eval>=quantile(g22_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g22_rend_exp2 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g22_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     g11_r0_exp2 <- unit_size*g11_r0_all
-    g11_rend_exp2 <- which(r_eval>=quantile(g11_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g11_rend_exp2 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g11_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp2 <- intensities/(unit_size^2)
+    npoints.exp2 <- npoints
   
-    cat('for statistical analysis, fill g12 with NA function values above r = ', r_eval[g12_rend_exp2], '\n')
+    cat('for statistical analysis (exp2), fill g12 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g12_rend_exp2], '\n')
+    cat('for statistical analysis (exp2), fill g22 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g22_rend_exp2], '\n')
+    cat('for statistical analysis (exp2), fill g11 with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g11_rend_exp2], '\n')
     
     data_temp <- data.frame( g12 = (rbind(data.g12.exp1, data.g12.exp2)), g22 = (rbind(data.g22.exp1, data.g22.exp2)),
                              g11 = (rbind(data.g11.exp1, data.g11.exp2)),
@@ -139,6 +145,12 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
                                                                          nrow(intensities.exp2)))), 
                       level1 = c(intensities.exp1[,1], intensities.exp2[,1]), 
                       level2 = c(intensities.exp1[,2], intensities.exp2[,2]))
+    npoints <- data.frame(id = factor(1:nrow(data_temp)),
+                      experiment = factor(rep(c(exp_name1, exp_name2), c(nrow(npoints.exp1),
+                                                                             nrow(npoints.exp2)))),
+                      level1 = c(npoints.exp1[,1], npoints.exp2[,1]),
+                      level2 = c(npoints.exp1[,2], npoints.exp2[,2]))
+    # npoints <- 'temp'
     
     # convert wide-formatted data into long
     num_measurements <- dim(data.g12.exp1)[2]
@@ -173,95 +185,85 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
                     times=r_eval[(length(r_eval)-(dim(data.g12.exp1)[2])+1):length(r_eval)], 
                     v.names=c('g12', 'g22', 'g11', 'K12', 'K22'))
     data$experiment <- relevel(data_allrange$experiment,ref=exp_name1)
-    
+
+    col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
     r_eval_plot <- which(r_eval>=reso_r)[1]:(0.8*length(r_eval))
-    ylim=c(0.5,10)
-    # r_eval_plot <- which(r_eval>=reso_r)[1]:(0.5*length(r_eval)); ylim=c(0.5,2.8)
+    ylim=c(0.5,10); xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
     if (plot_2experiments & (length(g12_all)>0)){
       openpdf("g12_2experiments.pdf")
-      # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
-      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
-      xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
       plot(1, xlim=xlim, xlab=paste('r ','[', units,']', sep = ''), 
            ylab=eval(bquote(expression(g[.(levels1)][','][.(levels2)](r)))), type='n', ylim = ylim)
       for (ii in 1:length(exp_names)){
-        exp_name <- exp_names[ii]
-        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        subset <- subset(data_allrange, data$experiment %in% exp_names[ii])
         for (jj in unique(subset$id)){
-          with(subset[which(subset$id == jj), ], lines(r, g12, lty=lty[ii], 
-                                                       main='', lwd=1, col=col_palette[ii]))
+          with(subset[which(subset$id == jj), ], lines(r, g12, lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
         }
       }
-      abline(h=1, lty=2, col='black')
-      # axis(1, at = seq(0, 500, by = 20), las=2)
-      legend("topright", legend=exp_names, lty=lty, col=col_palette)
-      closepdf("g12_2experiments.pdf")
-      cat('\t\'g12_2experiments.pdf\' created.\n')
+      abline(h=1, lty=2, col='black'); legend("topright", legend=exp_names, lty=lty, col=col_palette)
+      closepdf("g12_2experiments.pdf");  cat('\t\'g12_2experiments.pdf\' created.\n')
     }
     if (plot_2experiments & (length(g22_all)>0)){
       openpdf("g22_2experiments.pdf")
-      # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
-      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
-      xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
       plot(1, xlim=xlim, xlab=paste('r ','[', units,']', sep = ''), 
            ylab=eval(bquote(expression(g[.(levels2)][','][.(levels2)](r)))), type='n', ylim = ylim)
       for (ii in 1:length(exp_names)){
-        exp_name <- exp_names[ii]
-        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        subset <- subset(data_allrange, data$experiment %in% exp_names[ii])
         for (jj in unique(subset$id)){
           with(subset[which(subset$id == jj), ], lines(r, g22, lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
         }
       }
-      abline(h=1, lty=2, col='black')
-      legend("topright", legend=exp_names, lty=lty, col=col_palette)
-      closepdf("g22_2experiments.pdf")
-      cat('\t\'g22_2experiments.pdf\' created.\n')
+      abline(h=1, lty=2, col='black'); legend("topright", legend=exp_names, lty=lty, col=col_palette)
+      closepdf("g22_2experiments.pdf");  cat('\t\'g22_2experiments.pdf\' created.\n')
     }
     if (plot_2experiments & (length(g11_all)>0)){
       openpdf("g11_2experiments.pdf")
-      # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
-      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
-      xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
       plot(1, xlim=xlim, xlab=paste('r ','[', units,']', sep = ''), 
            ylab=eval(bquote(expression(g[.(levels1)][','][.(levels1)](r)))), type='n', ylim = ylim)
       for (ii in 1:length(exp_names)){
-        exp_name <- exp_names[ii]
-        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        subset <- subset(data_allrange, data$experiment %in% exp_names[ii])
         for (jj in unique(subset$id)){
           with(subset[which(subset$id == jj), ], lines(r, g11, lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
         }
       }
-      abline(h=1, lty=2, col='black')
-      legend("topright", legend=exp_names, lty=lty, col=col_palette)
-      closepdf("g11_2experiments.pdf")
-      cat('\t\'g11_2experiments.pdf\' created.\n')
+      abline(h=1, lty=2, col='black'); legend("topright", legend=exp_names, lty=lty, col=col_palette)
+      closepdf("g11_2experiments.pdf"); cat('\t\'g11_2experiments.pdf\' created.\n')
     }
-    # ylim=c(0,60)
-    ylim=c(-500,500)
+    ylim=c(0,0.5*max(data$K12, na.rm=TRUE))
     if (plot_2experiments & (length(K12_all)>0)){
-      openpdf("L12_2experiments.pdf")
-      # col_palette <- colorRampPalette(c("black", "grey60"))(length(exp_names)); lty=c(1,2)
-      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
-      xlim <- c(r_eval[r_eval_plot][1],r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
+      openpdf("K12_2experiments.pdf")
       plot(1, xlim=xlim, xlab=paste('r ','[', units,']', sep = ''), 
-           ylab=eval(bquote(expression(L[.(levels1)][','][.(levels2)](r)))), type='n', ylim = ylim)
+           ylab=eval(bquote(expression(K[.(levels1)][','][.(levels2)](r)))), type='n', ylim = ylim)
       for (ii in 1:length(exp_names)){
-        exp_name <- exp_names[ii]
-        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        subset <- subset(data_allrange, data$experiment %in% exp_names[ii])
         for (jj in unique(subset$id)){
-          with(subset[which(subset$id == jj), ], lines(r[r_eval_plot], sqrt(K12[r_eval_plot]/pi)-r[r_eval_plot],
-                                                       lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
-          # with(subset[which(subset$id == jj), ], lines(r[r_eval_plot], K12[r_eval_plot], lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
+          with(subset[which(subset$id == jj), ], lines(r, K12, lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
         }
       }
-      abline(h=0, lty=2, col='black')
-      # lines(r_eval[r_eval_plot], pi*r_eval[r_eval_plot]^2, col="black", lty=2)
-      legend("topleft", legend=exp_names, lty=lty, col=col_palette)
-      closepdf("L12_2experiments.pdf")
-      cat('\t\'L12_2experiments.pdf\' created.\n')
+      lines(r_eval, pi*r_eval^2, col="black", lty=2); legend("topleft", legend=exp_names, lty=lty, col=col_palette)
+      closepdf("K12_2experiments.pdf"); cat('\t\'K12_2experiments.pdf\' created.\n')
+      
+      openpdf("cdf12_empirical_npoints_2experiments.pdf")
+      plot(1, xlim=c(r_eval[r_eval_plot][1],2*150),#min(parameters_g11$r0, na.rm=TRUE)), 
+           ylim=c(0,100), xlab=paste('2r ','[', units,']', sep = ''),
+           ylab=paste('Av. number of points (', levels1, ',', levels2, ') [%]', sep=''), type='n')
+      for (ii in 1:length(exp_names)){
+        subset <- data$experiment %in% exp_names[ii]
+        K12_median <- apply(matrix(data_allrange$K12[subset], nrow=length(unique(data$id[subset]))), 2, median)
+        lines(2*r_eval[r_eval_plot], 100*K12_median[r_eval_plot]/K12_median[which(r_eval>100)[1]], 
+                           lty=lty[ii], main='', lwd=1, col=col_palette[ii])
+        
+        # subset <- subset(data_allrange, data$experiment %in% exp_names[ii])
+        # for (jj in unique(subset$id)){
+        #   with(subset[which(subset$id == jj), ],
+        #        lines(2*r, 100*K12/K12[which(r>200)[1]], lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
+        # }
+      }
+      legend("topleft", legend=exp_names, lty=lty, col=col_palette);
+      closepdf("cdf12_empirical_npoints_2experiments.pdf"); cat('\t\'cdf12_empirical_npoints_2experiments.pdf\' created.\n')
     }
     if (save){
-      save(data, data_allrange, units, parameters_g12, parameters_g22, parameters_g11, density, r_eval, levels1, levels2, 
+      save(data, data_allrange, units, parameters_g12, parameters_g22, parameters_g11, density, npoints, 
+           r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
                                                         '_2experiments.RData'), collapse = ''))
     }
@@ -270,20 +272,22 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
     load(path_to_RData1)
     r_eval <- r_eval*unit_size
     data.g11.exp1 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K11.exp1 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K11.exp1 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
     g11_r0_exp1 <- unit_size*g11_r0_all
-    g11_rend_exp1 <- which(r_eval>=quantile(g11_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g11_rend_exp1 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g11_r0_exp1, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp1 <- intensities/(unit_size^2)
-    cat('for statistical analysis, fill with NA function values above r = ', r_eval[g11_rend_exp1], '\n')
+    npoints.exp1 <- npoints
+    cat('for statistical analysis (exp1), fill with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g11_rend_exp1], '\n')
 
     load(path_to_RData2)
     r_eval <- r_eval*unit_size
     data.g11.exp2 <- t(sapply(g11_all, `[[`, 'g11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
-    data.K11.exp2 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]
+    data.K11.exp2 <- t(sapply(K11_all, `[[`, 'K11'))[,which(r_eval>=reso_r)[1]:(length(r_eval))]*(unit_size^2)
     g11_r0_exp2 <- unit_size*g11_r0_all
-    g11_rend_exp2 <- which(r_eval>=quantile(g11_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
+    g11_rend_exp2 <- which(r_eval[which(r_eval>=reso_r)]>=quantile(g11_r0_exp2, probs=stat_rrange_probs, na.rm=TRUE))[1]
     intensities.exp2 <- intensities/(unit_size^2)
-    cat('for statistical analysis, fill with NA function values above r = ', r_eval[g11_rend_exp2], '\n')
+    npoints.exp2 <- npoints
+    cat('for statistical analysis (exp2), fill with NA function values above r = ', r_eval[which(r_eval>=reso_r)][g11_rend_exp2], '\n')
     
     data_temp <- data.frame( g11 = (rbind(data.g11.exp1, data.g11.exp2)), 
                              K11 = (rbind(data.K11.exp1, data.K11.exp2)))
@@ -300,6 +304,10 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
                           experiment = factor(rep(c(exp_name1, exp_name2), c(nrow(intensities.exp1),
                                                                              nrow(intensities.exp2)))), 
                           level1 = c(intensities.exp1[,1], intensities.exp2[,1]))
+    npoints <- data.frame(id = factor(1:nrow(data_temp)),
+                          experiment = factor(rep(c(exp_name1, exp_name2), c(nrow(npoints.exp1),
+                                                                             nrow(npoints.exp2)))), 
+                          level1 = c(npoints.exp1[,1], npoints.exp2[,1]))
     
     # convert wide-formatted data into long
     num_measurements <- dim(data.g11.exp1)[2]
@@ -362,10 +370,28 @@ generate_longitudinal_data <- function(path_to_experiments, pptype, exp_names, l
       legend("topleft", legend=exp_names, lty=lty, col=col_palette)
       closepdf("K11_2experiments.pdf")
       cat('\t\'K11_2experiments.pdf\' created.\n')
+
+      openpdf("cdf_empirical_npoints_2experiments.pdf")
+      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125)); lty=c(1,2)
+      xlim <- c(r_eval[r_eval_plot][1],2*min(parameters_g11$r0, na.rm=TRUE))
+                # r_eval[r_eval_plot][length(r_eval[r_eval_plot])])
+      plot(1, xlim=xlim, ylim=c(0,100), xlab=paste('r ','[', units,']', sep = ''), 
+           ylab=paste('Av. number of points (', levels1, ',', levels1, ') [%]', sep=''), type='n')
+      for (ii in 1:length(exp_names)){
+        exp_name <- exp_names[ii]
+        subset <- subset(data_allrange, data$experiment %in% exp_name)
+        for (jj in unique(subset$id)){
+          with(subset[which(subset$id == jj), ], 
+               lines(2*r, 100*K11/K11[which(r>100)[1]], lty=lty[ii], main='', lwd=1, col=col_palette[ii]))
+        }
+      }
+      legend("bottomright", legend=exp_names, lty=lty, col=col_palette)
+      closepdf("cdf_empirical_npoints_2experiments.pdf")
+      cat('\t\'cdf_empirical_npoints_2experiments.pdf\' created.\n')
     }
     
     if (save){
-      save(data, data_allrange, units, parameters_g11, density, r_eval, levels1, levels2, 
+      save(data, data_allrange, units, parameters_g11, density, npoints, r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
                         '_2experiments.RData'), collapse = ''))
     }
@@ -379,6 +405,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
   library(MASS)
   library(car)
   library(lattice)
+  library(pracma) # error function
 
   cat('Running statistical analysis...\n')  
   RData_2experiments <- list.files(path = path_to_experiments[1], pattern = "\\_2experiments.RData$", all.files = FALSE,
@@ -464,14 +491,29 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g11_plots.pdf'), collapse=""))
       lmod <- lm(g11 ~ r, subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g11_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g11_plots.pdf'), collapse=""))
       lmod <- lm(g22 ~ r, subset=(experiment==levels(data$experiment)[1]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g22_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g22_plots.pdf'), collapse=""))
       lmod <- lm(g22 ~ r, subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g22_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g22_plots.pdf'), collapse=""))
       lmod <- lm(g12 ~ r, subset=(experiment==levels(data$experiment)[1]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g12_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g12_plots.pdf'), collapse=""))
       lmod <- lm(g12 ~ r, subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g12_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g12_plots.pdf'), collapse=""))
       cat('Done.\n')
     }
     if (fitting=="expsq"){
@@ -482,35 +524,77 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g11_plots.pdf'), collapse=""))
       lmod <- lm(g11 ~ 1+I(r^2), subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g11_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g11_plots.pdf'), collapse=""))
       lmod <- lm(g22 ~ 1+I(r^2), subset=(experiment==levels(data$experiment)[1]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g22_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g22_plots.pdf'), collapse=""))
       lmod <- lm(g22 ~ 1+I(r^2), subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g22_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g22_plots.pdf'), collapse=""))
       lmod <- lm(g12 ~ 1+I(r^2), subset=(experiment==levels(data$experiment)[1]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g12_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[1], '_g12_plots.pdf'), collapse=""))
       lmod <- lm(g12 ~ 1+I(r^2), subset=(experiment==levels(data$experiment)[2]), data = data)
       capture.output(summary(lmod), file=fileName, append=TRUE)
+      openpdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g12_plots.pdf'), collapse=""))
+      plot(lmod)
+      closepdf(paste(c(strsplit(fileName, "\\.txt"), '_', levels(data$experiment)[2], '_g12_plots.pdf'), collapse=""))
       cat('Done.\n')
     }
     if(fitting %in% c('exp', 'expsq')){
       amplitude_g12 <- exp(parameters_g12$beta0)
       amplitudeAtr0_g12 <- exp(parameters_g12$beta0*parameters_g12$beta1*reso_r)+1
       length_scale_g12 <- -parameters_g12$beta1^(-1)
-      clusterradiusR_g12 <- 2*sqrt(length_scale_g12)
       area_g12 <- -length_scale_g12*amplitude_g12*(exp(-1/(length_scale_g12)*parameters_g12$r0)-1)
     
       amplitude_g22 <- exp(parameters_g22$beta0)
       amplitudeAtr0_g22 <- exp(parameters_g22$beta0*parameters_g22$beta1*reso_r)+1
       length_scale_g22 <- -parameters_g22$beta1^(-1)
-      clusterradiusR_g22 <- 2*sqrt(length_scale_g22)
       area_g22 <- -length_scale_g22*amplitude_g22*(exp(-1/(length_scale_g22)*parameters_g22$r0)-1)
       
       amplitude_g11 <- exp(parameters_g11$beta0)
       amplitudeAtr0_g11 <- exp(parameters_g11$beta0*parameters_g11$beta1*reso_r)+1
       length_scale_g11 <- -parameters_g11$beta1^(-1)
-      clusterradiusR_g11 <- 2*sqrt(length_scale_g11)
       area_g11 <- -length_scale_g11*amplitude_g11*(exp(-1/(length_scale_g11)*parameters_g11$r0)-1)
       
+      if (fitting == 'expsq'){
+        clusterradiusR_g12 <- 2*sqrt(length_scale_g12)
+        clusterradiusR_g22 <- 2*sqrt(length_scale_g22)
+        clusterradiusR_g11 <- 2*sqrt(length_scale_g11)
+        kappa_g12 <- 1/(amplitude_g12*pi*length_scale_g12)  # number of clusters per area
+        kappa_g22 <- 1/(amplitude_g22*pi*length_scale_g22)  # number of clusters per area
+        kappa_g11 <- 1/(amplitude_g11*pi*length_scale_g11)  # number of clusters per area
+        phi_g12 <- amplitude_g12/4   # rho_cluster/rho_average
+        phi_g22 <- amplitude_g22/4   # rho_cluster/rho_average
+        phi_g11 <- amplitude_g11/4   # rho_cluster/rho_average
+        rho_g12 <- phi_g12*(density$level1 + density$level2)
+        rho_g22 <- phi_g22*density$level2
+        rho_g11 <- phi_g11*density$level1
+        Nclusters_g22 <- density$level2/kappa_g22  #  average number of points per cluster
+        Nclusters_g11 <- density$level1/kappa_g11  #  average number of points per cluster
+      }
+      if (fitting == 'exp'){
+        clusterradiusR_g12 <- length_scale_g12
+        clusterradiusR_g22 <- length_scale_g22
+        clusterradiusR_g11 <- length_scale_g11
+        phi_g12 <- 2*amplitude_g12   # rho_cluster/rho_average
+        phi_g22 <- 2*amplitude_g22   # rho_cluster/rho_average
+        phi_g11 <- 2*amplitude_g11   # rho_cluster/rho_average
+        rho_g12 <- phi_g12*(density$level1 + density$level2)
+        rho_g22 <- phi_g22*density$level2
+        rho_g11 <- phi_g11*density$level1
+        Nclusters_g22 <- 2*amplitude_g22*pi*length_scale_g22^2*density$level2  #  average number of points per cluster
+        Nclusters_g11 <- 2*amplitude_g11*pi*length_scale_g11^2*density$level1  #  average number of points per cluster
+      }  
+
       # tests (experiments)
       cat('Running tests... \n')
       pexp <- data$experiment[match(1:nlevels(data$id),data$id)]
@@ -661,6 +745,51 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       }
       closepdf(paste(c("g12_log_2experiments_", fitting, '.pdf'), collapse=""))
       cat('\t\'g12/g11/g22_2experiments(FITTING).pdf\' created.\n')
+      openpdf('cdf11_npoints_2experiments.pdf')
+      plot(1, xlim=c(0,2*min(parameters_g11$r0, na.rm=TRUE)), ylim=c(0,100), xlab=paste('2r ','[', units,']', sep = ''),
+           ylab=paste('Av. number of points (', levels1, ',', levels1, ') [%]', sep=''), type='n')
+      for (ii in  1:length(levels(data$experiment))){
+        if (fitting=="expsq"){
+          exp_name <- levels(data$experiment)[ii]
+          medianclusterradiusR <- median(clusterradiusR_g11[pexp==exp_name], na.rm=TRUE)
+          r <- seq(0,2*min(parameters_g11$r0[pexp==exp_name], na.rm=TRUE), by=5)
+          cdf_line <- 100*(pnorm(r, mean=0, sd=medianclusterradiusR/4)-pnorm(-r, mean=0, sd=medianclusterradiusR/4))
+          lines(2*r, cdf_line , col=col_palette[ii], lty=1)
+          legend("bottomright", legend=exp_names, lty=1, col=col_palette)
+        }
+      }
+      closepdf("cdf11_npoints_2experiments.pdf")
+      cat('\t\'cdf11_npoints_2experiments(FITTING).pdf\' created.\n')
+      openpdf('cdf22_npoints_2experiments.pdf')
+      plot(1, xlim=c(0,2*min(parameters_g11$r0, na.rm=TRUE)), ylim=c(0,100), xlab=paste('2r ','[', units,']', sep = ''),
+           ylab=paste('Av. number of points (', levels2, ',', levels2, ') [%]', sep=''), type='n')
+      for (ii in  1:length(levels(data$experiment))){
+        if (fitting=="expsq"){
+          exp_name <- levels(data$experiment)[ii]
+          medianclusterradiusR <- median(clusterradiusR_g22[pexp==exp_name], na.rm=TRUE)
+          r <- seq(0,2*min(parameters_g22$r0[pexp==exp_name], na.rm=TRUE), by=5)
+          cdf_line <- 100*(pnorm(r, mean=0, sd=medianclusterradiusR/4)-pnorm(-r, mean=0, sd=medianclusterradiusR/4))
+          lines(2*r, cdf_line , col=col_palette[ii], lty=1)
+          legend("bottomright", legend=exp_names, lty=1, col=col_palette)
+        }
+      }
+      closepdf("cdf22_npoints_2experiments.pdf")
+      cat('\t\'cdf22_npoints_2experiments(FITTING).pdf\' created.\n')
+      openpdf('cdf12_npoints_2experiments.pdf')
+      plot(1, xlim=c(0,2*min(parameters_g11$r0, na.rm=TRUE)), ylim=c(0,100), xlab=paste('2r ','[', units,']', sep = ''),
+           ylab=paste('Av. number of points (', levels1, ',', levels2, ') [%]', sep=''), type='n')
+      for (ii in  1:length(levels(data$experiment))){
+        if (fitting=="expsq"){
+          exp_name <- levels(data$experiment)[ii]
+          medianclusterradiusR <- median(clusterradiusR_g12[pexp==exp_name], na.rm=TRUE)
+          r <- seq(0,2*min(parameters_g12$r0[pexp==exp_name], na.rm=TRUE), by=1)
+          cdf_line <- 100*(pnorm(r, mean=0, sd=medianclusterradiusR/4)-pnorm(-r, mean=0, sd=medianclusterradiusR/4))
+          lines(2*r, cdf_line , col=col_palette[ii], lty=1)
+          legend("bottomright", legend=exp_names, lty=1, col=col_palette)
+        }
+      }
+      closepdf("cdf12_npoints_2experiments.pdf")
+      cat('\t\'cdf12_npoints_2experiments(FITTING).pdf\' created.\n')
       
       parameters_g12_r0.test <- t.test(parameters_g12$r0[which(parameters_g12$experiment == exp1_name)], parameters_g12$r0[which(parameters_g12$experiment == exp2_name)])
       density_level1.test <- t.test(density$level1[pexp==exp1_name],density$level1[pexp==exp2_name])
@@ -671,6 +800,8 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       clusterradiusR_g12.test <- t.test(clusterradiusR_g12[pexp==exp1_name],clusterradiusR_g12[pexp==exp2_name])
       parameters_g12_R2.test <- t.test(parameters_g12$R2[pexp==exp1_name],parameters_g12$R2[pexp==exp2_name])
       area_g12.test <- t.test(area_g12[pexp==exp1_name],area_g12[pexp==exp2_name])
+      phi_g12.test <- t.test(phi_g12[pexp==exp1_name],phi_g12[pexp==exp2_name])
+      rho_g12.test <- t.test(rho_g12[pexp==exp1_name],rho_g12[pexp==exp2_name])
       
       parameters_g22_r0.test <- t.test(parameters_g22$r0[which(parameters_g22$experiment == exp1_name)], parameters_g22$r0[which(parameters_g22$experiment == exp2_name)])
       amplitude_g22.test <- t.test(amplitude_g22[pexp==exp1_name],amplitude_g22[pexp==exp2_name])
@@ -679,6 +810,9 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       clusterradiusR_g22.test <- t.test(clusterradiusR_g22[pexp==exp1_name],clusterradiusR_g22[pexp==exp2_name])
       parameters_g22_R2.test <- t.test(parameters_g22$R2[pexp==exp1_name],parameters_g22$R2[pexp==exp2_name])
       area_g22.test <- t.test(area_g22[pexp==exp1_name],area_g22[pexp==exp2_name])
+      phi_g22.test <- t.test(phi_g22[pexp==exp1_name],phi_g22[pexp==exp2_name])
+      rho_g22.test <- t.test(rho_g22[pexp==exp1_name],rho_g22[pexp==exp2_name])
+      Nclusters_g22.test <- t.test(Nclusters_g22[pexp==exp1_name],Nclusters_g22[pexp==exp2_name])
       
       parameters_g11_r0.test <- t.test(parameters_g11$r0[which(parameters_g11$experiment == exp1_name)], parameters_g11$r0[which(parameters_g11$experiment == exp2_name)])
       amplitude_g11.test <- t.test(amplitude_g11[pexp==exp1_name],amplitude_g11[pexp==exp2_name])
@@ -687,6 +821,15 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       clusterradiusR_g11.test <- t.test(clusterradiusR_g11[pexp==exp1_name],clusterradiusR_g11[pexp==exp2_name])
       parameters_g11_R2.test <- t.test(parameters_g11$R2[pexp==exp1_name],parameters_g11$R2[pexp==exp2_name])
       area_g11.test <- t.test(area_g11[pexp==exp1_name],area_g11[pexp==exp2_name])
+      phi_g11.test <- t.test(phi_g11[pexp==exp1_name],phi_g11[pexp==exp2_name])
+      rho_g11.test <- t.test(rho_g11[pexp==exp1_name],rho_g11[pexp==exp2_name])
+      Nclusters_g11.test <- t.test(Nclusters_g11[pexp==exp1_name],Nclusters_g11[pexp==exp2_name])
+      
+      if (fitting=='expsq'){
+        kappa_g12.test <- t.test(kappa_g12[pexp==exp1_name],kappa_g12[pexp==exp2_name])
+        kappa_g22.test <- t.test(kappa_g22[pexp==exp1_name],kappa_g22[pexp==exp2_name])
+        kappa_g11.test <- t.test(kappa_g11[pexp==exp1_name],kappa_g11[pexp==exp2_name])
+      }
       cat('Done.\n')
       
       # # plot results
@@ -754,6 +897,35 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_clusterradiusR_g12.pdf"), collapse = "_"))
       cat('\t\'statistical_tests_clusterradiusR_g12.pdf\' created.\n')
       
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g12.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(phi_g12, na.rm=TRUE),1.2*max(phi_g12, na.rm=TRUE))
+      bp <- boxplot(split(phi_g12,pexp), ylab=expression(phi1^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(phi_g12, na.rm=TRUE), y1 = 1.04*max(phi_g12, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(phi_g12, na.rm=TRUE) ,  get_asterisk(phi_g12.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g12.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_phi_g12.pdf\' created.\n')
+      
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g12.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(rho_g12, na.rm=TRUE),1.2*max(rho_g12, na.rm=TRUE))
+      bp <- boxplot(split(rho_g12,pexp), ylab=expression(rho^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(rho_g12, na.rm=TRUE), y1 = 1.04*max(rho_g12, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(rho_g12, na.rm=TRUE) ,  get_asterisk(rho_g12.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g12.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_rho_g12.pdf\' created.\n')
+
+      if (fitting == 'expsq'){
+        openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g12.pdf"), collapse = "_"))
+        ylim <- c(0.9*min(kappa_g12, na.rm=TRUE),1.2*max(kappa_g12, na.rm=TRUE))
+        bp <- boxplot(split(kappa_g12,pexp), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")), 
+                      names=c(exp1_name, exp2_name), ylim=ylim)
+        segments(x0 = 1, x1 = 2, y0 = 1.04*max(kappa_g12, na.rm=TRUE), y1 = 1.04*max(kappa_g12, na.rm=TRUE), col = "black")
+        text( 1.5 , 1.09*max(kappa_g12, na.rm=TRUE) ,  get_asterisk(kappa_g12.test) , cex=1)
+        closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g12.pdf"), collapse = "_"))
+        cat('\t\'statistical_tests_kappa_g12.pdf\' created.\n')
+      }
+      
       openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g12.pdf"), collapse = "_"))
       # ylim <- c(10,1.2*max(parameters_g12$R2, na.rm=TRUE))
       bp <- boxplot(split(parameters_g12$R2,pexp), ylab=expression(paste(R^2,"(adj)")), names=c(exp1_name, exp2_name))
@@ -762,6 +934,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       text( 1.5 , 1.09*max(parameters_g12$R2, na.rm=TRUE) ,  get_asterisk(parameters_g12_R2.test) , cex=1)
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g12.pdf"), collapse = "_"))
       cat('\t\'statistical_tests_R2_g12.pdf\' created.\n')
+      
       
       # openpdf(paste(unlist(strsplit(RData_2experiments, "\\_"))[1], "_statistical_tests_area_g12.pdf", collapse = "_"))
       # ylim <- c(0,1.2*max(area_g12, na.rm=TRUE))
@@ -815,6 +988,44 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_clusterradiusR_g22.pdf"), collapse = "_"))
       cat('\t\'statistical_tests_clusterradiusR_g22.pdf\' created.\n')
       
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g22.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(phi_g22, na.rm=TRUE),1.2*max(phi_g22, na.rm=TRUE))
+      bp <- boxplot(split(phi_g22,pexp), ylab=expression(phi1^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(phi_g22, na.rm=TRUE), y1 = 1.04*max(phi_g22, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(phi_g22, na.rm=TRUE) ,  get_asterisk(phi_g22.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g22.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_phi_g22.pdf\' created.\n')
+      
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g22.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(rho_g22, na.rm=TRUE),1.2*max(rho_g22, na.rm=TRUE))
+      bp <- boxplot(split(rho_g22,pexp), ylab=expression(rho^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(rho_g22, na.rm=TRUE), y1 = 1.04*max(rho_g22, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(rho_g22, na.rm=TRUE) ,  get_asterisk(rho_g22.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g22.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_rho_g22.pdf\' created.\n')
+      
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_Nclusters_g22.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(Nclusters_g22, na.rm=TRUE),1.2*max(Nclusters_g22, na.rm=TRUE))
+      bp <- boxplot(split(Nclusters_g22,pexp), ylab=expression(paste(N^cluster, ' [points/cluster]')),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(Nclusters_g22, na.rm=TRUE), y1 = 1.04*max(Nclusters_g22, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(Nclusters_g22, na.rm=TRUE) ,  get_asterisk(Nclusters_g22.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_Nclusters_g22.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_Nclusters_g22.pdf\' created.\n')
+      
+      if (fitting == 'expsq'){
+        openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g22.pdf"), collapse = "_"))
+        ylim <- c(0.9*min(kappa_g22, na.rm=TRUE),1.2*max(kappa_g22, na.rm=TRUE))
+        bp <- boxplot(split(kappa_g22,pexp), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")), 
+                      names=c(exp1_name, exp2_name), ylim=ylim)
+        segments(x0 = 1, x1 = 2, y0 = 1.04*max(kappa_g22, na.rm=TRUE), y1 = 1.04*max(kappa_g22, na.rm=TRUE), col = "black")
+        text( 1.5 , 1.09*max(kappa_g22, na.rm=TRUE) ,  get_asterisk(kappa_g22.test) , cex=1)
+        closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g22.pdf"), collapse = "_"))
+        cat('\t\'statistical_tests_kappa_g22.pdf\' created.\n')
+      }
+      
       openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g22.pdf"), collapse = "_"))
       # ylim <- c(10,1.2*max(parameters_g22$R2, na.rm=TRUE))
       bp <- boxplot(split(parameters_g22$R2,pexp), ylab=expression(paste(R^2,"(adj)")), names=c(exp1_name, exp2_name))
@@ -867,10 +1078,48 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_clusterradiusR_g11.pdf"), collapse = "_"))
       cat('\t\'statistical_tests_clusterradiusR_g11.pdf\' created.\n')
       
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g11.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(phi_g11, na.rm=TRUE),1.2*max(phi_g11, na.rm=TRUE))
+      bp <- boxplot(split(phi_g11,pexp), ylab=expression(phi1^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(phi_g11, na.rm=TRUE), y1 = 1.04*max(phi_g11, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(phi_g11, na.rm=TRUE) ,  get_asterisk(phi_g11.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g11.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_phi_g11.pdf\' created.\n')
+      
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g11.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(rho_g11, na.rm=TRUE),1.2*max(rho_g11, na.rm=TRUE))
+      bp <- boxplot(split(rho_g11,pexp), ylab=expression(rho^cluster),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(rho_g11, na.rm=TRUE), y1 = 1.04*max(rho_g11, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(rho_g11, na.rm=TRUE) ,  get_asterisk(rho_g11.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_rho_g11.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_rho_g11.pdf\' created.\n')
+      
+      openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_Nclusters_g11.pdf"), collapse = "_"))
+      ylim <- c(0.9*min(Nclusters_g11, na.rm=TRUE),1.2*max(Nclusters_g11, na.rm=TRUE))
+      bp <- boxplot(split(Nclusters_g11,pexp), ylab=expression(paste(N^cluster, ' [points/cluster]')),
+                    names=c(exp1_name, exp2_name), ylim=ylim)
+      segments(x0 = 1, x1 = 2, y0 = 1.04*max(Nclusters_g11, na.rm=TRUE), y1 = 1.04*max(Nclusters_g11, na.rm=TRUE), col = "black")
+      text( 1.5 , 1.09*max(Nclusters_g11, na.rm=TRUE) ,  get_asterisk(Nclusters_g11.test) , cex=1)
+      closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_Nclusters_g11.pdf"), collapse = "_"))
+      cat('\t\'statistical_tests_Nclusters_g11.pdf\' created.\n')
+      
+      if (fitting == 'expsq'){
+        openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g11.pdf"), collapse = "_"))
+        ylim <- c(0.9*min(kappa_g11, na.rm=TRUE),1.2*max(kappa_g11, na.rm=TRUE))
+        bp <- boxplot(split(kappa_g11,pexp), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")), 
+                      names=c(exp1_name, exp2_name), ylim=ylim)
+        segments(x0 = 1, x1 = 2, y0 = 1.04*max(kappa_g11, na.rm=TRUE), y1 = 1.04*max(kappa_g11, na.rm=TRUE), col = "black")
+        text( 1.5 , 1.09*max(kappa_g11, na.rm=TRUE) ,  get_asterisk(kappa_g11.test) , cex=1)
+        closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g11.pdf"), collapse = "_"))
+        cat('\t\'statistical_tests_kappa_g11.pdf\' created.\n')
+      }
+      
       openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g11.pdf"), collapse = "_"))
       # ylim <- c(10,1.2*max(parameters_g11$R2, na.rm=TRUE))
       bp <- boxplot(split(parameters_g11$R2,pexp), ylab=expression(paste(R^2,"(adj)")), names=c(exp1_name, exp2_name))
-      text(bp$group, bp$out, parameters_g11$id[which(parameters_g11$R2 %in% bp$out)], cex=0.5, pos = 4)
+      # text(bp$group, bp$out, parameters_g11$id[which(parameters_g11$R2 %in% bp$out)], cex=0.5, pos = 4)
       segments(x0 = 1, x1 = 2, y0 = 1.04*max(parameters_g11$R2, na.rm=TRUE), y1 = 1.04*max(parameters_g11$R2, na.rm=TRUE), col = "black")
       text( 1.5 , 1.09*max(parameters_g11$R2, na.rm=TRUE) ,  get_asterisk(parameters_g11_R2.test) , cex=1)
       closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_R2_g11.pdf"), collapse = "_"))
@@ -940,7 +1189,8 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       parameters_g11_aux <- parameters_g11; parameters_g22_aux <- parameters_g22; parameters_g12_aux <- parameters_g12
       load(paste(c(path_to_experiments[1], RData_2experiments), collapse='/'))
       parameters_g11 <- parameters_g11_aux; parameters_g22 <- parameters_g22_aux; parameters_g12 <- parameters_g12_aux
-      save(data, data_allrange, parameters_g11, density, r_eval, levels1, levels2, 
+      save(data, data_allrange, units, parameters_g11, parameters_g22, parameters_g12, density, npoints,
+           r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
                         '_2experiments.RData'), collapse = ''))
     }
@@ -1070,6 +1320,22 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       }
       closepdf(paste(c("g11_log_2experiments_", fitting, '.pdf'), collapse=""))
       cat('\t\'g11_2experiments(FITTING).pdf\' created.\n')
+      openpdf('cdf11_npoints_2experiments.pdf')
+      col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255))
+      plot(1, xlim=c(0,2*min(parameters_g11$r0, na.rm=TRUE)), ylim=c(0,100), xlab=paste('2r ','[', units,']', sep = ''),
+           ylab=paste('Av. number of points (', levels1, ',', levels1, ') [%]', sep=''), type='n')
+      for (ii in  1:length(levels(data$experiment))){
+        exp_name <- levels(data$experiment)[ii]
+        medianclusterradiusR <- median(clusterradiusR_g11[pexp==exp_name], na.rm=TRUE)
+        if (fitting=="expsq"){
+            r <- seq(0,2*min(parameters_g11$r0[pexp==exp_name], na.rm=TRUE), by=5)
+            cdf_line <- 100*(pnorm(r, mean=0, sd=medianclusterradiusR/4)-pnorm(-r, mean=0, sd=medianclusterradiusR/4))
+        }
+        lines(2*r, cdf_line , col=col_palette[ii], lty=1)
+        legend("bottomright", legend=exp_names, lty=1, col=col_palette)
+      }
+      closepdf("cdf11_npoints_2experiments.pdf")
+      cat('\t\'cdf11_npoints_2experiments(FITTING).pdf\' created.\n')
 
       # tests (experiments)
       cat('Running tests... ')
@@ -1148,7 +1414,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
 
       openpdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_phi_g11.pdf"), collapse = "_"))
       ylim <- c(0.9*min(phi_g11, na.rm=TRUE),1.2*max(phi_g11, na.rm=TRUE))
-      bp <- boxplot(split(clusterradiusR_g11,pexp), ylab=expression(phi^(cluster)),
+      bp <- boxplot(split(phi_g11,pexp), ylab=expression(phi1^cluster),
                     names=c(exp1_name, exp2_name), ylim=ylim)
       segments(x0 = 1, x1 = 2, y0 = 1.04*max(phi_g11, na.rm=TRUE), y1 = 1.04*max(phi_g11, na.rm=TRUE), col = "black")
       text( 1.5 , 1.09*max(phi_g11, na.rm=TRUE) ,  get_asterisk(phi_g11.test) , cex=1)
@@ -1169,7 +1435,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
         ylim <- c(0.9*min(kappa_g11, na.rm=TRUE),1.2*max(kappa_g11, na.rm=TRUE))
         bp <- boxplot(split(kappa_g11,pexp), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")), 
                       names=c(exp1_name, exp2_name), ylim=ylim)
-        segments(x0 = 1, x1 = 2, y0 = 1.04*max(clusterradiusR_g11, na.rm=TRUE), y1 = 1.04*max(clusterradiusR_g11, na.rm=TRUE), col = "black")
+        segments(x0 = 1, x1 = 2, y0 = 1.04*max(kappa_g11, na.rm=TRUE), y1 = 1.04*max(kappa_g11, na.rm=TRUE), col = "black")
         text( 1.5 , 1.09*max(kappa_g11, na.rm=TRUE) ,  get_asterisk(kappa_g11.test) , cex=1)
         closepdf(paste(c(unlist(strsplit(RData_2experiments, "\\_"))[1], "statistical_tests_kappa_g11.pdf"), collapse = "_"))
         cat('\t\'statistical_tests_kappa_g11.pdf\' created.\n')
@@ -1258,7 +1524,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       parameters_g11_aux <- parameters_g11
       load(paste(c(path_to_experiments[1], RData_2experiments), collapse='/'))
       parameters_g11 <- parameters_g11_aux
-      save(data, data_allrange, parameters_g11, density, r_eval, levels1, levels2, 
+      save(data, data_allrange, units, parameters_g11, density, npoints, r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
                         '_2experiments.RData'), collapse = ''))
     }
@@ -1338,8 +1604,14 @@ circle <- function(distribution, n=Nclusters, radius=radius, centre=centre, sig=
   if (distribution=='thomas'){
     npoints <- rpois(1, lambda=Nclusters)
     p <- mvrnorm(n=npoints, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
-    p[,1] <- p[,1] + centre[1]
-    p[,2] <- p[,2] + centre[2]
+    if (npoints==1){
+      p[1] <- p[1] + centre[1]
+      p[2] <- p[2] + centre[2]
+    }
+    else{
+      p[,1] <- p[,1] + centre[1]
+      p[,2] <- p[,2] + centre[2]
+    }
     points <- as.ppp(p, c(centre[1]-radius, centre[1]+radius, centre[2]-radius, centre[2]+radius))
     return(points)
   }

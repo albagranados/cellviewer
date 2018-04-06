@@ -23,17 +23,17 @@ source("utilities.R")
 ### Compare set1 and set2 (monoVSdual, noisyVSnoisefree, ...)
 ### select data
 
-# SET1
-set1_name <- "obs"
-pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
-levels1 = 'CTCF'; levels2 = ''
-exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
-path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
-
-storm_file = 0
-exp_names <- c(exp_name1, exp_name2)
-path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+# # SET1
+# set1_name <- "noise"
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160
+# levels1 = 'CTCF'; levels2 = '_'
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
+# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
+# 
+# storm_file = 0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ## compute
 RData_2experiments <- list.files(path = path_to_experiments[1], pattern = "\\_2experiments.RData$", 
@@ -45,12 +45,12 @@ parameters1 <- parameters_g11
 density1 <- density$level1
 
 # SET2
-set2_name <- "sim"
+set2_name <- "noisefree"
 pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
 levels1 = 'CTCF'; levels2 = ''
-path_to_experiment1 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/simulations/expsq'
-path_to_experiment2 <- '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/simulations/expsq'
+path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisefree/2017-06-15_HeLa_antiCTCF_DMSO'
+path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisefree/2017-06-15_HeLa_antiCTCF_ActD'
 
 storm_file=0
 exp_names <- c(exp_name1, exp_name2)
@@ -64,20 +64,35 @@ load(paste(c(path_to_experiments[1], RData_2experiments), collapse='/'))
 parameters2 <- parameters_g11
 density2 <- density$level1
 
-# experiment 1 comparison:
+# experiment 1 comparison (sq-exp fitting):
 amplitude_g1 <- exp(parameters1$beta0)  # set1
 length_scale_g1 <- -parameters1$beta1^(-1)
 clusterradiusR_g1 <- 2*sqrt(length_scale_g1)
 phi_g1 <- amplitude_g1/4   # rho_cluster/rho_average
 Nclusters_g1 <- amplitude_g1*pi*length_scale_g1*density1  # average number of points per cluster
-kappa_g1 <- 1/(amplitude_g1*pi*length_scale_g1)  
+kappa_g1 <- 1/(amplitude_g1*pi*length_scale_g1)
 
 amplitude_g2 <- exp(parameters2$beta0)  # set2
 length_scale_g2 <- -parameters2$beta1^(-1)
 clusterradiusR_g2 <- 2*sqrt(length_scale_g2)
 phi_g2 <- amplitude_g2/4   # rho_cluster/rho_average
 Nclusters_g2 <- amplitude_g2*pi*length_scale_g2*density2  #  average number of points per cluster
-kappa_g2 <- 1/(amplitude_g2*pi*length_scale_g2)  
+kappa_g2 <- 1/(amplitude_g2*pi*length_scale_g2)
+
+# # experiment 1 comparison (exp fitting):
+# amplitude_g1 <- exp(parameters1$beta0)  # set1
+# length_scale_g1 <- -parameters1$beta1^(-1)
+# clusterradiusR_g1 <- length_scale_g1
+# phi_g1 <- 2*amplitude_g1   # rho_cluster/rho_average
+# Nclusters_g1 <- 2*amplitude_g1*pi*length_scale_g1^2*density1  # average number of points per cluster
+# kappa_g1 <- 1/(amplitude_g1*pi*length_scale_g1)
+# 
+# amplitude_g2 <- exp(parameters2$beta0)  # set2
+# length_scale_g2 <- -parameters2$beta1^(-1)
+# clusterradiusR_g2 <- length_scale_g2
+# phi_g2 <- 2*amplitude_g2   # rho_cluster/rho_average
+# Nclusters_g2 <- 2*amplitude_g2*pi*length_scale_g2^2*density2  #  average number of points per cluster
+# kappa_g2 <- 1/(amplitude_g2*pi*length_scale_g2)
 
 pexp_1 <- parameters1$experiment  # set1
 pexp_2 <- parameters2$experiment  # set2
@@ -131,7 +146,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression("Length scale [nm]"))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(length_scale.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name1, "_length_scale.pdf"), collapse = ""))
 cat('\t\'statistical_tests_length_scale.pdf\' created.\n')
 
@@ -142,7 +157,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression("cluster radius R [nm]"))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(clusterradiusR.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name1, "_clusterradiusR.pdf"), collapse = ""))
 cat('\t\'statistical_clusterradiusR_scale.pdf\' created.\n')
 
@@ -153,7 +168,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression(phi^(cluster)))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(phi.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name1, "_phi.pdf"), collapse = ""))
 cat('\t\'statistical_phi_scale.pdf\' created.\n')
 
@@ -164,7 +179,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression(paste(N^cluster, ' [points/cluster]')))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(Nclusters.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name1, "_Nclusters.pdf"), collapse = ""))
 cat('\t\'statistical_Nclusters_scale.pdf\' created.\n')
 
@@ -175,7 +190,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(kappa.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name1, "_kappa.pdf"), collapse = ""))
 cat('\t\'statistical_kappa_scale.pdf\' created.\n')
 
@@ -229,7 +244,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim,
               names=c(set1_name, set2_name), ylab=expression("Length scale [nm]"))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(length_scale.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name2, "_length_scale.pdf"), collapse = ""))
 cat('\t\'statistical_tests_length_scale.pdf\' created.\n')
 
@@ -240,7 +255,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim,
               names=c(set1_name, set2_name), ylab=expression("Cluster radius [nm]"))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(clusterradiusR.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name2, "_clusterradiusR.pdf"), collapse = ""))
 cat('\t\'statistical_tests_clusterradiusR.pdf\' created.\n')
 
@@ -249,9 +264,9 @@ set1 <- phi_g1[which(pexp_1 == exp_name2)]
 set2 <- phi_g2[which(pexp_2 == exp_name2)]
 ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
-              names=c(set1_name, set2_name), ylab=expression(phi^(cluster)))
+              names=c(set1_name, set2_name), ylab=expression(phi^cluster))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(phi.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name2, "_phi.pdf"), collapse = ""))
 cat('\t\'statistical_phi_scale.pdf\' created.\n')
 
@@ -262,7 +277,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression(paste(N^cluster, ' [points/cluster]')))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(Nclusters.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name2, "_Nclusters.pdf"), collapse = ""))
 cat('\t\'statistical_Nclusters_scale.pdf\' created.\n')
 
@@ -273,7 +288,7 @@ ylim <- c(0,1.2*max(set1, set2, na.rm=TRUE))
 bp <- boxplot(set1, set2, ylim=ylim, 
               names=c(set1_name, set2_name), ylab=expression(paste(kappa, " [clusters/", nm^2, "]")))
 segments(x0 = 1, x1 = 2, y0 = 1.04*max(set1, set2, na.rm=TRUE), y1 = 1.04*max(set1, set2, na.rm=TRUE), col = "black")
-text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(amplitude.test) , cex=1)
+text( 1.5 , 1.09*max(set1, set2, na.rm=TRUE),  get_asterisk(kappa.test) , cex=1)
 closepdf(paste(c(paste(c(set1_name, set2_name, '_'), collapse=''), "statistical_tests_", levels1, '_', exp_name2, "_kappa.pdf"), collapse = ""))
 cat('\t\'statistical_kappa_scale.pdf\' created.\n')
 

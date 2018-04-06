@@ -22,41 +22,41 @@ source("utilities.R")
 
 ### select data
 
-# # dual
-# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'SMC1'; levels2 = 'CTCF'
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in DMSO Controls'
-# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-07-17_HeLa_DualColor_SMC1_CTCF/SMC1_CTCF in ActD Treated'
-# 
-# storm_file = 0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # single
-# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
-# levels1 = 'CTCF'; levels2 = ''
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_DMSO'
-# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiCTCF_DMSO_ActD/noisy/2017-06-15_HeLa_antiCTCF_ActD'
-# 
-# storm_file=0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
-# # mono
-pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
-levels1 = 'CTCF'; levels2 = ''
-exp_name1 <- "DMSO"; exp_name2 <- "ActD"
-path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
-path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+# dual
+pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+levels1 = 'SMC1'; levels2 = 'SMC3'
+path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'
+path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated'
 
 storm_file = 0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
+# # single
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# levels1 = 'H3'; levels2 = '_'
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_DMSO'
+# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-15_HeLa_antiH3_DMSO_ActD/2017-06-15_HeLa_antiH3_ActD'
+# 
+# storm_file=0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# # # mono
+# pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
+# levels1 = 'SMC1'; levels2 = ''
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
+# path_to_experiment1 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp1"
+# path_to_experiment2 = "/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/pointpatternanalysis_SMLM/output/exp2"
+# 
+# storm_file = 0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
 ### compute
-compute_ppsummaries <- data.frame(run=0, 
+compute_ppsummaries <- data.frame(run=0,
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
@@ -67,19 +67,19 @@ compute_ppsummaries <- data.frame(run=0,
                                   save = 0)
 longitudinal_dataset <- data.frame(run=1,
                                     generate = 1,
-                                      reso_r = 5,
-                                      stat_rrange_probs = 0.1,
+                                      reso_r = 20,
+                                      stat_rrange_probs = 0,
                                       units = units_out,
                                       plot_2experiments = 1,
-                                      save = 1,
+                                      save = 0,
                                     statanalysis = 1,
-                                      fitting = 'exp'
+                                      fitting = 'expsq'
                                    )
 longitudinal_dataset$fitting <- as.character(longitudinal_dataset$fitting)
 
 ### parameters
-# r_eval = seq(0, 4, length.out=200) # 300
-r_eval = seq(0, 640, length.out=200)
+r_eval = seq(0, 4, length.out=200) # 300
+# r_eval = seq(0, 640, length.out=200)
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
 # ------------------------------------------------------------
@@ -114,6 +114,7 @@ if (pptype == "marked"){
       g11_all <- list();
       
       intensities <- matrix(nrow = length(fileNamesCh1), ncol = 2)
+      npoints <- matrix(nrow = length(fileNamesCh1), ncol = 2)
       
       cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
       
@@ -129,7 +130,7 @@ if (pptype == "marked"){
         cat("Analyzing file ", j, ' [name =', fileNamesCh1[j], ']... \n')
         path_to_file1 = paste(c(dirs_channels[1],fileNamesCh1[j]), collapse='/')
         path_to_file2 = paste(c(dirs_channels[2],fileNamesCh2[j]), collapse='/')
-          
+        
         res <- build_pp(pptype=pptype, fn1=path_to_file1, fn2=path_to_file2, pn1=levels1, pn2=levels2, storm_file=storm_file)
         points1 = res$first; points2 = res$second; points = res$all; points_unmarked = res$all_unmarked
       
@@ -288,6 +289,7 @@ if (pptype == "marked"){
         }
         
         intensities[j,] <- intensity(points)
+        npoints[j,] <- points$n
         
         if (cellName_current != cellName_previous){ no = no + 1 }
         cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
@@ -310,7 +312,7 @@ if (pptype == "marked"){
         save(path_to_experiment1, path_to_experiment2, exp_name, levels1, levels2,
              G12_all, G22_all, K12_all, K22_all, L12_all, L22_all, g12_all, g22_all, g11_all, 
              g12_r0_all, g22_r0_all, g11_r0_all,  
-             r_eval, cell_nos, intensities,
+             r_eval, cell_nos, intensities, npoints,
              file=path_to_RData)
       }
     }
@@ -350,11 +352,12 @@ if (pptype %in% c("unmarked")){
       range_files = 1:num_files
       
       # initialize
-      g11_r0_all <- c()
+      g11_r0_all <- c();
       G11_all <- list(); K11_all <- list(); L11_all <- list();
       g11_all <- list(); p11_all <- list(); M11_all <- list();
       
       intensities <- matrix(nrow = length(fileNamesCh1), ncol = 1)
+      npoints <- matrix(nrow = length(fileNamesCh1), ncol = 1)
       
       cat('level 1 = ', levels1, "\nlevel 2 = ", levels2, '\n')
       
@@ -469,6 +472,7 @@ if (pptype %in% c("unmarked")){
           correlationrange = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
           g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
           g11_r0_all[j] = correlationrange
+          cat('correlationrange='); cat(correlationrange)
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
@@ -505,6 +509,7 @@ if (pptype %in% c("unmarked")){
           }
         }
         intensities[j,] <- intensity(points)
+        npoints[j,] <- points$n
         
         if (cellName_current != cellName_previous){ no = no + 1 }
         cell_nos <- append(cell_nos, no); cellName_previous <- cellName_current
@@ -521,7 +526,7 @@ if (pptype %in% c("unmarked")){
         path_to_RData <- paste(c(paste(c(path_to_experiment,paste(c(levels1,levels2,'_',exp_name), collapse = '')),
                                        collapse='/'), '.RData'), collapse = '')
         save(path_to_experiment1, path_to_experiment2, exp_name, levels1, levels2, 
-             G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities,
+             G11_all, K11_all, L11_all, g11_all, p11_all, g11_r0_all, r_eval, intensities, npoints,
              file=path_to_RData)
       }
     }
