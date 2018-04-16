@@ -351,7 +351,7 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False, xlabel='', ylabel=
     pos = np.arange(0, len(pos1))
     dist = max(pos)-min(pos)
 
-    w = min(0.15*max(dist,1.0),0.5)
+    w = min(0.15*max(dist, 1.0), 0.5)
     print data1
     for p, d in enumerate(data1):
         k = gaussian_kde(d)  # calculates the kernel density

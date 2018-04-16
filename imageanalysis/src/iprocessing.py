@@ -336,11 +336,11 @@ def get_blob(image, kwargs):
                 print '\t\tWarning: if scale_resolution [nm] < analysis_pixel_size [nm], then scale_resolution = ' \
                       'analysis_pixel_size:'
                 print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' %(scale_resolution,
-                                                                                             pixel_size)
+                                                                                                   pixel_size)
             scale_ini = np.ceil((scale_ini - 1) / 2.)
             scale_end = np.ceil((scale_end - 1) / 2.)
             if max_filter_depth is None: max_filter_depth = nscales + 1
-            scale_range = (3 ** -2) * ((2 * np.arange(scale_ini, scale_end+1, step=scale_resolution) + 1)) ** 2
+            scale_range = (3**-2)*(2*np.arange(scale_ini, scale_end+1, step=scale_resolution) + 1) ** 2
             nscales = len(scale_range)
         elif scale_spacing is 'log': 
             print '\Warning in building scale range: with log spacing and arbitrary nscales, maximum in Laplacian ' \
@@ -359,7 +359,7 @@ def get_blob(image, kwargs):
                 scale_range = (3**-2)*(1./pixel_size*np.linspace(scale_ini, scale_end,
                                                                      num=nscales))**2
         print '\tAnalyzing', nscales, 'scales (from t = %.2f to t = %.2f):' %(scale_range[0],
-                                                                          scale_range[len(scale_range)-1])
+                                                                              scale_range[len(scale_range)-1])
         strength = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         l = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         lx = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
@@ -379,6 +379,9 @@ def get_blob(image, kwargs):
             # strength[n-1] = t*(lx**2 + ly**2) + C*t**2*(lxx**2 + lyy**2 + 2*lxy)  # quasi quadrature term Li98b
             strength[n-1] = -(t ** gamma * laplacian)
 
+            # plt.figure(); plt.imshow(laplacian, interpolation='none', cmap='gray', origin='lower');
+            # plt.title('diam=%.0f' %(3*np.sqrt(t))); plt.show()
+
         dila = np.ones(shape=(max_filter_depth, max_filter_width, max_filter_width), dtype=float)
         dila[max_filter_depth/2, max_filter_width/2, max_filter_width/2] = 0
         featurestrength_dila = maximum_filter(strength, footprint=dila, mode='constant', cval=0)  # -float('inf'))
@@ -389,8 +392,8 @@ def get_blob(image, kwargs):
         # featurestrength[argmaxgrad] = strength[local_maxima_locations]
         featurestrength = strength[local_maxima_locations]
 
-        # plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,202,151], 'k.-');
-        # plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (202,151)'); plt.hold(0)
+        plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,202,151], 'k.-')
+        plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (202,151)'); plt.hold(0)
 
         tnew = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
@@ -604,7 +607,7 @@ def get_gauss_filter(t=10):
     # x = np.linspace(-5 * np.sqrt(t), 5 * np.sqrt(t), num=np.floor(5 * np.sqrt(t) + 5 * np.sqrt(t))+1)
     t0 = t
     num_steps = 2. * round((2 * 5 * np.sqrt(t0) + 1) / 2) - 1
-    x = np.linspace(-5 * np.sqrt(t0), 5 * np.sqrt(t0), num=num_steps)
+    x = np.linspace(-7 * np.sqrt(t0), 7 * np.sqrt(t0), num=num_steps)
     s = np.sqrt(t)
 
     g = 1. / (s * np.sqrt(2 * np.pi)) * np.exp(-1 * (x * x) / (2 * s * s))
@@ -653,8 +656,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     if blob_color is None:
         cmap = plt.cm.gray
         # values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
-        # values = featurestrength  # range(argmaxgrad[0].shape[0])
-        values = np.sqrt(tnew) * 2*1.5
+        values = featurestrength  # range(argmaxgrad[0].shape[0])
+        # values = np.sqrt(tnew) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values)) #colors.Normalize(vmin=0, vmax=np.max(values))
         #
         # vmax=values[-1]) . LogNorm, Normalize
@@ -679,15 +682,16 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                 bx = argmaxgrad[0][ii]
                 # # if strength < 1:
                 if scalarmap is not None:
-                    strength = np.sqrt(tnew[ii]) * 2 * 1.5
+                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5
                     # strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
-                    # strength = featurestrength[ii]
+                    strength = featurestrength[ii]
                     blob_color = scalarmap.to_rgba(strength)  # values[ii])
                 ax.plot(ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx, ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 +
                         by, color=blob_color, linewidth=1.5)
                 # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
                 #         color='k')
-                # ax.text( bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='k')
+                print 'feature detected: (bx=%d, by=%d), diam=%.0f; str=%.2f' % (bx, by, 3*np.sqrt(tnew[ii]), strength)
+                # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='r')
                 if len(orientation) > 0:
                     for jj in orientation[ii]:
                         if cluster_color is not None:
@@ -698,8 +702,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                         plt.arrow(bx, by,
                                   np.sqrt(tnew[ii]) * 1*1.5 * np.cos(jj), np.sqrt(tnew[ii]) * 1*1.5 * np.sin(jj),
                                   head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.2)
-        # fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
-        fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - analysis]')
+        fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+        # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - analysis]')
 
     ax.set_xlim(0, image.T.shape[1])
     ax.set_ylim(0, image.T.shape[0])

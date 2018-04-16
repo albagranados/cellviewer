@@ -17,23 +17,76 @@ def plot_hist(data, bins=None, hist_scale='log', xlabel={}, num_bins=100):
     bins (1d array): if it is not None, then bins=bins and 'lin' scale
 
     """
+
+    data = data[np.where((data != float('inf')) & (data >= 0))]  # eliminate areas that are set to inf, -1 or 0
+
     if bins is not None:
         plt.figure(), plt.hist(data, bins=bins, histtype='step',
                                weights=np.zeros_like(data) + 1. / data.size, color='k')
     else:
         ini = np.min(data)
         if hist_scale is 'log':
-            if ini <= 0: ini = 1
             plt.figure(), plt.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
                                    histtype='step', weights=np.zeros_like(data) + 1. / data.size, color='k')
             plt.gca().set_xscale("log")
         else:
-            if ini < 0: ini = 0
             plt.figure(), plt.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
                                    weights=np.zeros_like(data) + 1. / data.size, color='k')
     plt.ylabel(r'frequency'); plt.xlabel(xlabel); plt.hold(0)
-
     # plt.hist(densities, bins='rice', histtype='step',  color='k'); plt.ylabel(r'counts')
+
+
+def plot_boxplot(data, scale='lin', bptype='violin', xlabel='', ylabel='values'):
+    """
+    This function plots boxplot.
+
+    Input:
+    ----------------
+    data: list of 1 or more arrays (depending on the number of boxplots per figure), e.g. [np.array()] or
+            [np.array(), np.array(),...]
+    xlabel: list of strings corresponding to the 1 or more boxplots in the figure, e.g. xlabel=['control'] or [
+            'control', 'experiment']
+
+    Output:
+    --------------
+    result (dict): cmeans, cmedians, ... see: https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.violinplot.html
+    """
+
+    if not isinstance(data, list): data = [data]  # correct if not list input data
+
+    data = [bp[np.where((bp != float('inf')) & (bp >= 0))] for bp in data]
+    if scale is 'log':
+        values = [np.log10(data)]
+        ylabel = ylabel + '$\quad$' + r'[$\log_{10}$]'
+    else:
+        values = data
+
+    fig, ax = plt.subplots()
+    if bptype == 'violin':   # plot violin plot
+        result = ax.violinplot(values, widths=0.95, showmeans=False, showmedians=True, showextrema=True)
+        for pc in result['bodies']:
+            pc.set_facecolor('gray')
+            pc.set_linewidth(1)
+        for pc in [result[ii] for ii in ('cbars', 'cmins', 'cmaxes', 'cmedians')]:
+            pc.set_edgecolor('black')
+            pc.set_linewidth(1)
+    else:  # plot box plot
+        result = ax.boxplot(values)
+
+    # # adding horizontal grid lines
+    # ax.yaxis.grid(True)
+    # ax.set_xticks([y + 1 for y in range(len(values))])
+    # ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
+
+    if xlabel != '':     # add x-tick labels
+        plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=xlabel,
+                 ylabel=ylabel)
+    else:
+        plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=[str(i+1) for i in range(len(values))],
+                 ylabel=ylabel)
+    plt.show()
+
+    return result
 
 
 def sample_statistics(data):
