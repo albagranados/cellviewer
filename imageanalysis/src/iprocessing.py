@@ -32,11 +32,6 @@ def pattern2image(points, pixel_size):
     range_x = points_x.ptp()  # Peak to peak (maximum - minimum) value along a given axis.
     range_y = points_y.ptp()
 
-    area_region = range_x*range_y  # input total image area
-    if pixel_size is None:
-        scale_pixel_size = math.sqrt(2) * area_region / float(num_points)
-    # average_pointdensity = float(num_points)/area_region
-
     nx = int(math.ceil(range_x / pixel_size))  # num. of pixels in the x direction
     ny = int(math.ceil(range_y/pixel_size))  # num. of pixels in the y direction
 
@@ -155,6 +150,7 @@ def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='o
     else:
         plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower')
 
+    plt.colorbar()
     fig.hold(1)
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -335,8 +331,8 @@ def get_blob(image, kwargs):
                 scale_resolution = np.ceil(scale_resolution/pixel_size)
                 print '\t\tWarning: if scale_resolution [nm] < analysis_pixel_size [nm], then scale_resolution = ' \
                       'analysis_pixel_size:'
-                print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' %(scale_resolution,
-                                                                                                   pixel_size)
+                print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' % (scale_resolution,
+                                                                                                    pixel_size)
             scale_ini = np.ceil((scale_ini - 1) / 2.)
             scale_end = np.ceil((scale_end - 1) / 2.)
             if max_filter_depth is None: max_filter_depth = nscales + 1
@@ -356,22 +352,21 @@ def get_blob(image, kwargs):
             if kwargs.get('scale_range_is') is 'pixel':
                 scale_range = (3**-2)*(np.linspace(scale_ini, scale_end, num=nscales))**2
             if kwargs.get('scale_range_is') is 'nm':
-                scale_range = (3**-2)*(1./pixel_size*np.linspace(scale_ini, scale_end,
-                                                                     num=nscales))**2
-        print '\tAnalyzing', nscales, 'scales (from t = %.2f to t = %.2f):' %(scale_range[0],
-                                                                              scale_range[len(scale_range)-1])
+                scale_range = (3**-2)*(1./pixel_size*np.linspace(scale_ini, scale_end, num=nscales))**2
+        print '\tAnalyzing', nscales, 'scales (from t = %.2f to t = %.2f):' % (scale_range[0],
+                                                                               scale_range[len(scale_range)-1])
         strength = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         l = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         lx = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         ly = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         for n in range(1, nscales+1):
             t = scale_range[n-1]
-            print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(physical unit))' % (t, 3*np.sqrt(t),
-                                                                            3*np.sqrt(t)*pixel_size)
+            print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(physical unit))' \
+                  % (t, 3*np.sqrt(t), 3*np.sqrt(t)*pixel_size)
             scalespace = compute_space_derivatives(image, t)
             lxx = scalespace.get('lxx')
             lyy = scalespace.get('lyy')
-            l[n-1] = scalespace.get('l')
+            l[n-1] = scalespace.get('l')  # used later for sift
             lx[n-1] = -1. * scalespace.get('lx')  # local minima, gradient descent, pointing from white to black (1->0)
             ly[n-1] = -1. * scalespace.get('ly')
             laplacian = lxx + lyy
@@ -379,8 +374,14 @@ def get_blob(image, kwargs):
             # strength[n-1] = t*(lx**2 + ly**2) + C*t**2*(lxx**2 + lyy**2 + 2*lxy)  # quasi quadrature term Li98b
             strength[n-1] = -(t ** gamma * laplacian)
 
-            # plt.figure(); plt.imshow(laplacian, interpolation='none', cmap='gray', origin='lower');
-            # plt.title('diam=%.0f' %(3*np.sqrt(t))); plt.show()
+            # if n == 1:
+            #     plot_image(strength[n-1], cmap='jet', interpolation='none', norm='linear', plot_axis='on', hold=False)
+            #     plt.title('diam=%.0f' % (3*np.sqrt(t))); plt.show()
+
+        # scalespace = compute_space_derivatives(image, 0.1)
+        # lxx = scalespace.get('lxx'); lyy = scalespace.get('lyy'); laplacian = lxx + lyy
+        # plt.figure(); plt.imshow(laplacian, interpolation='none', cmap='gray', origin='lower')
+        # plt.title('diam=very small'); plt.show()
 
         dila = np.ones(shape=(max_filter_depth, max_filter_width, max_filter_width), dtype=float)
         dila[max_filter_depth/2, max_filter_width/2, max_filter_width/2] = 0
@@ -392,8 +393,8 @@ def get_blob(image, kwargs):
         # featurestrength[argmaxgrad] = strength[local_maxima_locations]
         featurestrength = strength[local_maxima_locations]
 
-        plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,202,151], 'k.-')
-        plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (202,151)'); plt.hold(0)
+        # plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,69,68], 'k.-')
+        # plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (69,68)'); plt.hold(0)
 
         tnew = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
@@ -441,7 +442,7 @@ def get_blob(image, kwargs):
             for ii, by in enumerate(argmaxgrad[1]):
                 scale_index = np.where(scale_range == tnew[ii])
                 bx = argmaxgrad[0][ii]
-                print '\t\t(bx,by)=(%d,%d)... ' % (bx,by),
+                print '\t\t(bx,by)=(%d,%d)... ' % (bx, by),
                 sigma_ori = sigma_ori_times * np.sqrt(tnew[ii])
                 # 1.5 is gaussian sigma for orientation assignment (lambda_ori in Re13)
                 radius = int(np.floor(window_ori_radtimes * sigma_ori))
@@ -607,7 +608,7 @@ def get_gauss_filter(t=10):
     # x = np.linspace(-5 * np.sqrt(t), 5 * np.sqrt(t), num=np.floor(5 * np.sqrt(t) + 5 * np.sqrt(t))+1)
     t0 = t
     num_steps = 2. * round((2 * 5 * np.sqrt(t0) + 1) / 2) - 1
-    x = np.linspace(-7 * np.sqrt(t0), 7 * np.sqrt(t0), num=num_steps)
+    x = np.linspace(-5 * np.sqrt(t0), 5 * np.sqrt(t0), num=num_steps)  # sensitive to this, of course!
     s = np.sqrt(t)
 
     g = 1. / (s * np.sqrt(2 * np.pi)) * np.exp(-1 * (x * x) / (2 * s * s))
@@ -658,8 +659,7 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
         # values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
         values = featurestrength  # range(argmaxgrad[0].shape[0])
         # values = np.sqrt(tnew) * 2*1.5
-        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values)) #colors.Normalize(vmin=0, vmax=np.max(values))
-        #
+        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))  # colors.Normalize(vmin=0,vmax=np.max(values))
         # vmax=values[-1]) . LogNorm, Normalize
         scalarmap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
         scalarmap.set_array(values)
@@ -803,11 +803,11 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
         # plots
         plt.figure()
         ax = plt.subplot(1, 2, 1)
-        plt.imshow(image_original.T, interpolation = 'none', cmap = 'gray', origin = 'lower', norm = LogNorm())
+        plt.imshow(image_original.T, interpolation='none', cmap='gray', origin='lower', norm=LogNorm())
         plt.hold(True)
-        for i in range(0, 2*radius+1,4):
+        for i in range(0, 2*radius+1, 4):
             y = by + i - radius
-            for j in range(0, 2*radius+1,4):
+            for j in range(0, 2*radius+1, 4):
                 x = bx + j - radius  # col
                 ax.arrow(x, y, weights[j, i]*grad_y[j, i], weights[j, i]*grad_x[j, i],
                          head_width=0.2, head_length=0.2, fc='r', ec='r')
@@ -898,7 +898,6 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
         pos_ref = R_inv.dot(np.array([pos[1]-bx, pos[0]-by]))
         hist_ind = np.floor((pos_ref[0]+radius)//(2.*radius/n_hist_x*1.000001) + n_hist_x*((pos_ref[1]+radius)//(
             2.*radius/n_hist_x)*1.000001))
-        #print(pos_ref[0][63])
         grad_x = lx[pos[1], pos[0]]; grad_y = ly[pos[1], pos[0]]
         ori_all = (np.arctan2(grad_x, grad_y) - ori)*180.//np.pi % 360
 
@@ -915,7 +914,6 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
         # print ori_all[0], ori_all_bins[0]
         bins_temp = (n_bins_descr * hist_ind + ori_all_bins).astype(int)
         for i, bins in enumerate(bins_temp):
-            #print i, bins
             hist[bins] += contr[i]
 
         # normalize descriptor vectors
@@ -952,7 +950,7 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
             # plt.text(corners[3, 0]+2, corners[3, 1]+2, '3', color='w')
             # plt.show()
 
-            plt.figure(); plt.title('center = (%d,%d), ori = %f' % (bx,by,ori))
+            plt.figure(); plt.title('center = (%d,%d), ori = %f' % (bx, by, ori))
             ax = plt.subplot(1, 2, 1)
             plt.imshow(image.T, interpolation='none', cmap='gray', origin='lower', norm=LogNorm())
             # plt.imshow(image.T, interpolation='none', cmap='gray', origin='lower')
@@ -987,7 +985,6 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
                 plt.ylim([0, max_ori])
                 plt.hold(True)
 
-
     return histogram
 
 
@@ -1011,7 +1008,7 @@ def nnd_feature(feature, dict_sift):
         dist_all_features = []
         fig, ax = plt.subplots()
         for ii, num in enumerate(number_features[0]):
-            t = tnew[num_ini]
+            # t = tnew[num_ini]
             x = argmaxgrad[0][num_ini:num_ini+num]
             y = argmaxgrad[1][num_ini:num_ini+num]
             blobs_xy = np.array([x, y]).T

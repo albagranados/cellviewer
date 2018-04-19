@@ -13,7 +13,7 @@ def _adjust_bounds(ax, points):
                 points[:, 1].max() + 0.1 * ptp_bound[1])
 
 
-def voronoi_plot_2d(vor, ax=None, **kw):
+def voronoi_plot_2d(vor, **kw):
     """
     Plot the given Voronoi diagram in 2-D, based on scipy.spatial.voronoi_plot_2d
 
@@ -172,7 +172,6 @@ def compute_areas(vor, original_pixel_size):
     ----------
     new attribut vor.areas and vor.areas_total
     """
-    import numpy as np
     from shapely.geometry import MultiPoint, Point, Polygon
 
     if vor.points.shape[1] != 2:
@@ -198,7 +197,7 @@ def compute_areas(vor, original_pixel_size):
                 areas[p1] = 0.5*np.abs(np.dot(polygon_vertices[:, 0], np.roll(polygon_vertices[:, 1], -1))
                                        - np.dot(polygon_vertices[:, 1], np.roll(polygon_vertices[:, 0], -1)))
             else:  # polygon intersection convex hull is not polygon
-                areas[p1] = float('inf') #-1  # area -1 means voronoi region outside the convex hull (~ROI)
+                areas[p1] = float('inf')  # -1 area -1 means voronoi region outside the convex hull (~ROI)
 
     vor.areas = original_pixel_size**2*areas   # in nm2
     vor.areas_total = float(np.sum(vor.areas[(vor.areas > 0) & (vor.areas < float('inf'))]))  # in nm2
@@ -225,7 +224,7 @@ def plot_areas(vor, thr=None, plot_axis='on', show_points=True, hold=False):
     polygons, polygons_thresholded = [], []
     p = 0
     for p1, area in enumerate(vor.areas):
-        if area >= 0 and area < float('inf'):
+        if (area >= 0) and (area < float('inf')):
             vertices_label = vor.regions[vor.point_region[p1]]
             polygons.append([(x, y) for x, y in vor.vertices[vertices_label]])
             p += 1
@@ -262,7 +261,6 @@ def plot_areas(vor, thr=None, plot_axis='on', show_points=True, hold=False):
         ax_th.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
         ax_th.set_aspect('equal', adjustable='box')
 
-
     return fig, ax  # .figure
 
 
@@ -279,9 +277,7 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
 
     """
 
-    import numpy as np
     from matplotlib.collections import PolyCollection
-    import matplotlib.pyplot as plt
     from matplotlib import cm, colors
 
     if not hasattr(vor, 'densities_zero'):
@@ -302,12 +298,13 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
     if cmap is 'gray': cmap = plt.cm.gray
 
     if norm is 'linear':
-        values = vor.densities_zero[vor.densities_zero > 0]
+        values = vor.densities_zero  # vor.densities_zero[vor.densities_zero > 0]
     if norm is 'log':
         values = np.log10(vor.densities_zero[vor.densities_zero > 0])
-    cNorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
-    scalarMap = cm.ScalarMappable(norm=cNorm, cmap=cmap); scalarMap.set_array(values)
-    colour = [scalarMap.to_rgba(ii) for ii in values]
+    print(np.min(values))
+    cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
+    scalarmap = cm.ScalarMappable(norm=cnorm, cmap=cmap); scalarmap.set_array(values)
+    colour = [scalarmap.to_rgba(ii) for ii in values]
     coll = PolyCollection(polygons, edgecolors='none'); ax.add_collection(coll), ax.autoscale_view()
     coll.set_facecolors(colour)
     # cbar = fig.colorbar(coll, ax=ax)   # Add a colorbar for the PolyCollection
@@ -335,7 +332,7 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
         ax_th.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
         ax_th.set_aspect('equal', adjustable='box')
 
-    return fig, ax  #.figure
+    return fig, ax  # .figure
 
 
 def threshold(vor, thr=None):
@@ -364,7 +361,8 @@ def threshold(vor, thr=None):
     return vor
 
 
-def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', fill_value=0.0):
+def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', fill_value=0.0,
+                          scale_transform='linear'):
     """
     Given a vornoi-based zero-rank density map, the natural interpolation (Sibson, 1980) on a regular grid with
     analysis_pixel_size grid size is performed. See Andronov et al., 2016 and Ledoux and Gold, 2005.
@@ -374,8 +372,6 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     densities_image (2d array)
     """
     from scipy.interpolate import griddata
-    import numpy as np
-    import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
 
     grid_x, grid_y = np.mgrid[np.min(vor.points[:, 0]):np.max(vor.points[:, 0]):scale_pixel_size,
@@ -388,6 +384,11 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     # cbar = plt.colorbar()
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
     # plt.show()
+
+    if scale_transform is not 'linear':
+        if np.any(densities_image <= 0):
+            densities_image[np.where(densities_image <= 0)] = None
+        densities_image = np.log10(densities_image)
 
     print('Done.')
 
@@ -424,20 +425,17 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
 
     if blob_color is None:
         cmap = plt.cm.gray
-        values = np.sqrt(tnew) * 2*1.5*scale_pixel_size
-        # values = featurestrength # range(argmaxgrad[0].shape[0])
+        # values = np.sqrt(tnew) * 2*1.5*scale_pixel_size
+        values = featurestrength  # range(argmaxgrad[0].shape[0])
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
-        scalarMap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
-        scalarMap.set_array(values)
+        scalarmap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
+        scalarmap.set_array(values)
     if cluster_color is not None:
         cmap = plt.get_cmap('Set1', np.max(cluster_color) - np.min(cluster_color) + 1)
-        scalarmap_clusters = plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=np.max(cluster_color)),
-                                                   cmap=cmap)
+        scalarmap_clusters = plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=np.max(cluster_color)), cmap=cmap)
         scalarmap_clusters.set_array(cluster_color)
-
     if feature_name == 'edge':
         plt.plot(argmaxgrad[0], argmaxgrad[1], 'ko', markersize=3)
-
     if feature_name == 'blob':
         cval = (2 * np.pi * np.linspace(0, 1, num=50))
         ucirc = np.array([np.cos(cval), np.sin(cval)])
@@ -446,10 +444,10 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
             # if tnew[ii] == feature.get('scale_range')[0]:
                 bx = argmaxgrad[0][ii]
                 # if strength < 1:
-                if scalarMap is not None:
-                    strength = np.sqrt(tnew[ii]) * 2 * 1.5*scale_pixel_size
-                    # strength = featurestrength[ii]
-                    blob_color = scalarMap.to_rgba(strength)
+                if scalarmap is not None:
+                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5*scale_pixel_size
+                    strength = featurestrength[ii]
+                    blob_color = scalarmap.to_rgba(strength)
                 ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
                               oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
                               color=blob_color, linewidth=1.5)
@@ -464,9 +462,8 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                                   np.sqrt(tnew[ii]) * 1 * 1.5 * np.cos(jj)*scale_pixel_size,
                                   np.sqrt(tnew[ii]) * 1 * 1.5 * np.sin(jj)*scale_pixel_size,
                                   head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.1)
-
-        # fig.colorbar(scalarMap, label='max$_t\{\Delta_{\gamma-norm}\}$')
-        fig.colorbar(scalarMap, label='3$\sqrt{t}$ [pixel - original]')
+        fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+        # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
