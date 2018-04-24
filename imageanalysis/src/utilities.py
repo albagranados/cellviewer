@@ -7,12 +7,12 @@ matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 
 class pointpattern():
 
     #     """
-    #     This function reads point pattern(s) stored in fileDir
+    #     This function reads point pattern(s) stored in file_dir
     #
     #     Input:
     #     ----------------------------------
-    #     fileDir (string): file(s) directory
-    #     fileName (string): if not None, then read multple data sets in fileDir
+    #     file_dir (string): file(s) directory
+    #     file_name (string): if not None, then read multple data sets in file_dir
     #     fileExt (string): extension of the pointpattern files
     #     storm (boolean): if the datafile is in storm format (precision, coordinates...)
     #     save_output_dir (string): if not None, then save the point pattern(s) in a txt files as a nx2 matrix in the output
@@ -23,19 +23,20 @@ class pointpattern():
     #     points: points (if multiple data sets, the last one) stored in a nx2 matrix
     #     points1, points2 (if more than 1 channel): stored in a nx2 matrix
 
-    def read(self, fileDir, fileName=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
+    def read(self, file_dir, file_name=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
                 save_output_dir=None, plot=1):
 
-        if fileName is not None:
-            fileNames = [fileName]
+        print 'Reading dataset...'
+        if file_name is not None:
+            file_names = [file_name]
         else:
-            fileNames = os.listdir(fileDir)
+            file_names = os.listdir(file_dir)
 
-        for ii in range(len(fileNames)):
-            fileName = fileNames[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
-            print 'Reading data set: "', fileName, '"...'
+        for ii in range(len(file_names)):
+            file_name = file_names[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
+            print '\tfile name: "', file_name, '"'
 
-            path = os.path.join(fileDir, fileName + fileExt)  # if we want to run in the Python Console
+            path = os.path.join(file_dir, file_name + fileExt)  # if we want to run in the Python Console
 
             if storm:
                 self.points = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(3, 4))  # export x_c and y_c
@@ -49,11 +50,11 @@ class pointpattern():
 
                 if len(np.unique(self.channels)) > 2:
                     print '\tSTORM file with more than 2 channels. Please, double check.'
-                for ii in out_channel:
-                    if ii == 1:
+                for jj in out_channel:
+                    if jj == 1:
                        self.points1 = self.points[np.where(self.channels == ii)]
                        print '\tChannel 1 in .points1.'
-                    if ii == 2:
+                    if jj == 2:
                         self.points2 = self.points[np.where(self.channels == ii)]
                         print '\tChannel 2 in .points2.'
 
@@ -62,10 +63,10 @@ class pointpattern():
 
             if save_output_dir is not None:
                 if channels_num == 2:
-                    np.savetxt(save_output_dir + fileName + '_Ch1' + fileExt, self.points[np.where(channels == 1)])
-                    np.savetxt(save_output_dir + fileName + '_Ch2' + fileExt, self.points[np.where(channels == 2)])
+                    np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt, self.points[np.where(channels == 1)])
+                    np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt, self.points[np.where(channels == 2)])
                 if channels_num == 1:
-                    np.savetxt(save_output_dir + fileName + fileExt, self.points)
+                    np.savetxt(save_output_dir + file_name + fileExt, self.points)
 
             if plot:
                 fig, ax = plt.subplots()
@@ -73,12 +74,11 @@ class pointpattern():
                 ax.set_xlim(self.points[:, 0].min(), self.points[:, 0].max())
                 ax.set_ylim(self.points[:, 1].min(), self.points[:, 1].max())
                 ax.set_aspect('equal', adjustable='box'); ax.hold(False)
-            print 'Done.'
 
 
-def saveparameters(fileName, dict1={}, dict2={}, dict3={}):
+def saveparameters(file_name, dict1={}, dict2={}, dict3={}):
 
-    f = open(fileName, 'wb')
+    f = open(file_name, 'wb')
     for ii in range(len(dict1)):
         name = dict1.keys()[ii]
         value = str(dict1[name])
@@ -128,7 +128,7 @@ def generate_pattern_rnd(kwargs, num=1, save_data={}):
     enrichment_ratio = kwargs.get('enrichment_ratio', 20)
 
     for ii in range(0, num):
-        print 'Generate pattern %d...' %ii
+        print 'Generate pattern %d...' % ii
         area_c = np.pi*mean_radius**2
         area_b = (cell_size-n_clusters*area_c)
 
@@ -196,7 +196,7 @@ def generate_pattern_rnd(kwargs, num=1, save_data={}):
             means = [xx.mean(), yy.mean()]
             stds = [xx.std() / 3, yy.std() / 3]
             corr = 0.8         # correlation
-            covs = [[stds[0]**2 , stds[0]*stds[1]*corr],
+            covs = [[stds[0]**2, stds[0]*stds[1]*corr],
                     [stds[0]*stds[1]*corr,           stds[1]**2]]
 
             m = np.random.multivariate_normal(means, covs, 1000).T
@@ -204,7 +204,7 @@ def generate_pattern_rnd(kwargs, num=1, save_data={}):
 
         print(save_data.get('output_dir') + r'syntheticpp_cw%d_enrichmentr%d_r%.2f_Nt%d_Ch1_%d.txt'
                        % (cell_size, enrichment_ratio, np.mean(n_points_clusters), n_points_total, ii))
-        if save_data.get('save',0):
+        if save_data.get('save', 0):
             np.savetxt(save_data.get('output_dir') + r'syntheticpp_cw%d_enrichmentr%d_r%d_Nt%d_Ch1_%d.txt'
                        % (cell_size, enrichment_ratio, np.mean(n_points_clusters), n_points_total, ii), points)
 
@@ -295,12 +295,11 @@ def generate_circularpattern_det(kwargs):
         means = [xx.mean(), yy.mean()]
         stds = [xx.std() / 3, yy.std() / 3]
         corr = 0.8         # correlation
-        covs = [[stds[0]**2 , stds[0]*stds[1]*corr],
+        covs = [[stds[0]**2, stds[0]*stds[1]*corr],
                 [stds[0]*stds[1]*corr,           stds[1]**2]]
 
         m = np.random.multivariate_normal(means, covs, 1000).T
         plt.scatter(m[0], m[1])
-
 
     return points/160.
 
@@ -323,8 +322,8 @@ def generate_image():
 
     print 'diameter:'
     print 2*radius
-    print 'number of blobs = %d' %np.sum(radius_n)
-    color = np.linspace(100, 255, num=np.max(radius_n), dtype=float)
+    print 'number of blobs = %d' % np.sum(radius_n)
+    # color = np.linspace(100, 255, num=np.max(radius_n), dtype=float)
     image = np.zeros(shape=(height, width))
 
     xv, yv = np.meshgrid(np.linspace(0, width, width+1), np.linspace(0, height, height+1))
@@ -336,7 +335,7 @@ def generate_image():
     for ii, itemii in enumerate(radius):
         for jj in range(radius_n[ii]):
             pos = np.where(((xv-grid_centers_x[jj])**2 + (yv-grid_centers_y[ii])**2) < radius[ii]**2)
-            image[pos] = 255  #color[jj]
+            image[pos] = 255  # color[jj]
 
     return image
 
@@ -357,7 +356,7 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False, xlabel='', ylabel=
         k = gaussian_kde(d)  # calculates the kernel density
         m = k.dataset.min()  # lower bound of violin
         M = k.dataset.max()  # upper bound of violin
-        x = np.arange(m,M,(M-m)/100.) # support for violin
+        x = np.arange(m, M, (M-m)/100.)  # support for violin
         v = k.evaluate(x)  # violin profile (density curve)
         v = v/v.max()*w  # scaling the violin to the available space
         ax.fill_betweenx(x, p, v+p, facecolor='lightgray', edgecolor='gray', alpha=0.3)
@@ -384,3 +383,24 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False, xlabel='', ylabel=
         # plt.xlim([-0.5,5.5])
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
+
+def plot_frameno(points, frame_no):
+    import matplotlib.colors as colors
+    import matplotlib.cm as cmx
+
+    cmap = plt.cm.jet
+    cNorm = colors.Normalize(vmin=np.min(frame_no), vmax=np.max(frame_no))  # vmax=values[-1]) . LogNorm,
+    # Normalize
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)  # norm=cNorm
+    scalarMap.set_array(frame_no)
+
+    fig, ax = plt.subplots()
+
+    for ii in range(frame_no.shape[0]):
+        deviation = frame_no[ii]
+        blob_color = scalarMap.to_rgba(deviation)
+        ax.plot(points[ii][0], points[ii][1], marker='o', fillstyle='full', color=blob_color, markersize=3,
+                markeredgewidth=0.0)
+        plt.hold(True)
+    plt.colorbar(scalarMap, label='Frame number')
+    plt.hold(False)

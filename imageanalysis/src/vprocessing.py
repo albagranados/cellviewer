@@ -220,7 +220,6 @@ def plot_areas(vor, thr=None, plot_axis='on', show_points=True, hold=False):
         raise ValueError("Requires vor.areas attribute! Please, run vprocessing.compute_areas(vor).")
 
     max_area = np.max(vor.areas[vor.areas < float('inf')])
-    print(max_area)
     polygons, polygons_thresholded = [], []
     p = 0
     for p1, area in enumerate(vor.areas):
@@ -301,7 +300,6 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
         values = vor.densities_zero  # vor.densities_zero[vor.densities_zero > 0]
     if norm is 'log':
         values = np.log10(vor.densities_zero[vor.densities_zero > 0])
-    print(np.min(values))
     cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
     scalarmap = cm.ScalarMappable(norm=cnorm, cmap=cmap); scalarmap.set_array(values)
     colour = [scalarmap.to_rgba(ii) for ii in values]
@@ -389,8 +387,6 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
         if np.any(densities_image <= 0):
             densities_image[np.where(densities_image <= 0)] = None
         densities_image = np.log10(densities_image)
-
-    print('Done.')
 
     return densities_image
 

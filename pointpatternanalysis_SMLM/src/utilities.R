@@ -1616,7 +1616,7 @@ circle <- function(distribution, n=Nclusters, radius=radius, centre=centre, sig=
     return(points)
   }
   if (distribution=='gaussian_truncated'){
-    p <- mvrnorm(n=3*n, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
+    p <- mvrnorm(n=npoints, mu=c(0,0), Sigma=matrix(c(sig^2,0,0,sig^2), 2, 2))
     out <- which((abs(p[,1])>radius) | (abs(p[,2])>radius))
     if (length(out)>0){
       p_constrained <- p[-out,] 

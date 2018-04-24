@@ -150,7 +150,7 @@ def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='o
     else:
         plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower')
 
-    plt.colorbar()
+    # plt.colorbar()
     fig.hold(1)
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -247,7 +247,6 @@ def find_feature(image, kwargs):
     #     feature['histogram_descr'] = [hist for ii, hist in enumerate(histogram_descr) if ii in temp[0]]
     # # end
 
-    print('Done.')
     return feature
 
 
@@ -690,7 +689,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                         by, color=blob_color, linewidth=1.5)
                 # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
                 #         color='k')
-                print 'feature detected: (bx=%d, by=%d), diam=%.0f; str=%.2f' % (bx, by, 3*np.sqrt(tnew[ii]), strength)
+                print '\t\tfeature %d detected \tat (%d, %d)\t diameter=%.0f[px]\t strength=%.2f' \
+                      % (ii, bx, by, 3*np.sqrt(tnew[ii]), strength)
                 # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='r')
                 if len(orientation) > 0:
                     for jj in orientation[ii]:
