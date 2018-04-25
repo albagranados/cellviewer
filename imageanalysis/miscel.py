@@ -22,7 +22,7 @@ experiment_author = ''; file_dir = ''; file_name = ''
 
 # # ====== MULTIPLE IMAGE STATISTICS =========
 # # ==========================================
-file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/1/output/'
+file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/5/output/'
 fileExt = '.txt'
 
 num_clusters = []; cluster_diameters = []; image_area = []; num_loc_cluster = []; ntotal = []
@@ -63,18 +63,18 @@ plt.savefig(output_dir + file_name + '_numclusters_hist.pdf', bbox_inches='tight
 stat.plot_hist(0.5*np.asarray(cluster_diameters), num_bins=30, xlabel=r'cluster radius R [nm]')
 plt.savefig(output_dir + file_name + '_clusterradius_hist.pdf', bbox_inches='tight')
 
-stat.plot_hist(np.asarray(num_loc_cluster), num_bins=50, xlabel=r'N$^{cluster}$ [points/cluster]')
-plt.savefig(output_dir + file_name + '_numloccluster_hist.pdf', bbox_inches='tight')
+stat.plot_hist(np.asarray(num_loc_cluster), num_bins=20, xlabel=r'N$^{cluster}$ [points/cluster]')
+plt.savefig(output_dir + file_name + '_clusternumloc_hist.pdf', bbox_inches='tight')
 
-stat.plot_hist(percentage_num_loc, num_bins=50, xlabel=r'percentage of localizations in clusters$ [$\%$]')
+stat.plot_hist(percentage_num_loc, num_bins=20, xlabel=r'percentage of localizations in clusters$ [$\%$]')
 plt.savefig(output_dir + file_name + '_percloccluster_hist.pdf', bbox_inches='tight')
 
 stat.plot_hist(np.divide(np.asarray(num_clusters), np.asarray(image_area)),
-               num_bins=50, xlabel=r'$\kappa$ [clusters/nm$^2$]')
+               num_bins=20, xlabel=r'$\kappa$ [clusters/nm$^2$]')
 plt.savefig(output_dir + file_name + '_densityclusters_hist.pdf', bbox_inches='tight')
 
 stat.plot_hist(np.divide(np.asarray(num_loc_cluster), (0.5*np.asarray(cluster_diameters))**2*np.pi),
-               num_bins=50, xlabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]')
+               num_bins=20, xlabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]')
 plt.savefig(output_dir + file_name + '_clusterdensities_hist.pdf', bbox_inches='tight')
 
 stat.plot_boxplot(np.divide(np.asarray(num_loc_cluster), (0.5*np.asarray(cluster_diameters))**2*np.pi),

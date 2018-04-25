@@ -686,7 +686,7 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
                     strength = featurestrength[ii]
                     blob_color = scalarmap.to_rgba(strength)  # values[ii])
                 ax.plot(ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx, ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 +
-                        by, color=blob_color, linewidth=1.5)
+                        by, color=blob_color, linewidth=0.7)
                 # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
                 #         color='k')
                 print '\t\tfeature %d detected \tat (%d, %d)\t diameter=%.0f[px]\t strength=%.2f' \

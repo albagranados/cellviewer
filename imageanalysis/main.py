@@ -20,12 +20,13 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/3/data/'
-file_name = 'synthetic_gaussian_numclusters10_rcluster50_50_NAnm_enrich100_densityc325px2_4'; fileExt = '.txt'
+file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/6/data/'
+file_name = 'SMC3_SMC1_DMSO_000_list_drift_1740-2622_Ch1_145165_105125'; fileExt = '.txt'
 
 for jj, fileid in enumerate(os.listdir(file_dir)):
     # if jj > 0:
     #     break
+    print '\n\n\n _______START ANALYSIS_______'; iniini_time = time.time()
     file_name = fileid.split(fileExt)[0]
 
     # # ============== INPUT PARAMETERS ========
@@ -128,12 +129,12 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
                                                 scale_transform='log')
             print('Done.')
             print 'Plotting Voronoi zero-rank densities image...'
-            iproc.plot_image(image, cmap='jet', norm='lin', plot_axis='on')
+            # iproc.plot_image(image, cmap='jet', norm='lin', plot_axis='on')
             # plt.savefig(output_dir + file_name + '_densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
             print 'Plotting Voronoi zero-rank densities point pattern...'
             threshold = float(2*vor.densities_average); vproc.threshold(vor, thr=threshold)
-            vproc.plot_densities(vor, thr=None, show_points=True, cmap='jet', norm='log', plot_axis='on')
+            # vproc.plot_densities(vor, thr=None, show_points=True, cmap='jet', norm='log', plot_axis='on')
             # plt.savefig(output_dir + file_name + '_densities_pp.pdf', bbox_inches='tight'); print 'Saved.'
 
             # print 'Plotting Voronoi areas...'
@@ -161,7 +162,7 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
 
                      # feature detection
                      t=10, feature_name='blob',
-                     thresholding=1, threshold_percent=0.5, scale_range_is='nm', scale_ini=20, scale_end=150,
+                     thresholding=1, threshold_percent=0.5, scale_range_is='nm', scale_ini=20, scale_end=350,
                      # diam. of search, if pixel->analysispixel
                      scale_spacing='odd', nscales=150,
                      scale_resolution=dict_inputfile.get('resolution'),  # 'scale_resolution': 1, # (radius) in
@@ -206,10 +207,10 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
     print 'Computing feature statistics...'
     blob_diameters = analysis_pixel_size*3*np.sqrt(feature.get('tnew'))  # in original units
     # nnd_localizations = iproc.nnd_feature(feature, dict_sift)
-    stat.plot_hist(blob_diameters, bins=analysis_pixel_size*3*np.sqrt(feature.get('scale_range')), xlabel=r'blob diameter [nm]')
-    plt.savefig(output_dir + file_name + '_blobdiam_hist.pdf', bbox_inches='tight')
-    # stat.plot_boxplot(blob_diameters, bptype='violin', ylabel=r'blob diameter [nm]')
-    # plt.savefig(output_dir + file_name + '_blobdiam_boxplot.pdf', bbox_inches='tight')
+    stat.plot_hist(0.5*blob_diameters, num_bins=50, xlabel=r'blob radius R [nm]')
+    plt.savefig(output_dir + file_name + '_blobradius_hist.pdf', bbox_inches='tight')
+    stat.plot_boxplot(0.5*blob_diameters, bptype='violin', ylabel=r'blob radius R [nm]')
+    plt.savefig(output_dir + file_name + '_blobradius_boxplot.pdf', bbox_inches='tight')
     # stat.plot_hist(np.pi*(blob_diameters/2.)**2, num_bins=50, xlabel=r'blob area [nm2]')
     stat.plot_boxplot(np.pi*(blob_diameters/2.)**2, bptype='violin', ylabel=r'blob area [nm2]')
     plt.savefig(output_dir + file_name + '_blobareas_boxplot.pdf', bbox_inches='tight')
@@ -232,10 +233,10 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
         stat.plot_boxplot(vor.areas, scale='log', bptype='violin', ylabel=r'Voronoi polygon area [nm$^2$]')
         plt.savefig(output_dir + file_name + '_voronoiareas_boxplot.pdf', bbox_inches='tight')
         # stat.plot_hist(number_localizations, hist_scale='lin', num_bins=50, xlabel=r'number of localizations per blob')
-        stat.plot_boxplot(number_localizations, scale='lin', bptype='violin', ylabel=r'number of localizations per blob')
+        stat.plot_boxplot(number_localizations, scale='lin', bptype='violin', ylabel=r'N$^{cluster}$ [points/cluster]')
         plt.savefig(output_dir + file_name + '_blobnumloc_boxplot.pdf', bbox_inches='tight')
         # stat.plot_hist(densities, hist_scale='lin', num_bins=50, xlabel=r'blob density [localizations/nm$^2$]')
-        stat.plot_boxplot(densities, bptype='violin', ylabel=r'blob density [localizations/nm$^2$]')
+        stat.plot_boxplot(densities, bptype='violin', ylabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]')
         plt.savefig(output_dir + file_name + '_blobdensities_boxplot.pdf', bbox_inches='tight')
 
     dict_output = dict(image_area=image.shape[0]*image.shape[1]*analysis_pixel_size**2,
@@ -270,5 +271,6 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
 
         print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
+    print ("\n\n***FINISHED ANALYSIS (total time =  %.2f seconds)" % (time.time() - inini_time))
     # # if __name__ == '__main__':
     # #     main()

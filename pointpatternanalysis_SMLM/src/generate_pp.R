@@ -173,15 +173,15 @@ for (j in 1:num_realizations){
 num_realizations <- 50
 area <- 20*20  # all units: STORM pixels
 num_clusters <- 10
-rcluster <- c(50/160, 50/160)  # mean/s of radius/radii. Univariate or bivariate distribution
+rcluster <- c(30/160, 100/160)  # mean/s of radius/radii. Univariate or bivariate distribution
 scluster <- rcluster*0  #rcluster/4 # c(0.05, 0.1)
 density_c <- 325   # constant
-enrichment <- 12
+enrichment <- 100
 density_b <- density_c/enrichment
 nbackground <- floor(area*density_b)
 cluster_type <- "gaussian"
 
-col_palette <-  c(rgb(173,216,230,max = 255), rgb(255,165,0,max = 255,alpha=125))
+col_palette <-  c(rgb(173,216,230,max = 255,alpha=125), rgb(255,165,0,max = 255,alpha=125))
 for (j in 1:num_realizations){
   fileName <- paste(c('synthetic_', cluster_type, '_numclusters', round(num_clusters), '_rcluster',
                       round(160*rcluster[1]), '_', round(160*rcluster[2]), '_', round(160*rcluster[3]), 
@@ -189,8 +189,8 @@ for (j in 1:num_realizations){
                       round(density_c), 'px2_', j), collapse='')
   
   radii <- rnorm(num_clusters, mean = rcluster, sd = scluster)
-  centreclusters <- cbind(runif(num_clusters, min = 6*max(radii), max = sqrt(area)-6*max(radii)),
-                          runif(num_clusters, min = 6*max(radii), max = sqrt(area)-6*max(radii)))
+  centreclusters <- cbind(runif(num_clusters, min = 5*max(radii), max = sqrt(area)-5*max(radii)),
+                          runif(num_clusters, min = 5*max(radii), max = sqrt(area)-5*max(radii)))
   pp_background <- rpoint(nbackground, win=owin(c(0,sqrt(area)), c(0,sqrt(area))))
   points <- pp_background
   openpdf(paste(fileName, ".pdf", sep = ''))
@@ -198,10 +198,11 @@ for (j in 1:num_realizations){
   points_cluster <- rpoint(0, win=owin(c(0,sqrt(area)), c(0,sqrt(area))))
   for (i in 1:num_clusters){
     Nclusters <- floor(density_c*(pi*radii[i]^2))
-    pp_cluster <- circle(cluster_type, n=Nclusters, radius=radii[i], centre=centreclusters[i,],
-                         sig=radii[i]/2)
-    points_cluster <- superimpose(pp_cluster,points_cluster)
-    points(points_cluster, cex=0.1, main='', pch=16, col=col_palette[1], cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+    pp_cluster <- circle(cluster_type, n=Nclusters, radius=radii[i], centre=centreclusters[i,], sig=radii[i]/2)
+    #points_cluster <- superimpose(pp_cluster,points_cluster)
+    # col <- "black"
+    col <- col_palette[i%%2 + 1]
+    points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
     points <- superimpose(pp_cluster,points)
   }
   closepdf(paste(fileName, ".pdf", sep = ''))

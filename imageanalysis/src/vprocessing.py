@@ -309,7 +309,7 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
     plt.hold(True)
     if show_points is True:
-        ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=2)
+        ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5)
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -446,7 +446,7 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                     blob_color = scalarmap.to_rgba(strength)
                 ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
                               oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
-                              color=blob_color, linewidth=1.5)
+                              color=blob_color, linewidth=0.7)
                 if len(orientation) > 0:
                     for jj in orientation[ii]:
                         if cluster_color is not None:
