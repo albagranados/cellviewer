@@ -9,6 +9,7 @@ from src import vprocessing as vproc, iprocessing as iproc, statistics as stat, 
 # def main():
 #     # all the stuff
 
+reload(stat)
 plt.close('all')
 # set directories
 parent_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis'   # os.chdir(parent_dir)
@@ -22,7 +23,7 @@ experiment_author = ''; file_dir = ''; file_name = ''
 
 # # ====== MULTIPLE IMAGE STATISTICS =========
 # # ==========================================
-file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/5/output/'
+file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/6/output/'
 fileExt = '.txt'
 
 num_clusters = []; cluster_diameters = []; image_area = []; num_loc_cluster = []; ntotal = []

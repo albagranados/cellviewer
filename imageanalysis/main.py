@@ -20,24 +20,29 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/synthetic_pp/validation/6/data/'
-file_name = 'SMC3_SMC1_DMSO_000_list_drift_1740-2622_Ch1_145165_105125'; fileExt = '.txt'
+file_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2017-05-22_HeLacells_antiSMC1_WAPLkd' \
+           '&Controls_DMSO&ActDtreatment/WAPLkd_ActD/Ch1/'
+# file_name = 'WAPLkd_ActD_000_list_drift_1911-1029_Ch1_5070_7595'
+fileExt = '.txt'
+
+feature_all = []  # list of all features obtained for each training image in file_dir
 
 for jj, fileid in enumerate(os.listdir(file_dir)):
     # if jj > 0:
     #     break
-    print '\n\n\n _______START ANALYSIS_______'; iniini_time = time.time()
+    print '\n\n\n _______START ANALYSIS_______';  inini_time = time.time()
+
     file_name = fileid.split(fileExt)[0]
 
     # # ============== INPUT PARAMETERS ========
     # # ========================================
     # cell_no = str(0) + str(2)
     dict_inputfile = dict(file_name=file_name,
-                          ispp=1, compute_ROI=0, crop=1, crop_range=[170, 200, 80, 100],
+                          ispp=1, compute_ROI=0, crop=1, crop_range=[100, 125, 21, 77],
                                   pixelate=0,
                                   tessellate=1,
                           original_pixel_size=160, photonconv=0.14, resolution=1)   # [nm]/[pixel], e.g. STORM
-    analysis_pixel_size = 5  # [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+    analysis_pixel_size = 10  # 10 [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
     scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
     dict_image = dict(scale_pixel_size=scale_pixel_size,
                       original_pixel_size=dict_inputfile.get('original_pixel_size'),
@@ -45,8 +50,8 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
     # read
     if dict_inputfile.get('ispp'):
         data = util.pointpattern()
-        data.read(file_dir, file_name=file_name, fileExt='.txt', storm=0, channels_num=1, out_channel=[1, 2],
-                  save_output_dir=None, plot=True)
+        data.read(file_dir, file_name=file_name, fileExt='.txt', storm=0, channels_num=2, out_channel=[0, 1],
+                  plot=True)  # , save_output_dir=output_dir)
         points = data.points
     else:
         image = (cv2.imread(file_dir + file_name + fileExt, 0).astype(float)).T  # recall:
@@ -79,21 +84,19 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
                 # # visualization
                 iproc.plot_image(image, cmap='gray', norm='lin'); plt.title(r"pixelated image")
                 iproc.plot_image(image_blurred, cmap='gray', norm='lin'), plt.title(r"blurred pixelated image")
-                iproc.plot_feature(image, feature, cmap='gray', norm='lin', feature_name=dict_roi.get('feature_name'))
+                iproc.plot_feature(image, feature, cmap='gray', norm='lin')
                 iproc.plot_image(feature.get('image_roi'), cmap='gray', norm='lin'), plt.title('ROI')
                 print("\tDONE (time =  %.2f seconds)" % (time.time() - start_time))
             else:
                 crop_range = dict_inputfile.get('crop_range')
                 points_roi = iproc.points_2dcrop(data.points, crop_range)
-                # file_name_crop = file_name + '_' + 'Ch1' + '_' + \
-                #                 str(crop_range[0])+str(crop_range[1]) + '_' +\
-                #                 str(crop_range[2]) + str(crop_range[3])
+                # file_name_crop = file_name + '_'
                 # np.savetxt(output_dir + file_name_crop + '.txt', points_roi)
                 # points_roi = iproc.points_2dcrop(data.points2, crop_range)
-                # file_name_crop = file_name + '_' + 'Ch2' + '_' + \
-                #                 str(crop_range[0])+str(crop_range[1]) + '_' +\
-                #                 str(crop_range[2]) + str(crop_range[3])
-                # np.savetxt(output_dir + file_name_crop + '.txt', points_roi)
+                file_name_crop = file_name + '_' + \
+                                str(crop_range[0])+str(crop_range[1]) + '_' +\
+                                str(crop_range[2]) + str(crop_range[3])
+                np.savetxt(output_dir + file_name_crop + '.txt', points_roi)
         else:
             print 'No ROI computations required.'
             points_roi = points  # points_roi = iproc.compute_roi(compute_ROI, points)
@@ -129,8 +132,8 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
                                                 scale_transform='log')
             print('Done.')
             print 'Plotting Voronoi zero-rank densities image...'
-            # iproc.plot_image(image, cmap='jet', norm='lin', plot_axis='on')
-            # plt.savefig(output_dir + file_name + '_densities_image.pdf', bbox_inches='tight'); print 'Saved.'
+            iproc.plot_image(image, cmap='jet', norm='lin', plot_axis='on')
+            plt.savefig(output_dir + file_name + '_densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
             print 'Plotting Voronoi zero-rank densities point pattern...'
             threshold = float(2*vor.densities_average); vproc.threshold(vor, thr=threshold)
@@ -161,24 +164,25 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
                      original_pixel_size=dict_inputfile.get('original_pixel_size'),
 
                      # feature detection
-                     t=10, feature_name='blob',
-                     thresholding=1, threshold_percent=0.5, scale_range_is='nm', scale_ini=20, scale_end=350,
+                     t=10, feature_name='blob',  # 0.8, scale_ini=80
+                     thresholding=1, threshold_percent=0.8, scale_range_is='nm', scale_ini=60, scale_end=200,
                      # diam. of search, if pixel->analysispixel
                      scale_spacing='odd', nscales=150,
                      scale_resolution=dict_inputfile.get('resolution'),  # 'scale_resolution': 1, # (radius) in
                      # scale_range_is (if [nm] and STORM -> min. 20nm)
-                     max_filter_width=5, max_filter_depth=7,
+                     max_filter_width=7, max_filter_depth=7,
 
                      # feature description [main orientation(s)]
-                     compute_orientation=0, n_bins_ori=36, peak_ratio=0.7,
-                     sigma_ori_times=1.5, window_ori_radtimes=2, smooth_cycles=2,
+                     compute_orientation=1, n_bins_ori=36, peak_ratio=0.6,
+                     sigma_ori_times=2, window_ori_radtimes=1, smooth_cycles=2,
 
                      # feature description [histograms]
-                     compute_sift_descr=0,
-                     sigma_descr_times=1.5, window_descr_radtimes=2, n_hist=16, n_bins_descr=8, threshold_sat=0.2,
+                     compute_sift_descr=1,
+                     sigma_descr_times=2, window_descr_radtimes=1, n_hist=16, n_bins_descr=8, threshold_sat=0.2,
                      plot_graphics=0)
     util.saveparameters(output_dir + file_name + '_parameters.txt', dict1=dict_inputfile, dict2=dict_image, dict3=dict_sift)
 
+    reload(iproc); plt.close('all')
     print 'Finding intensity-dependent features (%s)...' % dict_sift.get('feature_name')
     feature = iproc.find_feature(image, dict_sift)
     print "\tnumber of (thresholded) features detected = %d" % feature.get('argmaxgrad')[0].shape
@@ -186,8 +190,7 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
 
     print 'Plotting intensity-dependent Voronoi features...'
     start_time = time.time()
-    iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='jet', norm='lin',
-                       plot_axis='on')
+    iproc.plot_feature(image, feature, cmap='jet', norm='lin', plot_axis='on', blob_color='strength')
     plt.savefig(output_dir + file_name + '_features_image.pdf', bbox_inches='tight')
     print("Done (time =  %.2f seconds)" % (time.time() - start_time))
 
@@ -196,7 +199,7 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
         start_time = time.time()
         vproc.plot_feature(vor, feature, dict_sift, show_points=True, cmap='jet', norm='log', plot_axis='on')
         plt.savefig(output_dir + file_name + '_features_pp.pdf', bbox_inches='tight')
-        print("Done (time =  %.2f seconds)" % (time.time() - start_time))
+        print ("Done (time =  %.2f seconds)" % (time.time() - start_time))
 
     print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
@@ -207,7 +210,7 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
     print 'Computing feature statistics...'
     blob_diameters = analysis_pixel_size*3*np.sqrt(feature.get('tnew'))  # in original units
     # nnd_localizations = iproc.nnd_feature(feature, dict_sift)
-    stat.plot_hist(0.5*blob_diameters, num_bins=50, xlabel=r'blob radius R [nm]')
+    stat.plot_hist(0.5*blob_diameters, num_bins=np.unique(feature.get('tnew')).shape[0]+1, xlabel=r'blob radius R [nm]')
     plt.savefig(output_dir + file_name + '_blobradius_hist.pdf', bbox_inches='tight')
     stat.plot_boxplot(0.5*blob_diameters, bptype='violin', ylabel=r'blob radius R [nm]')
     plt.savefig(output_dir + file_name + '_blobradius_boxplot.pdf', bbox_inches='tight')
@@ -248,29 +251,45 @@ for jj, fileid in enumerate(os.listdir(file_dir)):
     util.saveparameters(output_dir + file_name + '_output.txt', dict1=dict_output)
     print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
-    # # ====== IMAGE ANALYSIS ====================
-    # # ==========================================
-    if dict_sift.get('compute_orientation'):
-        plt.close('all'); reload(stat); reload(iproc)
-        print '\n _______ IMAGE ANALYSIS_______'; ini_time = time.time()
-        fig2, ax2 = plt.subplots()
-        for ii in range(2, 3):
-            fig1, ax1 = plt.subplots()
-            kmeans = stat.siftdescr_analysis(feature, dict_sift, n_cluster=ii,  max_iter=300, n_jobs=-1,
-                                             compute_pca=True, plot_graphics=True, fig=fig1, ax=ax1)
-            fig1.savefig(output_dir + file_name + '_kmeans%d' % ii + '.pdf', bbox_inches='tight')
-            ax2.plot(ii, kmeans.inertia_, 'k.', markersize=10)
-            ax2.set_ylabel('total within sum of squares'); ax2.set_xlabel('number of clusters k'); fig2.hold(True)
+    feature_all.append(feature)
+    plt.close('all')
 
-        fig2.savefig(output_dir + file_name + '_within_sum_of_squares.pdf', bbox_inches='tight')
-        iproc.plot_feature(image, feature, feature_name=dict_sift.get('feature_name'), cmap='gray', norm='log', plot_axis='on',
-                           cluster_color=kmeans.labels_)
-        plt.savefig(output_dir + file_name + '_features_image_kmeans.pdf', bbox_inches='tight')
-        plot_feature(vor, feature, dict_sift, show_points=True, cmap='jet', norm='log', plot_axis='on',
-                     cluster_color=kmeans.labels_)
+# # ====== IMAGE ANALYSIS ====================
+# # ==========================================
 
-        print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
+# # ==== CREATE VOCABULARY, unsupervised =====
+if dict_sift.get('compute_orientation'):
+    reload(stat); reload(iproc); reload(vproc); reload(util)
+    print '\n _______ IMAGE ANALYSIS_______'; ini_time = time.time()
+    k0 = 3; kn = 3; sserror = []  # build bag of words - unsupervised kmeans
+    for ii in range(k0, kn+1):
+        fig1, ax1 = plt.subplots()
+        kmeans = stat.siftdescr_analysis(feature, dict_sift, n_cluster=ii,  max_iter=300, n_jobs=-1,
+                                         compute_pca=True, plot_graphics=True, fig=fig1, ax=ax1,
+                                         cluster_cmap=util.discrete_cmap(ii, "jet"))
+        fig1.savefig(output_dir + file_name + '_kmeans%d' % ii + '.pdf', bbox_inches='tight')
 
-    print ("\n\n***FINISHED ANALYSIS (total time =  %.2f seconds)" % (time.time() - inini_time))
-    # # if __name__ == '__main__':
-    # #     main()
+        sserror.append(kmeans.inertia_)
+        iproc.plot_feature(image, feature, cmap='gray', norm='linear', plot_axis='on', blob_color='class',
+                           ori_color=kmeans.labels_, ori_cmap=util.discrete_cmap(ii, "jet"))
+        plt.savefig(output_dir + file_name + '_features_image' + '_kmeans%d' % ii + '.pdf', bbox_inches='tight')
+
+        if dict_inputfile['ispp']:
+            vproc.plot_feature(vor, feature, dict_sift, show_points=True, cmap='gray', norm='log', plot_axis='on',
+                               blob_color='class', ori_color=kmeans.labels_, ori_cmap=util.discrete_cmap(ii, "jet"))
+            plt.savefig(output_dir + file_name + '_features_pp' + '_kmeans%d' % ii + '.pdf', bbox_inches='tight')
+
+        limits = None
+        # limits = [60, 100, 20, 60]; limits = [100, 140, 20, 60]  # microtubule
+        class_color_sub = stat.bow_histogram(vor, feature, dict_sift, ori_color=kmeans.labels_,
+                                             ori_cmap=util.discrete_cmap(ii, "jet"), limits=limits)
+        plt.savefig(output_dir + file_name + '_BoWhistogram' + '_kmeans%d' % ii + '.pdf', bbox_inches='tight')
+    fig2, ax2 = plt.subplots()
+    ax2.plot(range(k0, kn+1), sserror, 'k.-', markersize=10)
+    ax2.set_ylabel('total within sum of squares'); ax2.set_xlabel('number of clusters k')
+    fig2.savefig(output_dir + file_name + '_within_sum_of_squares.pdf', bbox_inches='tight')
+    print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
+
+print ("\n\n***FINISHED ANALYSIS (total time =  %.2f seconds)" % (time.time() - inini_time))
+# # if __name__ == '__main__':
+# #     main()
