@@ -2,9 +2,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
+matplotlib.rcParams.update({'font.size': 16})
 
 
-def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, num_bins=100):
+def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, cmap=None, num_bins=100, xticks=None):
     """
     This function plots histograms. Range: min-max of data.
 
@@ -19,20 +20,31 @@ def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, num_bins=100):
     """
 
     data = data[np.where((data != float('inf')) & (data >= 0))]  # eliminate areas that are set to inf, -1 or 0
-
     if bins is not None:
-        plt.figure(), plt.hist(data, bins=bins, histtype='step',
-                               weights=np.zeros_like(data) + 1. / data.size, color='k')
+        plt.figure()
+        n, bins, patches = plt.hist(data, bins=bins, histtype='bar',
+                                    weights=np.zeros_like(data) + 1. / data.size, color='w')  # , color='k')
+        if cmap is not None:
+            for c, p in zip(range(len(bins)-1), patches):
+                plt.setp(p, 'facecolor', cmap(c))
+        # plt.hold(1)
+        if xticks is not None:
+            plt.xticks(xticks) #, ['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])
+        plt.show()
     else:
         ini = np.min(data)
         if hist_scale is 'log':
             plt.figure(), plt.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
-                                   histtype='step', weights=np.zeros_like(data) + 1. / data.size, color='k')
+                                   histtype='step', weights=np.zeros_like(data) + 1. / data.size,
+                                   color='k')
             plt.gca().set_xscale("log")
         else:
             plt.figure(), plt.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
                                    weights=np.zeros_like(data) + 1. / data.size, color='k')
+            # plt.figure(), plt.hist(data, bins=num_bins, histtype='step',
+            #                        weights=np.zeros_like(data) + 1. / data.size, color='k')
     plt.ylabel(r'frequency'); plt.xlabel(xlabel); plt.hold(0)
+    plt.gca().set_ylim(0, 0.6)
     # plt.hist(densities, bins='rice', histtype='step',  color='k'); plt.ylabel(r'counts')
 
 
@@ -170,7 +182,7 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
 
 
 def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", max_iter=300, n_jobs=-1,
-                       compute_pca=True, plot_graphics=True, fig={}, ax={}):
+                       compute_pca=True, plot_graphics=True, fig=None, ax=None, cluster_cmap=None):
     """
     This function
 
@@ -181,14 +193,13 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     Output:
     ---------
     """
-
     from sklearn.cluster import KMeans
     from sklearn.decomposition import PCA
 
     orientation = feature.get('orientation')
     argmaxgrad = feature.get('argmaxgrad')
     histogram_descr = feature.get('histogram_descr')
-    histogram = np.asarray([hist for allhist_feature in histogram_descr for hist in allhist_feature])
+    histogram = np.asarray([hist_sub for hist in histogram_descr for hist_sub in hist])
     if len(histogram) == 0:
         print 'error: please, compute orientation and descriptors histograms for SIFT'
         return None
@@ -217,29 +228,28 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     if compute_pca:
         print 'computing PCA for visualization (n_clusters = %.d)...' % n_cluster
         pca = PCA(n_components=2)
-        X = np.append(histogram, cluster_centers, axis=0)  #  shape (n_samples, n_features)
+        X = np.append(histogram, cluster_centers, axis=0)  # shape (n_samples, n_features)
         X_reduced = pca.fit_transform(X)  # array-like, shape (n_samples, n_components)
         # histogram_reduced = pca.fit_transform(histogram)  # array-like, shape (n_samples, n_components)
         # cluster_centers_reduced = pca.fit_transform(cluster_centers)  # array-like, shape (n_samples, n_components)
 
         if plot_graphics:
             if fig is None: fig, ax = plt.subplots()
+            if cluster_cmap is None: cluster_cmap = plt.cm.get_cmap('Set1')
             ax.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
-                       alpha=0.8, cmap=plt.cm.get_cmap('Set1'))
-            fig.hold(True)
+                       alpha=0.8, cmap=cluster_cmap)
+            # fig.hold(True)
             aux = 0
             for i in range(argmaxgrad[0].size):
-                for ii, ori in enumerate(np.asarray(orientation[i])):
+                for ii, ori in enumerate(np.asarray(orientation[i])):  # if empty => no in X_reduced
                     # ax.annotate('(%d,%d), ori=%.1f' % (argmaxgrad[0][i], argmaxgrad[1][i], ori),
                     #             xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
-                    ax.annotate('(%d,%d)' % (argmaxgrad[0][i], argmaxgrad[1][i]),
-                                xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
                     aux += 1
-            ax.plot(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
-                    X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], 'k*', markersize=10)
+            # ax.plot(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
+            #         X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], 'k*', markersize=10)
             # # ax.plot(cluster_centers_reduced[:,0], cluster_centers_reduced[:, 1],
             # #            'k*', markersize=10)
-            plt.xlabel(r'PCA$_1$'); plt.ylabel(r'PCA$_2$')
+            plt.xlabel(r'PCA$_1$'); plt.ylabel(r'PCA$_2$'); plt.title('k=%d' % n_cluster)
             plt.show(); fig.hold(False)
 
             # arg = 0; hist_ind = 0
@@ -258,3 +268,58 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     return kmeans
 
 #  kmeans.predict([[0, 0], [4, 4]])
+
+
+def bow_histogram(vor, feature, dict_sift,  ori_color, ori_cmap=None, limits=None,
+                  blob_diameter_thr=[-float('inf'), float('inf')]):
+    """
+    histogram of words for that particular point pattern (vor)
+
+    Input:
+    --------
+    dict_sift (dictionary - input)
+    ori_color (list) = if not None, for all orientations, assigned classes
+    ori_cmap = if not None, discrete cmap for vocabulary - output clustering/unsupervised learing.
+    """
+
+    feature_name = dict_sift.get('feature_name')
+    scale_pixel_size = dict_sift.get('scale_pixel_size')
+    analysis_pixel_size = scale_pixel_size * dict_sift.get('original_pixel_size', 1)
+    argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
+    orientation = feature.get('orientation', [])
+    blob_diameters = analysis_pixel_size * 3 * np.sqrt(feature.get('tnew'))
+
+    ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
+    ori_color_sub = []  #
+    if feature_name == 'blob':
+        hist_ind = 0   # plot orientation with colorcode from clustering algorithm (label)
+        for ii, by in enumerate(argmaxgrad[1]):
+                x = ox + argmaxgrad[0][ii]*scale_pixel_size
+                y = oy + by*scale_pixel_size
+                if len(orientation) > 0:
+                    for jj in orientation[ii]:  # loop just to update hist_ind
+                        if blob_diameter_thr[0] < blob_diameters[ii] < blob_diameter_thr[1]:
+                            if limits is None:
+                                ori_color_sub.append(ori_color[hist_ind])  # if no thr & no limits = labels
+                            elif limits[0] < x < limits[1] and limits[2] < y < limits[3]:
+                                ori_color_sub.append(ori_color[hist_ind])
+                        hist_ind += 1
+                    # mean = 0
+                    # for jj, ori in enumerate(orientation[ii]):
+                    #     ori_color = scalarmap_clusters.to_rgba(ori_color[hist_ind])
+                    #     mean += ori_color[hist_ind]
+                    #     hist_ind += 1
+                    # orir_color_argmaxgrad[ii] = round(mean/(float(jj)+1.))
+                else:
+                    print 'Error: SIFT descriptors missing.'
+        # argmaxgrad[0] = ox+argmaxgrad[0]*scale_pixel_size
+        # argmaxgrad[1] = oy+argmaxgrad[1]*scale_pixel_size
+        # np.where((argmaxgrad[0] > limits[0])&(argmaxgrad[0] < limits[2])&
+        #          (argmaxgrad[1] > limits[1])&(argmaxgrad[1] < limits[3]))
+
+        plot_hist(np.asarray(ori_color_sub),
+                  bins=np.append(np.unique(ori_color_sub), np.max(ori_color_sub)+1)-0.5,
+                  cmap=ori_cmap, xlabel=r'cluster no.', xticks=np.unique(ori_color_sub))
+
+        return ori_color_sub
+

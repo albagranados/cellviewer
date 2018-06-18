@@ -426,6 +426,7 @@ def get_blob(image, kwargs):
         image_roi = flood_fill(image_roi)
         # end
 
+        aux = 0
         if compute_orientation:
             print '\tComputing feature orientations...'
             n_bins_ori = kwargs.get('n_bins_ori', 36)
@@ -441,26 +442,34 @@ def get_blob(image, kwargs):
             for ii, by in enumerate(argmaxgrad[1]):
                 scale_index = np.where(scale_range == tnew[ii])
                 bx = argmaxgrad[0][ii]
-                print '\t\t(bx,by)=(%d,%d)... ' % (bx, by),
                 sigma_ori = sigma_ori_times * np.sqrt(tnew[ii])
                 # 1.5 is gaussian sigma for orientation assignment (lambda_ori in Re13)
-                radius = int(np.floor(window_ori_radtimes * sigma_ori))
+                radius_ori = int(np.floor(window_ori_radtimes * sigma_ori))
                 # radius of the (squared) region in ori assignment
 
+                # print '\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& NEW POINT &&&&&&&&&&&'
+                # print '(bx,by)=', bx, by, '\t orientation_hist \pm ', radius_ori
                 ori = orientation_hist(l[scale_index[0]], bx, by, lx[scale_index[0]][0], ly[scale_index[0]][0],
-                                       radius, sigma_ori, n_bins_ori, peak_ratio, smooth_cycles, image_original=image,
-                                       plot_graphics=plot_graphics)
+                                          radius_ori, sigma_ori, n_bins_ori, peak_ratio, smooth_cycles,
+                                          image_original=image,
+                                          plot_graphics=plot_graphics)
                 orientation.append(ori)
-                print 'Orientation(s) computed.'
+                # print 'Orientation(s) computed.'
                 if compute_sift_descr:
-                    print '\t\t\t Computing sift descriptor(s)...',
+                    if ii == 0: print '\t\t\t Computing sift descriptor(s)...',
                     sigma_descr = sigma_descr_times*np.sqrt(tnew[ii])
                     radius_descr = int(np.floor(window_descr_radtimes * sigma_descr))
+                    # print '\n(bx,by)=', bx, by, '\t sift_descriptor \pm ', radius_descr
                     hist = sift_descriptor(l[scale_index[0]][0], bx, by, lx[scale_index[0]][0],
                                            ly[scale_index[0]][0], radius_descr, ori, n_hist, n_bins_descr,
                                            threshold_sat, plot_graphics, image_original=image)
                     histogram_descr.append(hist)
-                    print 'Done.'
+                    # if hist != []: aux = aux + len(hist)
+                    if hist == []:
+                        # print 'sift descriptor in Nan region -> ori set to [], even if in non-nan region.'
+                        orientation[-1] = []
+                    # print 'Done.'
+            # print 'number of no-empty elements in histogram_descr = ', aux
             print '\t\tDONE'
 
     return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew, 'scale_range': scale_range,
@@ -606,8 +615,8 @@ def get_gauss_filter(t=10):
     """
     # x = np.linspace(-5 * np.sqrt(t), 5 * np.sqrt(t), num=np.floor(5 * np.sqrt(t) + 5 * np.sqrt(t))+1)
     t0 = t
-    num_steps = 2. * round((2 * 5 * np.sqrt(t0) + 1) / 2) - 1
-    x = np.linspace(-5 * np.sqrt(t0), 5 * np.sqrt(t0), num=num_steps)  # sensitive to this, of course!
+    num_steps = 2. * round((2 * 3 * np.sqrt(t0) + 1) / 2) - 1  # with 3, 99.7% of data
+    x = np.linspace(-3 * np.sqrt(t0), 3 * np.sqrt(t0), num=num_steps)  # sensitive to this, of course!
     s = np.sqrt(t)
 
     g = 1. / (s * np.sqrt(2 * np.pi)) * np.exp(-1 * (x * x) / (2 * s * s))
@@ -625,19 +634,21 @@ def get_gauss_filter(t=10):
     return {'g': g, 'dg': dg, 'ddg': ddg, 'dddg': dddg}
 
 
-def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, plot_axis='on',
-                 feature_name='blob', blob_color=None, cluster_color=None):
+def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None, plot_axis='on',
+                 blob_color='strength', ori_color=None, ori_cmap=None):
     """
     Function for plotting scale-space feature
 
     Input:
     --------
     image (ndarray)
-    feature (dictionary): {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew', 'scale_range'}
+    feature (dictionary)
     cmap: map of the image
     norm (string): 'log', 'lin'. Scale of imshow. E.g.,
-        if norm is 'log':
-        plt.imshow(image.T, interpolation='none', cmap='jet', origin='lower', norm=LogNorm())
+        if norm is 'log':  plt.imshow(image.T, interpolation='none', cmap='jet', origin='lower', norm=LogNorm())
+    blob_color = 'strength', 'scale', 'class'
+    ori_color (list) = if not None, for all orientations, assigned classes
+    ori_cmap = if not None, discrete cmap for vocabulary - output clustering/unsupervised learing.
 
     Output:
     --------
@@ -645,6 +656,8 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     """
     from matplotlib.colors import LogNorm
     import matplotlib.colors as colors
+    from src import utilities as util
+    from collections import Counter
 
     fig, ax = plot_image(image, cmap=cmap, interpolation=interpolation, norm=norm, plot_axis=plot_axis, hold=True)
     plt.hold(1)
@@ -653,20 +666,18 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
     featurestrength = feature.get('featurestrength')
     orientation = feature.get('orientation', [])
 
-    if blob_color is None:
-        cmap = plt.cm.gray
-        # values = featurestrength[argmaxgrad[0], argmaxgrad[1]]  # range(argmaxgrad[0].shape[0])
-        values = featurestrength  # range(argmaxgrad[0].shape[0])
-        # values = np.sqrt(tnew) * 2*1.5
-        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))  # colors.Normalize(vmin=0,vmax=np.max(values))
-        # vmax=values[-1]) . LogNorm, Normalize
-        scalarmap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
-        scalarmap.set_array(values)
-    if cluster_color is not None:
-        cmap = plt.get_cmap('Set1', np.max(cluster_color) - np.min(cluster_color) + 1)
-        scalarmap_clusters = plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=np.max(cluster_color)),
-                                                   cmap=cmap)
-        scalarmap_clusters.set_array(cluster_color)
+    if ori_color is not None and ori_cmap is None: ori_cmap = plt.cm.get_cmap('Set1')
+    if blob_color == 'strength' or blob_color == 'scale':
+        values = []
+        if blob_color is 'strength': values = featurestrength
+        elif blob_color is 'scale': values = np.sqrt(tnew) * 2*1.5
+        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
+        blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
+        blob_cmap.set_array(values)
+    elif blob_color is 'class':
+        if ori_cmap is None: raise ValueError('Error in iproc.plot_feature: introduce ori_color.')
+        blob_cmap = ori_cmap
+    else: ValueError('Error in iproc.plot: introduce blob_color \in (strength, scale, class)')
 
     if feature_name == 'edge':
         plt.plot(argmaxgrad[0], argmaxgrad[1], 'r.', markersize=5)
@@ -676,92 +687,38 @@ def plot_feature(image, feature, cmap='gray', interpolation='none', norm=None, p
         ucirc = np.array([np.cos(cval), np.sin(cval)])
         hist_ind = 0   # plot orientation with colorcode from clustering algorithm (label)
         for ii, by in enumerate(argmaxgrad[1]):
-            # if tnew[ii] == feature.get('scale_range')[0]:
-            # if nloc is not None and nloc[ii]==4:
-                bx = argmaxgrad[0][ii]
-                # # if strength < 1:
-                if scalarmap is not None:
-                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5
-                    # strength = featurestrength[argmaxgrad[0][ii], argmaxgrad[1][ii]]
-                    strength = featurestrength[ii]
-                    blob_color = scalarmap.to_rgba(strength)  # values[ii])
-                ax.plot(ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx, ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 +
-                        by, color=blob_color, linewidth=0.7)
-                # ax.text(1.1* np.sqrt(tnew[ii]) * 1*1.5 + bx, 1.1* np.sqrt(tnew[ii]) * 1*1.5 + by, '%.2f'%strength,
-                #         color='k')
-                print '\t\tfeature %d detected \tat (%d, %d)\t diameter=%.0f[px]\t strength=%.2f' \
-                      % (ii, bx, by, 3*np.sqrt(tnew[ii]), strength)
-                # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='r')
-                if len(orientation) > 0:
-                    for jj in orientation[ii]:
-                        if cluster_color is not None:
-                            ori_color = scalarmap_clusters.to_rgba(cluster_color[hist_ind])
-                            hist_ind += 1
-                        else:
-                            ori_color = blob_color
-                        plt.arrow(bx, by,
-                                  np.sqrt(tnew[ii]) * 1*1.5 * np.cos(jj), np.sqrt(tnew[ii]) * 1*1.5 * np.sin(jj),
-                                  head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.2)
-        fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
-        # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - analysis]')
+            bx = argmaxgrad[0][ii]
+            # # plot arrows dominant orientations
+            if len(orientation) > 0:  # if descriptors have been computed
+                mean = []
+                # if orientation[ii] == []: print 'empty at hist_ind = ', hist_ind, ' ; argmaxgrad ii = ', ii
+                for jj, ori in enumerate(orientation[ii]):  # if [] => skip, this blob is not in the analysis
+                    if ori_color is not None:  # colors according to unsupervised
+                        o_color = ori_cmap(ori_color[hist_ind])
+                        mean.append(ori_color[hist_ind])
+                        hist_ind += 1
+                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(featurestrength[ii])
+                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+                    plt.arrow(bx, by,
+                              np.sqrt(tnew[ii]) * 1.5 * np.cos(ori), np.sqrt(tnew[ii]) * 1.5 * np.sin(ori),
+                              head_width=0, head_length=0, fc=o_color, ec=o_color, fill=True, linewidth=1.7)
+                if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
+            # # plot blobs - detected features
+            if blob_color == 'strength': b_color = blob_cmap.to_rgba(featurestrength[ii])
+            elif blob_color == 'scale': b_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+            elif blob_color == 'class':
+                if len(orientation[ii]) == 0: b_color = 'None'
+                else: b_color = blob_cmap(mean)
+            ax.plot(ucirc[0, :]*np.sqrt(tnew[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(tnew[ii])*1.5 +
+                    by, color=b_color, linewidth=1.7)
+            # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='r')
+        # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+        # fig.colorbar(blob_cmap, label='3$\sqrt{t}$ [pixel - analysis]')
 
-    ax.set_xlim(0, image.T.shape[1])
-    ax.set_ylim(0, image.T.shape[0])
+    ax.set_xlim(0, image.T.shape[1]); ax.set_ylim(0, image.T.shape[0])
     ax.set_aspect('equal', adjustable='box')
 
     return ax.figure
-
-
-# def compute_sift(image, feature, n_bins_ori=18, peak_ratio=0.8, smooth_cycles=1, sigma_ori_times=2,
-#                  window_ori_radtimes=3):
-#     """
-#     Compute Scale-Invariant Feature Transformation (SIFT, "Distinctive Image Features from Scale-Invariant
-#     Keypoints", Lowe, 2004)
-#     [X, Y, S, TH, D]. computes the SIFT descriptors as well. Each column of D is the descriptor of the corresponding
-#     frame.A descriptor is a 128 - dimensional vector. X, Y is the center of the frame, S is the scale and TH is the
-#     orientation (in radians).
-#
-#     Input:
-#     -----------
-#     n (int): num bins
-#
-#     Output:
-#     ------------
-#
-#     """
-#     argmaxgrad = feature.get('argmaxgrad')
-#     tnew = feature.get('tnew')  # 1d-array
-#     scale_range = feature.get('scale_range')
-#
-#     l = np.zeros(shape=(len(scale_range), image.shape[0], image.shape[1]))
-#     lx = np.zeros(shape=(len(scale_range), image.shape[0], image.shape[1]))
-#     ly = np.zeros(shape=(len(scale_range), image.shape[0], image.shape[1]))
-#     for ii in range(len(scale_range)):
-#         scalespace = compute_space_derivatives(image, scale_range[ii])
-#         l[ii] = scalespace.get('l')
-#         lx[ii] = -1.*scalespace.get('lx')  # local minima, gradient descent, pointing from white to black (1->0)
-#         ly[ii] = -1.*scalespace.get('ly')
-#
-#     feature_ori = []
-#     for ii, by in enumerate(argmaxgrad[1]):
-#         scale_index = np.where(scale_range == tnew[ii])
-#         bx = argmaxgrad[0][ii]
-#         sigma_ori = sigma_ori_times*np.sqrt(tnew[ii])  # 1.5 is gaussian sigma for orientation assignment (lambda_ori
-#         #  in Re13)
-#         radius = int(np.floor(window_ori_radtimes*sigma_ori))  # radius of the (squared) region used in orientation
-#         # assignment
-#         ori = orientation_hist(l[scale_index[0]], bx, by, lx[scale_index[0]], ly[scale_index[0]],
-#                                radius, sigma_ori, n_bins_ori, peak_ratio, smooth_cycles, image_original=image)
-#         feature_ori.append(ori)
-#
-#         plt.figure()
-#         plt.imshow(image.T, interpolation='none', cmap='gray', origin='low')
-#         plt.hold(True)
-#         for i in ori:
-#             plt.arrow(bx, by, 10*np.cos(i), 10*np.sin(i), head_width=1, head_length=1, fc='r', ec='r')
-#             plt.show()
-#
-#     return feature_ori
 
 
 def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_ratio=0.8, smooth_cycles=2,
@@ -773,17 +730,18 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
 
     from matplotlib.colors import LogNorm
 
-    hist = np.zeros(shape=n_bins_ori)
-    if bx-np.sqrt(2)*radius < 0 or bx+np.sqrt(2)*radius > image.shape[1] or by-np.sqrt(2)*radius < 0 or \
-                            by+np.sqrt(2)*radius > image.shape[2]:
-        return []
+    hist = np.zeros(shape=n_bins_ori)  # lx.shape=image.shape (row,cols), transpose from reading image =>
+    # bx-by=row-col in this case!
     grad_x = lx[bx-radius:bx+radius+1, by-radius:by+radius+1]
     grad_y = ly[bx-radius:bx+radius+1, by-radius:by+radius+1]
-    locgrid_x, locgrid_y = np.meshgrid(np.linspace(bx - radius, bx + radius, 2*radius+1),
+    # print 'lx.shape=', lx.shape
+    # fig, ax = plot_image(lx.T, cmap='jet', interpolation='none', hold=True)
+    if np.isnan(grad_x).any() or np.isnan(grad_y).any():
+        return []
+    locgrid_x, locgrid_y = np.meshgrid(np.linspace(bx - radius, bx + radius, 2*radius+1), # cart. ref. frame
                                        np.linspace(by - radius, by + radius, 2*radius + 1))
     weights = np.exp(-((locgrid_x-bx)**2 + (locgrid_y-by)**2)/(2*sigma_ori**2))
-
-    ori = np.arctan2(grad_x, grad_y)
+    ori = np.arctan2(grad_x, grad_y)  # in the image.T reference (rotate) -> (bx,by)
     contr = np.multiply(weights, np.sqrt(grad_x**2 + grad_y**2))  # contribution to the histogram
 
     # build histogram
@@ -803,13 +761,13 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
         # plots
         plt.figure()
         ax = plt.subplot(1, 2, 1)
-        plt.imshow(image_original.T, interpolation='none', cmap='gray', origin='lower', norm=LogNorm())
+        plt.imshow(image_original.T, interpolation='none', cmap='gray', origin='lower')  #, norm=LogNorm())
         plt.hold(True)
         for i in range(0, 2*radius+1, 4):
             y = by + i - radius
             for j in range(0, 2*radius+1, 4):
                 x = bx + j - radius  # col
-                ax.arrow(x, y, weights[j, i]*grad_y[j, i], weights[j, i]*grad_x[j, i],
+                ax.arrow(x, y, weights[j, i]*grad_y[j, i], weights[j, i]*grad_x[j, i],  # good!
                          head_width=0.2, head_length=0.2, fc='r', ec='r')
         plt.show()
         plt.subplot(1, 2, 2); plt.bar(np.arange(n_bins_ori), hist, color='0.5', align='center')
@@ -844,7 +802,9 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
     from matplotlib.colors import LogNorm
 
     orientation = np.asarray(orientation)
+
     if orientation.size == 0:
+        # print '=============================== Because no main orienations, compute_orientation returns []'
         return []
 
     # image = image_test
@@ -869,10 +829,8 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
     # ly = -1.*scalespace.get('ly')
 
     n_hist_x = np.sqrt(n_hist)
-    grid_x, grid_y = np.meshgrid(np.arange(0, image.shape[0]), np.arange(0, image.shape[1]))
-    if bx - np.sqrt(2)*radius < 0 or bx + np.sqrt(2)*radius > image.shape[0] or by - np.sqrt(2)*radius < 0 or by + \
-            np.sqrt(2)*radius > image.shape[1]:
-        return []
+    grid_x, grid_y = np.meshgrid(np.arange(0, image.shape[0]), np.arange(0, image.shape[1]))  # OK, 'image' is
+    # rotated: #rows=xlim; #cols=ylim
 
     histogram = []
     for ori in orientation:
@@ -897,8 +855,11 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
         pos_ref = R_inv.dot(np.array([pos[1]-bx, pos[0]-by]))
         hist_ind = np.floor((pos_ref[0]+radius)//(2.*radius/n_hist_x*1.000001) + n_hist_x*((pos_ref[1]+radius)//(
-            2.*radius/n_hist_x)*1.000001))
+                   2.*radius/n_hist_x)*1.000001))
         grad_x = lx[pos[1], pos[0]]; grad_y = ly[pos[1], pos[0]]
+        if np.isnan(grad_x).any() or np.isnan(grad_y).any():
+            # print '=============================== blob in nan region. compute_orientation returns []'
+            return []
         ori_all = (np.arctan2(grad_x, grad_y) - ori)*180.//np.pi % 360
 
         weights = np.exp(-((pos[0]-by)**2 + (pos[1]-bx)**2)/(2*radius**2))
@@ -907,7 +868,7 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
         # build the histogram
         hist = np.zeros(shape=(n_hist*n_bins_descr))
         ori_all_bins = np.floor(ori_all / (360 / n_bins_descr))
-        # print '\n******************ori=', ori
+        # print '\n(bx,by)=', bx, by, ' ******************ori=', ori
         # print np.min(hist_ind), np.min(np.arctan2(grad_x, grad_y) - ori), np.min(ori_all), np.min(ori_all_bins)
         # print np.max(hist_ind), np.max(np.arctan2(grad_x, grad_y) - ori), np.max(ori_all), np.max(ori_all_bins)
         # print 'hist_ind[0]=', hist_ind[0]
@@ -919,8 +880,8 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
         # normalize descriptor vectors
         hist /= np.linalg.norm(hist)
         hist[np.where(hist > threshold_sat)] = threshold_sat  # we reduce the influence of large gradient
-                # magnitudes by thresholding the values in the unit feature vector to each be no larger than
-                # 0.2, and then renormalizing to unit length.
+        # magnitudes by thresholding the values in the unit feature vector to each be no larger than 0.2,
+        # and then renormalizing to unit length.
         hist /= np.linalg.norm(hist)
 
         # print bx, by
@@ -952,7 +913,7 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
             plt.figure(); plt.title('center = (%d,%d), ori = %f' % (bx, by, ori))
             ax = plt.subplot(1, 2, 1)
-            plt.imshow(image.T, interpolation='none', cmap='gray', origin='lower', norm=LogNorm())
+            plt.imshow(image.T, interpolation='none', cmap='gray', origin='lower')  # , norm=LogNorm())
             # plt.imshow(image.T, interpolation='none', cmap='gray', origin='lower')
             plt.show(); plt.hold(True)
             ax.autoscale(False); ax.hold(True)
@@ -979,6 +940,8 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
                 ind = 4*(3-ii//4) + ii % 4
                 plt.subplot(4, 8, (ii//4+1)*4+ii+1)
                 # plt.subplot(4, 4, ii+1)
+                print 'checking histogram sift:'
+                print n_bins_descr*ind, ' to ', n_bins_descr*ind+n_bins_descr
                 plt.bar(np.arange(n_bins_descr), hist[n_bins_descr*ind:n_bins_descr*ind+n_bins_descr], color='0.5',
                         align='center')
                 plt.xticks(np.linspace(0, n_bins_descr, 5), ['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])

@@ -50,12 +50,13 @@ class pointpattern():
 
                 if len(np.unique(self.channels)) > 2:
                     print '\tSTORM file with more than 2 channels. Please, double check.'
-                for jj in out_channel:
-                    if jj == 1:
-                       self.points1 = self.points[np.where(self.channels == ii)]
+                for jj, ch in enumerate(out_channel):
+                    if jj == 0:
+                       self.points1 = self.points[np.where(self.channels == ch)]
                        print '\tChannel 1 in .points1.'
-                    if jj == 2:
-                        self.points2 = self.points[np.where(self.channels == ii)]
+                    if jj == 1:
+                        print 'in out_channel==2'
+                        self.points2 = self.points[np.where(self.channels == ch)]
                         print '\tChannel 2 in .points2.'
 
             if not storm:
@@ -63,8 +64,10 @@ class pointpattern():
 
             if save_output_dir is not None:
                 if channels_num == 2:
-                    np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt, self.points[np.where(channels == 1)])
-                    np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt, self.points[np.where(channels == 2)])
+                    np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt,
+                               self.points[np.where(self.channels == out_channel[0])])
+                    np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt,
+                               self.points[np.where(self.channels == out_channel[1])])
                 if channels_num == 1:
                     np.savetxt(save_output_dir + file_name + fileExt, self.points)
 
@@ -384,6 +387,7 @@ def violin_plot(ax, data1, pos1, data2={}, pos2={}, bp=False, xlabel='', ylabel=
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
+
 def plot_frameno(points, frame_no):
     import matplotlib.colors as colors
     import matplotlib.cm as cmx
@@ -404,3 +408,17 @@ def plot_frameno(points, frame_no):
         plt.hold(True)
     plt.colorbar(scalarMap, label='Frame number')
     plt.hold(False)
+
+
+def discrete_cmap(N, base_cmap=None):
+    """Create an N-bin discrete colormap from the specified input map"""
+
+    # Note that if base_cmap is a string or None, you can simply do
+    #    return plt.cm.get_cmap(base_cmap, N)
+    # The following works for string, None, or a colormap instance:
+
+    base = plt.cm.get_cmap(base_cmap)
+    color_list = base(np.linspace(0, 1, N))
+    cmap_name = base.name + str(N)
+
+    return base.from_list(cmap_name, color_list, N)

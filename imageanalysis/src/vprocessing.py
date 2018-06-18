@@ -392,22 +392,23 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
 
 
 def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cmap='jet', norm=None,
-                 blob_color=None, cluster_color=None):
+                 blob_color='strength', ori_color=None, ori_cmap=None):
     """
     Function for plotting scale-space feature on Vornoi tessellation (STORM pixel size)
 
     Input:
     --------
-    vor
-    feature (dictionary): {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength,  'tnew': tnew,
-    'scale_range': scale_range}
-    dict_densities_image: we need 'feature_name', 'scale_pixel_size' (=analysis pixel size / original pixel size),
-    'argmaxgrad', 'tnew'
+    feature (dictionary)
+    cmap: map of the image density map (if not just points)
+    norm (string): 'log', 'lin'. Scale of imshow. E.g.,
+        if norm is 'log':  plt.imshow(image.T, interpolation='none', cmap='jet', origin='lower', norm=LogNorm())
+    blob_color = 'strength', 'scale', 'class'
+    ori_color (list) = if not None, for all orientations, assigned classes
+    ori_cmap = if not None, discrete cmap for vocabulary - output clustering/unsupervised learing.
 
-    norm (string): 'log' or 'lin'. It is only used in iprocessing.plot_feature as
-            plt.imshow(image.T, interpolation='none', cmap='jet', origin='lower', norm=LogNorm())
     """
     import matplotlib.colors as colors
+    from collections import Counter
 
     feature_name = dict_sift.get('feature_name')
     scale_pixel_size = dict_sift.get('scale_pixel_size')
@@ -416,56 +417,72 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
     featurestrength = feature.get('featurestrength')
     orientation = feature.get('orientation', [])
 
-    fig, ax = plot_densities(vor, plot_axis=plot_axis, show_points=show_points, cmap=cmap, norm=norm, hold=True)
+    # fig, ax = plot_densities(vor, plot_axis=plot_axis, show_points=show_points, cmap=cmap, norm=norm, hold=True)
+    fig, ax = plt.subplots()
+    ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5)
+    ax.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max()); ax.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
+    ax.set_aspect('equal', adjustable='box'); plt.hold('True')
+
     ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
 
-    if blob_color is None:
-        cmap = plt.cm.gray
-        # values = np.sqrt(tnew) * 2*1.5*scale_pixel_size
-        values = featurestrength  # range(argmaxgrad[0].shape[0])
+    if ori_color is not None and ori_cmap is None: ori_cmap = plt.cm.get_cmap('Set1')
+    if blob_color == 'strength' or blob_color == 'scale':
+        values = []
+        if blob_color is 'strength': values = featurestrength
+        elif blob_color is 'scale': values = np.sqrt(tnew) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
-        scalarmap = plt.cm.ScalarMappable(norm=cnorm, cmap=cmap)  # norm=cNorm
-        scalarmap.set_array(values)
-    if cluster_color is not None:
-        cmap = plt.get_cmap('Set1', np.max(cluster_color) - np.min(cluster_color) + 1)
-        scalarmap_clusters = plt.cm.ScalarMappable(norm=colors.Normalize(vmin=0, vmax=np.max(cluster_color)), cmap=cmap)
-        scalarmap_clusters.set_array(cluster_color)
+        blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
+        blob_cmap.set_array(values)
+    elif blob_color is 'class':
+        if ori_cmap is None: raise ValueError('Error in iproc.plot_feature: introduce ori_color.')
+        blob_cmap = ori_cmap
+    else: ValueError('Error in iproc.plot: introduce blob_color \in (strength, scale, class)')
+
     if feature_name == 'edge':
-        plt.plot(argmaxgrad[0], argmaxgrad[1], 'ko', markersize=3)
+        plt.plot(argmaxgrad[0], argmaxgrad[1], 'r.', markersize=5)
+
     if feature_name == 'blob':
         cval = (2 * np.pi * np.linspace(0, 1, num=50))
         ucirc = np.array([np.cos(cval), np.sin(cval)])
-        hist_ind = 0
+        hist_ind = 0   # plot orientation with colorcode from clustering algorithm (label)
         for ii, by in enumerate(argmaxgrad[1]):
-            # if tnew[ii] == feature.get('scale_range')[0]:
-                bx = argmaxgrad[0][ii]
-                # if strength < 1:
-                if scalarmap is not None:
-                    # strength = np.sqrt(tnew[ii]) * 2 * 1.5*scale_pixel_size
-                    strength = featurestrength[ii]
-                    blob_color = scalarmap.to_rgba(strength)
-                ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
-                              oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
-                              color=blob_color, linewidth=0.7)
-                if len(orientation) > 0:
-                    for jj in orientation[ii]:
-                        if cluster_color is not None:
-                            ori_color = scalarmap_clusters.to_rgba(cluster_color[hist_ind])
-                            hist_ind += 1
-                        else:
-                            ori_color = blob_color
-                        plt.arrow(ox + bx*scale_pixel_size, oy + by*scale_pixel_size,
-                                  np.sqrt(tnew[ii]) * 1 * 1.5 * np.cos(jj)*scale_pixel_size,
-                                  np.sqrt(tnew[ii]) * 1 * 1.5 * np.sin(jj)*scale_pixel_size,
-                                  head_width=0, head_length=0, fc=ori_color, ec=ori_color, fill=True, width=0.1)
-        fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+            bx = argmaxgrad[0][ii]
+            # # plot arrows dominant orientations
+            if len(orientation) > 0:  # if descriptors have been computed
+                mean = []
+                # if orientation[ii] == []: print 'empty at hist_ind = ', hist_ind, ' ; argmaxgrad ii = ', ii
+                for jj, ori in enumerate(orientation[ii]):  # if [] => skip, this blob is not in the analysis
+                    if ori_color is not None:  # colors according to unsupervised
+                        o_color = ori_cmap(ori_color[hist_ind])
+                        mean.append(ori_color[hist_ind])
+                        hist_ind += 1
+                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(featurestrength[ii])
+                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+                    plt.arrow(ox + bx * scale_pixel_size, oy + by * scale_pixel_size,
+                              np.sqrt(tnew[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size,
+                              np.sqrt(tnew[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size,
+                              head_width=0, head_length=0, fc=o_color, ec=o_color, fill=True, linewidth=1.7)
+                if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
+            # # plot blobs - detected features
+            if blob_color == 'strength':
+                b_color = blob_cmap.to_rgba(featurestrength[ii])
+            elif blob_color == 'scale':
+                b_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+            elif blob_color == 'class':
+                if len(orientation[ii]) == 0:
+                    b_color = 'None'
+                else:
+                    b_color = blob_cmap(mean)
+            ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
+                          oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
+                          color=b_color, linewidth=1.7)
+        # fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])
         ax.axes.get_yaxis().set_ticks([])
-
     plt.hold(False)
 
     return ax
