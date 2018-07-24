@@ -185,7 +185,7 @@ def blur_image(image, t):
     return image_blurred
 
 
-def find_feature(image, kwargs):
+def find_feature(image, kwargs, image_descr=None):
     """
     Find ROI corresponding to the nucleus to be processed.
 
@@ -199,6 +199,7 @@ def find_feature(image, kwargs):
         'feature_name' (string): 'edge' or 'blob'
         'thresholding' (bool) - True or False, depending whether we want to capture only the strongest feature responses
         'threshold_percent' (float 0<.<=1): the threshold_percent*100 strongest responses. Default 0.4.
+    image: if not empty, then we use image_descr for the feature descriptors, different from the feature detection.
 
     Output:
     ---------
@@ -214,26 +215,26 @@ def find_feature(image, kwargs):
         feature = get_edge(image, kwargs)
 
     if feature_name == 'blob':
-        feature = get_blob(image, kwargs)
+        feature = get_blob(image, kwargs, image_descr=image_descr)
 
     #  # begin: this code below has been moved to get_blob -> we compute orientations just in the thresholded features.
     # argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    # featurestrength = feature.get('featurestrength')  # 2d-array
-    # tnew = feature.get('tnew')
+    # strength = feature.get('strength')  # 2d-array
+    # scale = feature.get('scale')
     # if thresholding:
     #     threshold_percent = kwargs.get('threshold_percent', 0.4)  # default 40% down the maximum response
-    #     threshold = np.max(featurestrength[argmaxgrad])-threshold_percent*(np.max(featurestrength[argmaxgrad]) -
-    #                                                                        np.min(featurestrength[argmaxgrad]))
+    #     threshold = np.max(strength[argmaxgrad])-threshold_percent*(np.max(strength[argmaxgrad]) -
+    #                                                                        np.min(strength[argmaxgrad]))
     # else:
     #     threshold = -float('inf')
     #
     # feature['threshold'] = threshold
     #
-    # temp = np.where(featurestrength[argmaxgrad] > threshold)  # tuple
+    # temp = np.where(strength[argmaxgrad] > threshold)  # tuple
     # argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
     # feature['argmaxgrad'] = argmaxgrad_threshold
-    # tnew_threshold = tnew[temp[0]]
-    # feature['tnew'] = tnew_threshold
+    # scale_threshold = scale[temp[0]]
+    # feature['scale'] = scale_threshold
     # image_roi = np.zeros(image.shape)
     # image_roi[argmaxgrad_threshold] = 1
     # image_roi = flood_fill(image_roi)
@@ -272,7 +273,7 @@ def flood_fill(test_array, h_max=255):
     return output_array
 
 
-def get_blob(image, kwargs):
+def get_blob(image, kwargs, image_descr=None):
     """
     detection of very Large OBject
 
@@ -285,8 +286,8 @@ def get_blob(image, kwargs):
     ---------
     dictionary with
      'argmaxgrad' (tupla for 2d-array - image): argmaxgrad
-     'featurestrength' (2d-array): blobstrength
-     'tnew' (1d-array length argmaxgrad): selected scale parameter (variance of Gaussian kernel)
+     'strength' (2d-array): blobstrength
+     'scale' (1d-array length argmaxgrad): selected scale parameter (variance of Gaussian kernel)
 
     """
     from scipy.ndimage.filters import maximum_filter
@@ -312,15 +313,15 @@ def get_blob(image, kwargs):
         lxx = scalespace.get('lxx')
         lyy = scalespace.get('lyy')
         laplacian = lxx + lyy
-        featurestrength = -t ** gamma * laplacian  # +t** -> find minima
+        strength = -t ** gamma * laplacian  # +t** -> find minima
 
         dila = np.ones(shape=(max_filter_width, max_filter_width), dtype=float)
         dila[max_filter_width/2, max_filter_width/2] = 0
-        featurestrength_dila = maximum_filter(featurestrength, footprint=dila, mode='constant', cval=-float('inf'))
-        argmaxgrad = np.where(featurestrength > featurestrength_dila)
+        strength_dila = maximum_filter(strength, footprint=dila, mode='constant', cval=-float('inf'))
+        argmaxgrad = np.where(strength > strength_dila)
 
-        tnew = np.ones(len(argmaxgrad[0])) * t
-        scale_range = tnew
+        scale = np.ones(len(argmaxgrad[0])) * t
+        scale_range = scale
     else:
         print '\tComputing scale range...'
         if scale_spacing is 'odd':
@@ -354,7 +355,7 @@ def get_blob(image, kwargs):
                 scale_range = (3**-2)*(1./pixel_size*np.linspace(scale_ini, scale_end, num=nscales))**2
         print '\tAnalyzing', nscales, 'scales (from t = %.2f to t = %.2f):' % (scale_range[0],
                                                                                scale_range[len(scale_range)-1])
-        strength = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
+        laplacian_mod = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         l = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         lx = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
         ly = np.zeros(shape=(nscales, image.shape[0], image.shape[1]), dtype=float)
@@ -363,71 +364,55 @@ def get_blob(image, kwargs):
             print '\t\tt = %.2f \t(blob diameter = %.1f pixels(analysis) = %.1f nm(physical unit))' \
                   % (t, 3*np.sqrt(t), 3*np.sqrt(t)*pixel_size)
             scalespace = compute_space_derivatives(image, t)
-            lxx = scalespace.get('lxx')
-            lyy = scalespace.get('lyy')
-            l[n-1] = scalespace.get('l')  # used later for sift
-            lx[n-1] = -1. * scalespace.get('lx')  # local minima, gradient descent, pointing from white to black (1->0)
-            ly[n-1] = -1. * scalespace.get('ly')
-            laplacian = lxx + lyy
+            laplacian = scalespace.get('lxx') + scalespace.get('lyy')
             # C = 0.5
-            # strength[n-1] = t*(lx**2 + ly**2) + C*t**2*(lxx**2 + lyy**2 + 2*lxy)  # quasi quadrature term Li98b
-            strength[n-1] = -(t ** gamma * laplacian)
+            # laplacian_mod[n-1] = t*(lx**2 + ly**2) + C*t**2*(lxx**2 + lyy**2 + 2*lxy)  # quasi quadrature term Li98b
+            laplacian_mod[n-1] = -(t ** gamma * laplacian)
 
-            # if n == 1:
-            #     plot_image(strength[n-1], cmap='jet', interpolation='none', norm='linear', plot_axis='on', hold=False)
-            #     plt.title('diam=%.0f' % (3*np.sqrt(t))); plt.show()
-
-        # scalespace = compute_space_derivatives(image, 0.1)
-        # lxx = scalespace.get('lxx'); lyy = scalespace.get('lyy'); laplacian = lxx + lyy
-        # plt.figure(); plt.imshow(laplacian, interpolation='none', cmap='gray', origin='lower')
-        # plt.title('diam=very small'); plt.show()
-
+            # # for descriptor, we use lin-transform Voronoi density map:
+            if image_descr is not None:
+                scalespace = compute_space_derivatives(image_descr, t)
+                l[n-1] = scalespace.get('l'); lx[n-1] = -1. * scalespace.get('lx'); ly[n-1] = -1. * scalespace.get('ly')
         dila = np.ones(shape=(max_filter_depth, max_filter_width, max_filter_width), dtype=float)
         dila[max_filter_depth/2, max_filter_width/2, max_filter_width/2] = 0
-        featurestrength_dila = maximum_filter(strength, footprint=dila, mode='constant', cval=0)  # -float('inf'))
-        local_maxima_locations = np.where(strength >= featurestrength_dila)
+        laplacian_mod_dila = maximum_filter(laplacian_mod, footprint=dila, mode='constant', cval=0)  # -float('inf'))
+        local_maxima_locations = np.where(laplacian_mod >= laplacian_mod_dila)
 
         argmaxgrad = local_maxima_locations[1:]  # tuple, true values
-        # featurestrength = np.zeros(shape=image.shape)  # 2d array
-        # featurestrength[argmaxgrad] = strength[local_maxima_locations]
-        featurestrength = strength[local_maxima_locations]
-
-        # plt.figure(); plt.plot(3*np.sqrt(scale_range), strength[:,69,68], 'k.-')
-        # plt.xlabel('$3\sqrt(scale)$'); plt.ylabel('strength at point (69,68)'); plt.hold(0)
-
-        tnew = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
+        strength = laplacian_mod[local_maxima_locations]
+        scale = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
         # begin: thresholding before orientation computation (used to be in find_feature)
         thresholding = kwargs.get('thresholding', False)
         if thresholding:
             print '\tThresholding...',
             threshold_percent = kwargs.get('threshold_percent', 0.4)  # default 40% down the maximum response
-            # threshold = np.max(featurestrength[argmaxgrad]) - threshold_percent * (np.max(featurestrength[argmaxgrad]) -
-            #                                                                        np.min(featurestrength[argmaxgrad]))
-            #
-            # temp = np.where(featurestrength[argmaxgrad] > threshold)  # tuple
-            # argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
-            # argmaxgrad = argmaxgrad_threshold
-            threshold = np.max(featurestrength) - threshold_percent * (np.max(featurestrength) -
-                                                                       np.min(featurestrength))
+            threshold = np.max(strength) - threshold_percent * (np.max(strength) -
+                                                                       np.min(strength))
 
-            temp = np.where(featurestrength > threshold)  # tuple
+            temp = np.where(strength > threshold)  # tuple
             argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
             argmaxgrad = argmaxgrad_threshold
-            tnew_threshold = tnew[temp[0]]
-            tnew = tnew_threshold
-            featurestrength = featurestrength[temp[0]]
+            scale_threshold = scale[temp[0]]
+            scale = scale_threshold
+            strength = strength[temp[0]]
             print 'Done.'
         else:
             threshold = -float('inf')
-
-        image_roi = np.zeros(image.shape)
-        image_roi[argmaxgrad] = 1
-        image_roi = flood_fill(image_roi)
+        num_features = kwargs.get('num_features', 'all')
+        if num_features is not 'all':
+            num_all_features = strength.shape[0]
+            if num_features > num_all_features:
+                print 'Warning in get_blob: size of subset of features is larger than total number of features.'
+                num_features = num_all_features
+            subset = np.argsort(-strength)[0:num_features]  # strongest num_features in terms of strength-laplacian
+            # subset = np.random.randint(0, high=num_all_features, size=num_features, dtype='l')
+            scale = scale[subset]; strength = strength[subset]
+            argmaxgrad = argmaxgrad[0][subset], argmaxgrad[1][subset]
         # end
 
         aux = 0
-        if compute_orientation:
+        if compute_orientation:  # descriptors
             print '\tComputing feature orientations...'
             n_bins_ori = kwargs.get('n_bins_ori', 36)
             peak_ratio = kwargs.get('peak_ratio', 0.8)
@@ -440,9 +425,9 @@ def get_blob(image, kwargs):
             n_bins_descr = kwargs.get('n_bins_descr', 8)
             threshold_sat = kwargs.get('threshold_sat', 0.2)
             for ii, by in enumerate(argmaxgrad[1]):
-                scale_index = np.where(scale_range == tnew[ii])
+                scale_index = np.where(scale_range == scale[ii])
                 bx = argmaxgrad[0][ii]
-                sigma_ori = sigma_ori_times * np.sqrt(tnew[ii])
+                sigma_ori = sigma_ori_times * np.sqrt(scale[ii])
                 # 1.5 is gaussian sigma for orientation assignment (lambda_ori in Re13)
                 radius_ori = int(np.floor(window_ori_radtimes * sigma_ori))
                 # radius of the (squared) region in ori assignment
@@ -457,7 +442,7 @@ def get_blob(image, kwargs):
                 # print 'Orientation(s) computed.'
                 if compute_sift_descr:
                     if ii == 0: print '\t\t\t Computing sift descriptor(s)...',
-                    sigma_descr = sigma_descr_times*np.sqrt(tnew[ii])
+                    sigma_descr = sigma_descr_times*np.sqrt(scale[ii])
                     radius_descr = int(np.floor(window_descr_radtimes * sigma_descr))
                     # print '\n(bx,by)=', bx, by, '\t sift_descriptor \pm ', radius_descr
                     hist = sift_descriptor(l[scale_index[0]][0], bx, by, lx[scale_index[0]][0],
@@ -472,7 +457,7 @@ def get_blob(image, kwargs):
             # print 'number of no-empty elements in histogram_descr = ', aux
             print '\t\tDONE'
 
-    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew, 'scale_range': scale_range,
+    return {'argmaxgrad': argmaxgrad, 'strength': strength, 'scale': scale, 'scale_range': scale_range,
             'orientation': orientation, 'histogram_descr': histogram_descr}
 
 
@@ -495,8 +480,8 @@ def get_edge(image, kwargs):
     ---------
     dictionary with
      'argmaxgrad' (tupla for 2d-array - image): argmaxgrad
-     'featurestrength' (2d-array): edgestrength
-     'tnew' (1d-array length argmaxgrad): selected scale parameter (variance of Gaussian kernel)
+     'strength' (2d-array): edgestrength
+     'scale' (1d-array length argmaxgrad): selected scale parameter (variance of Gaussian kernel)
     """
 
     gamma = 0.5  # parameter to normalize derivatives (automatic scale selection, strongest response)
@@ -511,7 +496,7 @@ def get_edge(image, kwargs):
         lxyy = scalespace.get('lxyy'); lyyy = scalespace.get('lyyy')
         lv = np.sqrt(lx ** 2 + ly ** 2); lvv = lx ** 2 * lxx + 2 * lx * ly * lxy + ly ** 2 * lyy
         lvvv = lx ** 3 * lxxx + 3 * lx ** 2 * ly * lxxy + 3 * lx * ly ** 2 * lxyy + ly ** 3 * lyyy
-        featurestrength = t ** (gamma * 0.5) * lv
+        strength = t ** (gamma * 0.5) * lv
 
         # find zero crossing of lvv
         lvvp = np.zeros(lvv.shape)
@@ -522,21 +507,21 @@ def get_edge(image, kwargs):
         maxgrad = np.logical_and(lvvvn, lvv0)
         argmaxgrad = np.where(maxgrad)  # tuple, true values (=1)
 
-        tnew = np.ones(len(argmaxgrad[0])) * t
+        scale = np.ones(len(argmaxgrad[0])) * t
 
     thresholding = kwargs.get('thresholding', False)
     if thresholding:
         print '\tThresholding...',
         threshold_percent = kwargs.get('threshold_percent', 0.4)
-        threshold = np.max(featurestrength) - threshold_percent * (np.max(featurestrength) -
-                                                                   np.min(featurestrength))
+        threshold = np.max(strength) - threshold_percent * (np.max(strength) -
+                                                                   np.min(strength))
 
-        temp = np.where(featurestrength > threshold)  # tuple
+        temp = np.where(strength > threshold)  # tuple
         argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
         argmaxgrad = argmaxgrad_threshold
-        tnew_threshold = tnew[temp[0]]
-        tnew = tnew_threshold
-        featurestrength = featurestrength[temp[0]]
+        scale_threshold = scale[temp[0]]
+        scale = scale_threshold
+        strength = strength[temp[0]]
         print 'Done.'
     else:
         threshold = -float('inf')
@@ -545,8 +530,8 @@ def get_edge(image, kwargs):
     image_roi[argmaxgrad] = 1
     image_roi = flood_fill(image_roi)
 
-    # return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew}  # tuple, 2d-array and 1d-array
-    return {'argmaxgrad': argmaxgrad, 'featurestrength': featurestrength, 'tnew': tnew,
+    # return {'argmaxgrad': argmaxgrad, 'strength': strength, 'scale': scale}  # tuple, 2d-array and 1d-array
+    return {'argmaxgrad': argmaxgrad, 'strength': strength, 'scale': scale,
             'image_roi': image_roi}
 
 
@@ -634,7 +619,8 @@ def get_gauss_filter(t=10):
     return {'g': g, 'dg': dg, 'ddg': ddg, 'dddg': dddg}
 
 
-def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None, plot_axis='on',
+def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None, \
+                                                                                                    plot_axis='on',
                  blob_color='strength', ori_color=None, ori_cmap=None):
     """
     Function for plotting scale-space feature
@@ -662,15 +648,15 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
     fig, ax = plot_image(image, cmap=cmap, interpolation=interpolation, norm=norm, plot_axis=plot_axis, hold=True)
     plt.hold(1)
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    tnew = feature.get('tnew')  # 1d-array
-    featurestrength = feature.get('featurestrength')
+    scale = feature.get('scale')  # 1d-array
+    strength = feature.get('strength')
     orientation = feature.get('orientation', [])
 
     if ori_color is not None and ori_cmap is None: ori_cmap = plt.cm.get_cmap('Set1')
     if blob_color == 'strength' or blob_color == 'scale':
         values = []
-        if blob_color is 'strength': values = featurestrength
-        elif blob_color is 'scale': values = np.sqrt(tnew) * 2*1.5
+        if blob_color is 'strength': values = strength
+        elif blob_color is 'scale': values = np.sqrt(scale) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
         blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
         blob_cmap.set_array(values)
@@ -697,21 +683,21 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                         o_color = ori_cmap(ori_color[hist_ind])
                         mean.append(ori_color[hist_ind])
                         hist_ind += 1
-                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(featurestrength[ii])
-                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
-                    plt.arrow(bx, by,
-                              np.sqrt(tnew[ii]) * 1.5 * np.cos(ori), np.sqrt(tnew[ii]) * 1.5 * np.sin(ori),
-                              head_width=0, head_length=0, fc=o_color, ec=o_color, fill=True, linewidth=1.7)
+                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(strength[ii])
+                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
+                    plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
+                             [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)],
+                              color=o_color, linewidth=0.6)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
-            if blob_color == 'strength': b_color = blob_cmap.to_rgba(featurestrength[ii])
-            elif blob_color == 'scale': b_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+            if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
+            elif blob_color == 'scale': b_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
             elif blob_color == 'class':
                 if len(orientation[ii]) == 0: b_color = 'None'
                 else: b_color = blob_cmap(mean)
-            ax.plot(ucirc[0, :]*np.sqrt(tnew[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(tnew[ii])*1.5 +
-                    by, color=b_color, linewidth=1.7)
-            # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(tnew[ii]), strength), color='r')
+            ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
+                    by, color=b_color, linewidth=0.6)
+            # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(scale[ii]), strength), color='r')
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(blob_cmap, label='3$\sqrt{t}$ [pixel - analysis]')
 
@@ -813,11 +799,11 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
     # n_bins_descr = 8
     # window_descr_radtimes = 4
     # argmaxgrad = feature.get('argmaxgrad')
-    # tnew = feature.get('tnew')  # 1d-array
+    # scale = feature.get('scale')  # 1d-array
     # scale_range = feature.get('scale_range')
     # orientation = feature.get('orientation')
     # sigma_descr_times = 1.5
-    # sigma_descr = sigma_descr_times * np.sqrt(tnew[0])
+    # sigma_descr = sigma_descr_times * np.sqrt(scale[0])
     # radius = int(np.floor(window_descr_radtimes * sigma_descr))
     # bx = argmaxgrad[0][0]
     # by = argmaxgrad[1][0]
@@ -940,8 +926,8 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
                 ind = 4*(3-ii//4) + ii % 4
                 plt.subplot(4, 8, (ii//4+1)*4+ii+1)
                 # plt.subplot(4, 4, ii+1)
-                print 'checking histogram sift:'
-                print n_bins_descr*ind, ' to ', n_bins_descr*ind+n_bins_descr
+                # print 'checking histogram sift:'
+                # print n_bins_descr*ind, ' to ', n_bins_descr*ind+n_bins_descr
                 plt.bar(np.arange(n_bins_descr), hist[n_bins_descr*ind:n_bins_descr*ind+n_bins_descr], color='0.5',
                         align='center')
                 plt.xticks(np.linspace(0, n_bins_descr, 5), ['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])
@@ -961,17 +947,17 @@ def nnd_feature(feature, dict_sift):
     analysis_pixel_size = dict_sift.get('scale_pixel_size') * dict_sift.get('original_pixel_size', 1)
 
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    tnew = feature.get('tnew')  # 1d-array
+    scale = feature.get('scale')  # 1d-array
 
-    scales = np.unique(np.append(tnew, float('inf')))
-    number_features = np.histogram(tnew, bins=scales)
+    scales = np.unique(np.append(scale, float('inf')))
+    number_features = np.histogram(scale, bins=scales)
 
     if feature_name == 'blob':
         num_ini = 0
         dist_all_features = []
         fig, ax = plt.subplots()
         for ii, num in enumerate(number_features[0]):
-            # t = tnew[num_ini]
+            # t = scale[num_ini]
             x = argmaxgrad[0][num_ini:num_ini+num]
             y = argmaxgrad[1][num_ini:num_ini+num]
             blobs_xy = np.array([x, y]).T

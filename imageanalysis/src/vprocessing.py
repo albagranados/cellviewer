@@ -103,7 +103,7 @@ def voronoi_plot_2d(vor, **kw):
 def plot_points(points, title='', plot_axis='on'):
 
     fig, ax = plt.subplots()
-    ax.plot(points[:, 0], points[:, 1], 'k.', markersize=1)
+    ax.plot(points[:, 0], points[:, 1], 'k.', markersize=0.5, alpha=0.5)
     fig.show(); ax.hold(True)
 
     plt.title(title)
@@ -360,7 +360,7 @@ def threshold(vor, thr=None):
 
 
 def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', fill_value=0.0,
-                          scale_transform='linear'):
+                          density_transform='linear'):
     """
     Given a vornoi-based zero-rank density map, the natural interpolation (Sibson, 1980) on a regular grid with
     analysis_pixel_size grid size is performed. See Andronov et al., 2016 and Ledoux and Gold, 2005.
@@ -383,7 +383,7 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
     # plt.show()
 
-    if scale_transform is not 'linear':
+    if density_transform is not 'linear':
         if np.any(densities_image <= 0):
             densities_image[np.where(densities_image <= 0)] = None
         densities_image = np.log10(densities_image)
@@ -413,23 +413,23 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
     feature_name = dict_sift.get('feature_name')
     scale_pixel_size = dict_sift.get('scale_pixel_size')
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    tnew = feature.get('tnew')  # 1d-array
-    featurestrength = feature.get('featurestrength')
+    scale = feature.get('scale')  # 1d-array
+    strength = feature.get('strength')
     orientation = feature.get('orientation', [])
 
     # fig, ax = plot_densities(vor, plot_axis=plot_axis, show_points=show_points, cmap=cmap, norm=norm, hold=True)
     fig, ax = plt.subplots()
-    ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5)
+    ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5, alpha=0.5); ax.hold(True)
     ax.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max()); ax.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
-    ax.set_aspect('equal', adjustable='box'); plt.hold('True')
+    ax.set_aspect('equal', adjustable='box'); ax.hold('True')
 
     ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
 
     if ori_color is not None and ori_cmap is None: ori_cmap = plt.cm.get_cmap('Set1')
     if blob_color == 'strength' or blob_color == 'scale':
         values = []
-        if blob_color is 'strength': values = featurestrength
-        elif blob_color is 'scale': values = np.sqrt(tnew) * 2*1.5
+        if blob_color is 'strength': values = strength
+        elif blob_color is 'scale': values = np.sqrt(scale) * 2*1.5
         cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
         blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
         blob_cmap.set_array(values)
@@ -456,26 +456,27 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                         o_color = ori_cmap(ori_color[hist_ind])
                         mean.append(ori_color[hist_ind])
                         hist_ind += 1
-                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(featurestrength[ii])
-                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
-                    plt.arrow(ox + bx * scale_pixel_size, oy + by * scale_pixel_size,
-                              np.sqrt(tnew[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size,
-                              np.sqrt(tnew[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size,
-                              head_width=0, head_length=0, fc=o_color, ec=o_color, fill=True, linewidth=1.7)
+                    elif blob_color == 'strength': o_color = blob_cmap.to_rgba(strength[ii])
+                    elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
+                    plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
+                              np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
+                             [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
+                              np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
+                              color=o_color, linewidth=0.6)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength':
-                b_color = blob_cmap.to_rgba(featurestrength[ii])
+                b_color = blob_cmap.to_rgba(strength[ii])
             elif blob_color == 'scale':
-                b_color = blob_cmap.to_rgba(np.sqrt(tnew[ii]) * 2 * 1.5)
+                b_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
             elif blob_color == 'class':
                 if len(orientation[ii]) == 0:
                     b_color = 'None'
                 else:
                     b_color = blob_cmap(mean)
-            ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(tnew[ii]) * 1*1.5 + bx)*scale_pixel_size,
-                          oy + (ucirc[1, :] * np.sqrt(tnew[ii]) * 1*1.5 + by)*scale_pixel_size,
-                          color=b_color, linewidth=1.7)
+            ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
+                          oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
+                          color=b_color, linewidth=0.6)
         # fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
 
@@ -504,7 +505,7 @@ def localizations_feature(vor, feature, dict_sift):
     feature_name = dict_sift.get('feature_name')
     scale_pixel_size = dict_sift.get('scale_pixel_size')
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    tnew = feature.get('tnew')  # 1d-array
+    scale = feature.get('scale')  # 1d-array
 
     ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
 
@@ -516,7 +517,7 @@ def localizations_feature(vor, feature, dict_sift):
     if feature_name == 'blob':
         for ii, blob_y in enumerate(argmaxgrad[1]):
             blob_x = argmaxgrad[0][ii]
-            radius = (np.sqrt(tnew[ii]) * 2)*scale_pixel_size
+            radius = (np.sqrt(scale[ii]) * 2)*scale_pixel_size
             count = np.where(np.sqrt((vor.points[:, 0] - (ox + blob_x*scale_pixel_size))**2 +
                              (vor.points[:, 1] - (oy + blob_y*scale_pixel_size))**2) <= radius)
             number_localizations[ii] = len(count[0])

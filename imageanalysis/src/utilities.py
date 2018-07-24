@@ -418,7 +418,54 @@ def discrete_cmap(N, base_cmap=None):
     # The following works for string, None, or a colormap instance:
 
     base = plt.cm.get_cmap(base_cmap)
-    color_list = base(np.linspace(0, 1, N))
+
+    max_size_voc = 30
+    # color_pos = np.random.permutation(np.linspace(0, 1, max_size_voc))
+    color_pos = np.array([0.27586207, 0.93103448, 0.79310345, 0.44827586, 0.,
+                           0.51724138, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
+                           0.03448276, 0.65517241, 0.10344828, 0.82758621, 0.5862069 ,
+                           0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.31034483,
+                           1., 0.62068966, 0.4137931, 0.68965517, 0.72413793,
+                           0.75862069, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
+    color_list = base(color_pos[0:N])
+    # color_list = base(np.linspace(0, 1, N))
     cmap_name = base.name + str(N)
 
     return base.from_list(cmap_name, color_list, N)
+
+
+def permute_labels(kmeans, k, centers_permuted0):
+    """
+    This function assignes a permuted version of the labels (or classes) just to be consistent with the colorcode of
+    the previous iteration in k (number of clusters, words,...)
+    """
+
+    labels_permuted = np.full_like(kmeans.labels_, -1)
+    centers_permuted = np.full_like(kmeans.cluster_centers_, -1)
+    list_labels = []
+    for l0, c in enumerate(centers_permuted0):
+        l1 = np.argmin(np.linalg.norm(c - kmeans.cluster_centers_, axis=1) ** 2)
+        labels_permuted[np.where(kmeans.labels_ == l1)] = l0
+        centers_permuted[l0] = kmeans.cluster_centers_[l1]
+        list_labels.append(l1)
+    labels_permuted[np.where(labels_permuted == -1)] = k - 1
+    centers_permuted[k - 1] = kmeans.cluster_centers_[np.setdiff1d(range(k), list_labels)[0]]
+    kmeans.labels_ = labels_permuted
+    kmeans.cluster_centers_ = centers_permuted
+    centers_permuted0 = centers_permuted
+
+    return centers_permuted0, kmeans
+
+
+def select_labels_image(feature_all, labels_all, image_no):
+
+    aux = 0; num_features = []
+    for feature in feature_all:
+        for ori in feature['orientation']:
+            aux += ori.shape[0]
+        num_features.append(aux)  # number of features or hist (!=[]) per image
+        aux = 0
+    image_ref = np.append(0, np.cumsum(num_features))
+    kmeans_labels_image = labels_all[image_ref[image_no]:image_ref[image_no+1]]
+
+    return kmeans_labels_image

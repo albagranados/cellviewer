@@ -1,11 +1,13 @@
 import matplotlib
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
 matplotlib.rcParams.update({'font.size': 16})
 
 
-def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, cmap=None, num_bins=100, xticks=None):
+def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, cmap=None, num_bins=100, xticks=None, xtickslabel=None,
+              alpha=1):
     """
     This function plots histograms. Range: min-max of data.
 
@@ -18,37 +20,40 @@ def plot_hist(data, bins=None, hist_scale='lin', xlabel={}, cmap=None, num_bins=
     bins (1d array): if it is not None, then bins=bins and 'lin' scale
 
     """
+    fig, ax = plt.subplots()
 
     data = data[np.where((data != float('inf')) & (data >= 0))]  # eliminate areas that are set to inf, -1 or 0
     if bins is not None:
-        plt.figure()
-        n, bins, patches = plt.hist(data, bins=bins, histtype='bar',
+        n, bins, patches = ax.hist(data, bins=bins, histtype='bar',
                                     weights=np.zeros_like(data) + 1. / data.size, color='w')  # , color='k')
         if cmap is not None:
             for c, p in zip(range(len(bins)-1), patches):
-                plt.setp(p, 'facecolor', cmap(c))
-        # plt.hold(1)
+                plt.setp(p, 'facecolor', cmap(c), alpha=alpha)
         if xticks is not None:
-            plt.xticks(xticks) #, ['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])
-        plt.show()
+            if xtickslabel is None: xtickslabel=xticks
+            plt.xticks(xticks, xtickslabel)
+        fig.show()
     else:
         ini = np.min(data)
         if hist_scale is 'log':
-            plt.figure(), plt.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
+            ax.hist(data, bins=np.logspace(np.log10(ini), np.log10(np.max(data)), num=num_bins),
                                    histtype='step', weights=np.zeros_like(data) + 1. / data.size,
-                                   color='k')
-            plt.gca().set_xscale("log")
+                                   color='k', alpha=alpha)
+            ax.set_xscale("log")
         else:
-            plt.figure(), plt.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
-                                   weights=np.zeros_like(data) + 1. / data.size, color='k')
-            # plt.figure(), plt.hist(data, bins=num_bins, histtype='step',
+            ax.hist(data, bins=np.linspace(ini, np.max(data), num=num_bins), histtype='step',
+                                   weights=np.zeros_like(data) + 1. / data.size, color='k', alpha=alpha)
+            # ax.hist(data, bins=num_bins, histtype='step',
             #                        weights=np.zeros_like(data) + 1. / data.size, color='k')
-    plt.ylabel(r'frequency'); plt.xlabel(xlabel); plt.hold(0)
-    plt.gca().set_ylim(0, 0.6)
-    # plt.hist(densities, bins='rice', histtype='step',  color='k'); plt.ylabel(r'counts')
+    plt.ylabel(r'frequency'); plt.xlabel(xlabel); ax.hold(0)
+    ax.set_ylim(0, 0.6)
+    # ax.hist(densities, bins='rice', histtype='step',  color='k'); plt.ylabel(r'counts')
+
+    return fig, ax
 
 
-def plot_boxplot(data, scale='lin', bptype='violin', xlabel='', ylabel='values'):
+def plot_boxplot(data, scale='lin', bptype='violin', xticklabels='', xlabel='', ylabel='values', cmap=None,
+                 widths=0.95):
     """
     This function plots boxplot.
 
@@ -70,18 +75,24 @@ def plot_boxplot(data, scale='lin', bptype='violin', xlabel='', ylabel='values')
     if scale is 'log':
         values = [np.log10(data)]
         ylabel = ylabel + '$\quad$' + r'[$\log_{10}$]'
-    else:
-        values = data
+    else: values = data
 
     fig, ax = plt.subplots()
     if bptype == 'violin':   # plot violin plot
-        result = ax.violinplot(values, widths=0.95, showmeans=False, showmedians=True, showextrema=True)
-        for pc in result['bodies']:
-            pc.set_facecolor('gray')
-            pc.set_linewidth(1)
-        for pc in [result[ii] for ii in ('cbars', 'cmins', 'cmaxes', 'cmedians')]:
+        result = ax.violinplot(values, widths=widths, showmeans=1, showmedians=True, showextrema=True)
+        for ii, pc in enumerate(result['bodies']):
+            if cmap is None:
+                pc.set_facecolor('gray')
+                pc.set_linewidth(1)
+            else:
+                pc.set_facecolor(cmap(ii))
+                pc.set_linewidth(1)
+        for pc in [result[ii] for ii in ('cbars', 'cmins', 'cmaxes', 'cmedians', 'cmeans')]:
             pc.set_edgecolor('black')
             pc.set_linewidth(1)
+            pc.set_alpha(0.5)
+            if pc == result['cmeans']:
+                pc.set_linestyle('--')
     else:  # plot box plot
         result = ax.boxplot(values)
 
@@ -90,12 +101,8 @@ def plot_boxplot(data, scale='lin', bptype='violin', xlabel='', ylabel='values')
     # ax.set_xticks([y + 1 for y in range(len(values))])
     # ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
 
-    if xlabel != '':     # add x-tick labels
-        plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=xlabel,
-                 ylabel=ylabel)
-    else:
-        plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=[str(i+1) for i in range(len(values))],
-                 ylabel=ylabel)
+    if xticklabels == '': xticklabels=[str(i+1) for i in range(len(values))]
+    plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=xticklabels, ylabel=ylabel, xlabel=xlabel)
     plt.show()
 
     return result
@@ -120,11 +127,8 @@ def errorbar_featureresponse(feature, dict_sift, xlabel={}):
     dict_analysis (dictionary)
 
     """
-    import math
-
-    featurestrength = feature.get('featurestrength')
-    argmaxgrad = feature.get('argmaxgrad')
-    tnew = feature.get('tnew')
+    strength = feature.get('strength')
+    scale = feature.get('scale')
     scale_range = feature.get('scale_range')
     analysis_pixel_size = dict_sift.get('scale_pixel_size')*dict_sift.get('original_pixel_size')
 
@@ -132,11 +136,11 @@ def errorbar_featureresponse(feature, dict_sift, xlabel={}):
     y = np.zeros(shape=scale_range.shape)
 
     for ii in range(len(scale_range)):
-        pos_equal_scale = np.where(tnew == scale_range[ii])
-        strength = featurestrength[pos_equal_scale]
-        y[ii] = np.median(strength)
+        pos_equal_scale = np.where(scale == scale_range[ii])
+        str = strength[pos_equal_scale]
+        y[ii] = np.median(str)
         if math.isnan(y[ii]): y[ii] = 0
-        err[ii] = np.std(strength)
+        err[ii] = np.std(str)
 
     x = 3*np.sqrt(scale_range)*analysis_pixel_size
     plt.figure(); plt.errorbar(x, y, err, fmt='ko')
@@ -155,9 +159,9 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
 
     b = bg*pc
     s = 0.5*width*np.sqrt(aspect_ratio)
-    photons = pc*area  #  number of photons for each molecule in the molecule list. The photon conversion factor,
-                        # eg. 0.41 for STORM and 0.14 for NSTORM
-    N = photons # total photon count, number of photons in the image
+    photons = pc*area  # number of photons for each molecule in the molecule list. The photon conversion factor,
+    #  eg. 0.41 for STORM and 0.14 for NSTORM
+    N = photons  # total photon count, number of photons in the image
     mu_x = (s**2 + a**2/12.)/N*(16./9 + 8.*np.pi*s**2*b**2/(N*a**2))
     rms = np.sqrt(2*mu_x)
 
@@ -181,35 +185,100 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
     return rms
 
 
-def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", max_iter=300, n_jobs=-1,
-                       compute_pca=True, plot_graphics=True, fig=None, ax=None, cluster_cmap=None):
+def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, fig=None, ax=None, cluster_cmap=None):
+    """
+    This functions plots in the PC1-PC2 space the clustered distribution of all detected features to create the
+    vocabulary.
+    """
+    from sklearn.decomposition import PCA
+
+    if not isinstance(feature_all, list): feature_all = [feature_all]
+
+    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+    histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
+    if len(histogram) == 0:
+        print 'error: please, compute orientation and descriptors histograms for SIFT'
+        return None
+
+    labels = kmeans.labels_
+    cluster_centers = kmeans.cluster_centers_  # kmeans.cluster_centers_[0] = centroid of cluster 0
+
+    print '\tcomputing PCA for visualization...'
+    pca = PCA(n_components=2)
+    X = np.append(histogram, cluster_centers, axis=0)  # shape (n_samples, n_features)
+    X_reduced = pca.fit_transform(X)  # array-like, shape (n_samples, n_components)
+    # histogram_reduced = pca.fit_transform(histogram)  # array-like, shape (n_samples, n_components)
+    # cluster_centers_reduced = pca.fit_transform(cluster_centers)  # array-like, shape (n_samples, n_components)
+    # print cluster_centers_reduced
+
+    if fig is None: fig, ax = plt.subplots()
+    if cluster_cmap is None: cluster_cmap = plt.cm.get_cmap('Set1')
+    ax.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
+               alpha=0.5, cmap=cluster_cmap)
+    fig.hold(True)
+    # aux = 0
+    # orientation = feature.get('orientation')
+    # argmaxgrad = feature.get('argmaxgrad')
+    # for i in range(argmaxgrad[0].size):
+    #     for ii, ori in enumerate(np.asarray(orientation[i])):  # if empty => no in X_reduced
+    #         # ax.annotate('(%d,%d), ori=%.1f' % (argmaxgrad[0][i], argmaxgrad[1][i], ori),
+    #         #             xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
+    #         ax.annotate('%d' % labels[aux], xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
+    #         aux += 1
+    # ax.plot(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
+    #         X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], 'k*', markersize=10)
+    # plt.plot(cluster_centers_reduced[:, 0], cluster_centers_reduced[:, 1], 'k*', markersize=10)
+    # for ii in range(n_cluster):
+    #     ax.annotate('%d' % ii, xy=(X_reduced[histogram.shape[0] + ii, 0],
+    #                                X_reduced[histogram.shape[0] + ii, 1]), size=40)
+    # ax.annotate('%.d', (X_reduced[hist_ind, s0], X_reduced[hist_ind, 1]), size=10)
+    plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$')  # ;plt.title('k=%d' % n_cluster)
+    plt.show(); fig.hold(False)
+
+    # arg = 0; hist_ind = 0
+    # for hist in histogram_descr:
+    #     if not hist:  # skip that blob, out of range
+    #         arg += 1
+    #         continue
+    #     bx = argmaxgrad[0][arg]; by = argmaxgrad[1][arg]
+    #     t = scale[arg]
+    #     arg += 1
+    #     for jj in range(len(hist)):
+    #         ax.annotate('%.0f,%.0f' % (bx, by), (X_reduced[hist_ind, 0]-0.01, X_reduced[hist_ind, 1]-0.01), size=10)
+    #         ax.annotate('%.0f' % t, (X_reduced[hist_ind, 0], X_reduced[hist_ind, 1]), size=10)
+    #         hist_ind += 1
+
+
+def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"):
     """
     This function
 
     Input:
     ---------
-    feature dictionary with sift elements, e.g., 'histogram_descr'.
+    feature_all: list of feature (argmaxgrad, orientation, scale, histogram_descr, ...) of all training images
 
     Output:
     ---------
+    kmeans: attributs are labels_, cluster_centers_
+
     """
     from sklearn.cluster import KMeans
-    from sklearn.decomposition import PCA
 
-    orientation = feature.get('orientation')
-    argmaxgrad = feature.get('argmaxgrad')
-    histogram_descr = feature.get('histogram_descr')
-    histogram = np.asarray([hist_sub for hist in histogram_descr for hist_sub in hist])
+    if not isinstance(feature_all, list): feature_all = [feature_all]
+
+    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+    histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])  # some hist can be []
+    print 'size all histograms: ', len(histogram)
     if len(histogram) == 0:
         print 'error: please, compute orientation and descriptors histograms for SIFT'
         return None
 
-    n_bins_descr = kwargs_sift.get('n_bins_descr', 4)
-    n_hist = kwargs_sift.get('n_hist', 4)
-
     kmeans = KMeans(n_clusters=n_cluster, random_state=0, init=init).fit(histogram)
-    labels = kmeans.labels_
-    cluster_centers = kmeans.cluster_centers_
+
+    # labels = kmeans.labels_
+    # cluster_centers = kmeans.cluster_centers_  # kmeans.cluster_centers_[0] = centroid of cluster 0
+    # n_bins_descr = kwargs_sift.get('n_bins_descr', 4)
+    # n_hist = kwargs_sift.get('n_hist', 4)
 
     # # plot
     # for jj in range(cluster_centers.shape[0]):
@@ -225,101 +294,77 @@ def siftdescr_analysis(feature, kwargs_sift={}, n_cluster=3, init="k-means++", m
     #         plt.ylim([0, max_ori])
     #         plt.hold(True)
 
-    if compute_pca:
-        print 'computing PCA for visualization (n_clusters = %.d)...' % n_cluster
-        pca = PCA(n_components=2)
-        X = np.append(histogram, cluster_centers, axis=0)  # shape (n_samples, n_features)
-        X_reduced = pca.fit_transform(X)  # array-like, shape (n_samples, n_components)
-        # histogram_reduced = pca.fit_transform(histogram)  # array-like, shape (n_samples, n_components)
-        # cluster_centers_reduced = pca.fit_transform(cluster_centers)  # array-like, shape (n_samples, n_components)
-
-        if plot_graphics:
-            if fig is None: fig, ax = plt.subplots()
-            if cluster_cmap is None: cluster_cmap = plt.cm.get_cmap('Set1')
-            ax.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
-                       alpha=0.8, cmap=cluster_cmap)
-            # fig.hold(True)
-            aux = 0
-            for i in range(argmaxgrad[0].size):
-                for ii, ori in enumerate(np.asarray(orientation[i])):  # if empty => no in X_reduced
-                    # ax.annotate('(%d,%d), ori=%.1f' % (argmaxgrad[0][i], argmaxgrad[1][i], ori),
-                    #             xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
-                    aux += 1
-            # ax.plot(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
-            #         X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], 'k*', markersize=10)
-            # # ax.plot(cluster_centers_reduced[:,0], cluster_centers_reduced[:, 1],
-            # #            'k*', markersize=10)
-            plt.xlabel(r'PCA$_1$'); plt.ylabel(r'PCA$_2$'); plt.title('k=%d' % n_cluster)
-            plt.show(); fig.hold(False)
-
-            # arg = 0; hist_ind = 0
-            # for hist in histogram_descr:
-            #     if not hist:  # skip that blob, out of range
-            #         arg += 1
-            #         continue
-            #     bx = argmaxgrad[0][arg]; by = argmaxgrad[1][arg]
-            #     t = tnew[arg]
-            #     arg += 1
-            #     for jj in range(len(hist)):
-            #         ax.annotate('%.0f,%.0f' % (bx, by), (X_reduced[hist_ind, 0]-0.01, X_reduced[hist_ind, 1]-0.01), size=10)
-            #         ax.annotate('%.0f' % t, (X_reduced[hist_ind, 0], X_reduced[hist_ind, 1]), size=10)
-            #         hist_ind += 1
-
     return kmeans
 
-#  kmeans.predict([[0, 0], [4, 4]])
 
-
-def bow_histogram(vor, feature, dict_sift,  ori_color, ori_cmap=None, limits=None,
-                  blob_diameter_thr=[-float('inf'), float('inf')]):
+def words_characteristics(feature_all, labels, cmap, pixel_size=1, savefile_suffix=None,
+                          blob_diameter_thr=[-float('inf'), float('inf')]):
     """
-    histogram of words for that particular point pattern (vor)
+    This function plots histograms and violin plots of the scales, densities, etc., corresponding to each cluster in the
+    vocabulary
 
     Input:
-    --------
-    dict_sift (dictionary - input)
-    ori_color (list) = if not None, for all orientations, assigned classes
-    ori_cmap = if not None, discrete cmap for vocabulary - output clustering/unsupervised learing.
+    ---------------------
+    feature_all (list): vector of all feature computed from training data
+    labels: from kmeans.labels_, output of the clustering of the trained features, each point corresponds to the
+            orientation of a features of a given training image key() = labels_, cluster_centers_
+    blob_diameters_thr [a,b]: results for the detected blobs of a particular scale range (diameter)
+
+    Alternatively, features_all[n] & kmeans_labels_image = kmeans.labels_[~n]
+
+    Output:
+    ---------------------
+
     """
+    if not isinstance(feature_all, list): feature_all = [feature_all]
 
-    feature_name = dict_sift.get('feature_name')
-    scale_pixel_size = dict_sift.get('scale_pixel_size')
-    analysis_pixel_size = scale_pixel_size * dict_sift.get('original_pixel_size', 1)
-    argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    orientation = feature.get('orientation', [])
-    blob_diameters = analysis_pixel_size * 3 * np.sqrt(feature.get('tnew'))
+    # words histograms
+    labels_sub = []; hist_ind = 0
+    for feature in feature_all:
+        blob_diameters = 3*np.sqrt(feature['scale'])*pixel_size
+        orientation = feature.get('orientation', [])
+        if len(orientation) == 0:
+            print 'Error: SIFT descriptors missing.'
+            return -1
+        for ii, ori in enumerate(orientation):
+            for jj in ori:  # loop just to update hist_ind
+                if blob_diameter_thr[0] < blob_diameters[ii] < blob_diameter_thr[1]:
+                    labels_sub.append(labels[hist_ind])  # if no thr & no limits = labels
+                hist_ind += 1
+    plot_hist(np.asarray(labels_sub),
+              bins=np.append(np.unique(labels_sub), np.max(labels_sub)+1)-0.5,
+              cmap=cmap, xlabel=r'visual word - cluster num.', xticks=np.unique(labels_sub),
+              xtickslabel=[str(e) for e in np.unique(labels_sub)+1], alpha=0.4)
+    if savefile_suffix is not None:
+        plt.savefig(savefile_suffix + '_BoWhistogram.pdf', bbox_inches='tight')
 
-    ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
-    ori_color_sub = []  #
-    if feature_name == 'blob':
-        hist_ind = 0   # plot orientation with colorcode from clustering algorithm (label)
-        for ii, by in enumerate(argmaxgrad[1]):
-                x = ox + argmaxgrad[0][ii]*scale_pixel_size
-                y = oy + by*scale_pixel_size
-                if len(orientation) > 0:
-                    for jj in orientation[ii]:  # loop just to update hist_ind
-                        if blob_diameter_thr[0] < blob_diameters[ii] < blob_diameter_thr[1]:
-                            if limits is None:
-                                ori_color_sub.append(ori_color[hist_ind])  # if no thr & no limits = labels
-                            elif limits[0] < x < limits[1] and limits[2] < y < limits[3]:
-                                ori_color_sub.append(ori_color[hist_ind])
-                        hist_ind += 1
-                    # mean = 0
-                    # for jj, ori in enumerate(orientation[ii]):
-                    #     ori_color = scalarmap_clusters.to_rgba(ori_color[hist_ind])
-                    #     mean += ori_color[hist_ind]
-                    #     hist_ind += 1
-                    # orir_color_argmaxgrad[ii] = round(mean/(float(jj)+1.))
-                else:
-                    print 'Error: SIFT descriptors missing.'
-        # argmaxgrad[0] = ox+argmaxgrad[0]*scale_pixel_size
-        # argmaxgrad[1] = oy+argmaxgrad[1]*scale_pixel_size
-        # np.where((argmaxgrad[0] > limits[0])&(argmaxgrad[0] < limits[2])&
-        #          (argmaxgrad[1] > limits[1])&(argmaxgrad[1] < limits[3]))
+    # scale vs words ; densities vs words
+    scale_all = [scale for feature in feature_all for scale in feature['scale']]
+    number_localizations_all = [number_localizations for feature in feature_all for number_localizations in
+                                 feature['number_localizations']]
+    scale_ori = np.asarray([scale_all[ii] for feature in feature_all
+                            for ii, hist in enumerate(feature['histogram_descr']) for jj in range(len(hist))])
+    number_localizations_ori = np.asarray([number_localizations_all[ii] for feature in feature_all
+                                           for ii, hist in enumerate(feature['histogram_descr'])
+                                           for jj in range(len(hist))])
+    radius = []; densities = []
+    for l in np.unique(labels):
+        pos = np.where(labels == l); rad = pixel_size*1.5*np.sqrt(scale_ori[pos])
+        radius.append(rad)
+        densities.append(number_localizations_ori[pos] / (rad ** 2 * np.pi))
 
-        plot_hist(np.asarray(ori_color_sub),
-                  bins=np.append(np.unique(ori_color_sub), np.max(ori_color_sub)+1)-0.5,
-                  cmap=ori_cmap, xlabel=r'cluster no.', xticks=np.unique(ori_color_sub))
+    plot_boxplot(radius, bptype='violin', xlabel=r'visual word - cluster num.', ylabel=r'blob radius R [nm]', cmap=cmap,
+                 widths=0.8)
+    if savefile_suffix is not None:
+        plt.savefig(savefile_suffix + '_scaleVSwords.pdf', bbox_inches='tight')
+    plot_boxplot(densities, bptype='violin', xlabel=r'visual word - cluster num.',
+                 ylabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]', cmap=cmap, widths=0.8)
+    if savefile_suffix is not None:
+        plt.savefig(savefile_suffix + '_denstitiesVSwords.pdf', bbox_inches='tight')
 
-        return ori_color_sub
-
+    # for ii, feature in enumerate(feature_all):
+    #     # pos_empty = [ii for ii, hist in enumerate(feature_all[ii]['histogram_descr']) if hist == []]
+    #     for label in np.unique(kmeans.labels_):
+    #         scale_ori = [feature_all[ii]['scale'][ii] for jj in range(len(hist))
+    #                      for ii, hist in enumerate(feature_all[ii]['histogram_descr'])]
+    #         diameter = 3*np.sqrt(scale_ori[np.where(scale_ori == label)])
