@@ -23,8 +23,11 @@ class pointpattern():
     #     points: points (if multiple data sets, the last one) stored in a nx2 matrix
     #     points1, points2 (if more than 1 channel): stored in a nx2 matrix
 
-    def read(self, file_dir, file_name=None, fileExt='.txt', storm=1, channels_num=2, out_channel='all',
-                save_output_dir=None, plot=1):
+    def read(self, dict_inputfile, save_output_dir=None, plot=1):
+
+        file_dir = dict_inputfile['file_dir']; file_name = dict_inputfile['file_name']
+        fileExt = dict_inputfile['fileExt']
+        is_storm = dict_inputfile['is_storm']; out_channel = dict_inputfile['out_channel']
 
         print 'Reading dataset...'
         if file_name is not None:
@@ -34,11 +37,12 @@ class pointpattern():
 
         for ii in range(len(file_names)):
             file_name = file_names[ii].split(fileExt)[0]  # '2017-12-14_HeLa_DMSO_000_list_m1000DC_CTS_0851-1731_allChs'
+            print '\tfile directory: "', file_dir, '"'
             print '\tfile name: "', file_name, '"'
 
             path = os.path.join(file_dir, file_name + fileExt)  # if we want to run in the Python Console
 
-            if storm:
+            if is_storm:
                 self.points = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(3, 4))  # export x_c and y_c
                 print '\tAll channels in .points.'
                 self.channels = np.loadtxt(path, skiprows=1, delimiter='\t', usecols=(0,))  # export x_c and y_c
@@ -50,30 +54,32 @@ class pointpattern():
 
                 if len(np.unique(self.channels)) > 2:
                     print '\tSTORM file with more than 2 channels. Please, double check.'
-                for jj, ch in enumerate(out_channel):
-                    if jj == 0:
-                       self.points1 = self.points[np.where(self.channels == ch)]
-                       print '\tChannel 1 in .points1.'
-                    if jj == 1:
-                        print 'in out_channel==2'
-                        self.points2 = self.points[np.where(self.channels == ch)]
-                        print '\tChannel 2 in .points2.'
-
-            if not storm:
+                if out_channel is not 'all':
+                    for jj, ch in enumerate(out_channel):
+                        if jj == 0:
+                           self.points1 = self.points[np.where(self.channels == ch)]
+                           print '\tChannel %d in .points1.' % ch
+                           if save_output_dir is not None:
+                               np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt,
+                                          self.points[np.where(self.channels == out_channel[0])])
+                               print '\tFile saved in *_Ch1'
+                        if jj == 1:
+                            print 'in out_channel==2'
+                            self.points2 = self.points[np.where(self.channels == ch)]
+                            print '\tChannel %d in .points2.' % ch
+                            if save_output_dir is not None:
+                                np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt,
+                                          self.points[np.where(self.channels == out_channel[1])])
+                                print '\tFile saved in *_Ch2'
+                else:
+                   if save_output_dir is True:
+                       np.savetxt(save_output_dir + file_name + fileExt, self.points)
+            if not is_storm:
                 self.points = np.loadtxt(path, skiprows=0, usecols=(0, 1))  # Petra/DNA_Paint
-
-            if save_output_dir is not None:
-                if channels_num == 2:
-                    np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt,
-                               self.points[np.where(self.channels == out_channel[0])])
-                    np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt,
-                               self.points[np.where(self.channels == out_channel[1])])
-                if channels_num == 1:
-                    np.savetxt(save_output_dir + file_name + fileExt, self.points)
 
             if plot:
                 fig, ax = plt.subplots()
-                ax.plot(self.points[:, 0], self.points[:, 1], 'k.', markersize=2); ax.hold(True)
+                ax.plot(self.points[:, 0], self.points[:, 1], markersize=0.5, alpha=0.5); ax.hold(True)
                 ax.set_xlim(self.points[:, 0].min(), self.points[:, 0].max())
                 ax.set_ylim(self.points[:, 1].min(), self.points[:, 1].max())
                 ax.set_aspect('equal', adjustable='box'); ax.hold(False)
@@ -421,12 +427,12 @@ def discrete_cmap(N, base_cmap=None):
 
     max_size_voc = 30
     # color_pos = np.random.permutation(np.linspace(0, 1, max_size_voc))
-    color_pos = np.array([0.27586207, 0.93103448, 0.79310345, 0.44827586, 0.,
-                           0.51724138, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
+    color_pos = np.array([0.05, 0.95, 0.5, 0.3, 0.7,
+                           0.44827586, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
                            0.03448276, 0.65517241, 0.10344828, 0.82758621, 0.5862069 ,
-                           0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.31034483,
+                           0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.27586207,
                            1., 0.62068966, 0.4137931, 0.68965517, 0.72413793,
-                           0.75862069, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
+                           0.79310345, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
     color_list = base(color_pos[0:N])
     # color_list = base(np.linspace(0, 1, N))
     cmap_name = base.name + str(N)
@@ -462,7 +468,7 @@ def select_labels_image(feature_all, labels_all, image_no):
     aux = 0; num_features = []
     for feature in feature_all:
         for ori in feature['orientation']:
-            aux += ori.shape[0]
+            aux += len(ori)
         num_features.append(aux)  # number of features or hist (!=[]) per image
         aux = 0
     image_ref = np.append(0, np.cumsum(num_features))

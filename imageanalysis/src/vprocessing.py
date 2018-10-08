@@ -430,7 +430,7 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
         values = []
         if blob_color is 'strength': values = strength
         elif blob_color is 'scale': values = np.sqrt(scale) * 2*1.5
-        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
+        cnorm = colors.Normalize(vmin=np.min(values), vmax=1.05*np.max(values))
         blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
         blob_cmap.set_array(values)
     elif blob_color is 'class':
@@ -462,7 +462,7 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                               np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
                              [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
                               np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
-                              color=o_color, linewidth=0.6)
+                              color=o_color, linewidth=1)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength':
@@ -476,8 +476,8 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                     b_color = blob_cmap(mean)
             ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
                           oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
-                          color=b_color, linewidth=0.6)
-        # fig.colorbar(scalarmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
+                          color=b_color, linewidth=1)
+        # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
 
     if plot_axis is 'off':
@@ -517,7 +517,7 @@ def localizations_feature(vor, feature, dict_sift):
     if feature_name == 'blob':
         for ii, blob_y in enumerate(argmaxgrad[1]):
             blob_x = argmaxgrad[0][ii]
-            radius = (np.sqrt(scale[ii]) * 2)*scale_pixel_size
+            radius = (np.sqrt(scale[ii]) * 1.5)*scale_pixel_size
             count = np.where(np.sqrt((vor.points[:, 0] - (ox + blob_x*scale_pixel_size))**2 +
                              (vor.points[:, 1] - (oy + blob_y*scale_pixel_size))**2) <= radius)
             number_localizations[ii] = len(count[0])

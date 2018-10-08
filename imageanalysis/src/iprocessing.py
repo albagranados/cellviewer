@@ -382,20 +382,25 @@ def get_blob(image, kwargs, image_descr=None):
         strength = laplacian_mod[local_maxima_locations]
         scale = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
+        from src import statistics as stat
+        stat.plot_hist(strength, num_bins=50, xlabel=r'strength (Laplacian) NO THRESHOLD')
+        # stat.plot_boxplot(strength, bptype='violin', ylabel=r'strength (Laplacian) NO THRESHOLD')
+        plt.savefig('strength_boxplot.pdf', bbox_inches='tight')
+        diameter = pixel_size * 3 * np.sqrt(scale)
+
         # begin: thresholding before orientation computation (used to be in find_feature)
         thresholding = kwargs.get('thresholding', False)
         if thresholding:
             print '\tThresholding...',
             threshold_percent = kwargs.get('threshold_percent', 0.4)  # default 40% down the maximum response
-            threshold = np.max(strength) - threshold_percent * (np.max(strength) -
-                                                                       np.min(strength))
-
+            threshold = np.max(strength) - threshold_percent * (np.max(strength) - np.min(strength))
             temp = np.where(strength > threshold)  # tuple
             argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
             argmaxgrad = argmaxgrad_threshold
             scale_threshold = scale[temp[0]]
             scale = scale_threshold
             strength = strength[temp[0]]
+            diameter = pixel_size * 3 * np.sqrt(scale)
             print 'Done.'
         else:
             threshold = -float('inf')
@@ -407,10 +412,11 @@ def get_blob(image, kwargs, image_descr=None):
                 num_features = num_all_features
             subset = np.argsort(-strength)[0:num_features]  # strongest num_features in terms of strength-laplacian
             # subset = np.random.randint(0, high=num_all_features, size=num_features, dtype='l')
-            scale = scale[subset]; strength = strength[subset]
+            scale = scale[subset]; strength = strength[subset]; diameter = diameter[subset]
             argmaxgrad = argmaxgrad[0][subset], argmaxgrad[1][subset]
         # end
 
+        print '\t\tNumber of detected features ', scale.shape
         aux = 0
         if compute_orientation:  # descriptors
             print '\tComputing feature orientations...'
@@ -434,6 +440,8 @@ def get_blob(image, kwargs, image_descr=None):
 
                 # print '\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& NEW POINT &&&&&&&&&&&'
                 # print '(bx,by)=', bx, by, '\t orientation_hist \pm ', radius_ori
+                # if scale[ii] > 32: plot_graphics = 1
+                # else: plot_graphics = 0
                 ori = orientation_hist(l[scale_index[0]], bx, by, lx[scale_index[0]][0], ly[scale_index[0]][0],
                                           radius_ori, sigma_ori, n_bins_ori, peak_ratio, smooth_cycles,
                                           image_original=image,
@@ -441,7 +449,7 @@ def get_blob(image, kwargs, image_descr=None):
                 orientation.append(ori)
                 # print 'Orientation(s) computed.'
                 if compute_sift_descr:
-                    if ii == 0: print '\t\t\t Computing sift descriptor(s)...',
+                    if ii == 0: print '\t Computing sift descriptor(s)...',
                     sigma_descr = sigma_descr_times*np.sqrt(scale[ii])
                     radius_descr = int(np.floor(window_descr_radtimes * sigma_descr))
                     # print '\n(bx,by)=', bx, by, '\t sift_descriptor \pm ', radius_descr
@@ -458,7 +466,7 @@ def get_blob(image, kwargs, image_descr=None):
             print '\t\tDONE'
 
     return {'argmaxgrad': argmaxgrad, 'strength': strength, 'scale': scale, 'scale_range': scale_range,
-            'orientation': orientation, 'histogram_descr': histogram_descr}
+            'orientation': orientation, 'histogram_descr': histogram_descr, 'diameter': diameter}
 
 
 def get_edge(image, kwargs):
@@ -619,9 +627,8 @@ def get_gauss_filter(t=10):
     return {'g': g, 'dg': dg, 'ddg': ddg, 'dddg': dddg}
 
 
-def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None, \
-                                                                                                    plot_axis='on',
-                 blob_color='strength', ori_color=None, ori_cmap=None):
+def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None,
+                 plot_axis='on', blob_color='strength', ori_color=None, ori_cmap=None):
     """
     Function for plotting scale-space feature
 
@@ -657,7 +664,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
         values = []
         if blob_color is 'strength': values = strength
         elif blob_color is 'scale': values = np.sqrt(scale) * 2*1.5
-        cnorm = colors.Normalize(vmin=np.min(values), vmax=np.max(values))
+        cnorm = colors.Normalize(vmin=np.min(values), vmax=1.05*np.max(values))
         blob_cmap = plt.cm.ScalarMappable(norm=cnorm, cmap=plt.cm.gray)
         blob_cmap.set_array(values)
     elif blob_color is 'class':
@@ -687,7 +694,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                     elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
                     plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
                              [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)],
-                              color=o_color, linewidth=0.6)
+                              color=o_color, linewidth=1)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
@@ -696,7 +703,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                 if len(orientation[ii]) == 0: b_color = 'None'
                 else: b_color = blob_cmap(mean)
             ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
-                    by, color=b_color, linewidth=0.6)
+                    by, color=b_color, linewidth=1)
             # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(scale[ii]), strength), color='r')
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(blob_cmap, label='3$\sqrt{t}$ [pixel - analysis]')
@@ -720,9 +727,11 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
     # bx-by=row-col in this case!
     grad_x = lx[bx-radius:bx+radius+1, by-radius:by+radius+1]
     grad_y = ly[bx-radius:bx+radius+1, by-radius:by+radius+1]
-    # print 'lx.shape=', lx.shape
+    # print 'lx.shape, ly.shape =', lx.shape, ly.shape
     # fig, ax = plot_image(lx.T, cmap='jet', interpolation='none', hold=True)
-    if np.isnan(grad_x).any() or np.isnan(grad_y).any():
+    if np.isnan(grad_x).any() or np.isnan(grad_y).any() or \
+       bx-radius < 0 or bx+radius > image.shape[1] or by-radius < 0 or by + radius > image.shape[2]:
+        print 'out'
         return []
     locgrid_x, locgrid_y = np.meshgrid(np.linspace(bx - radius, bx + radius, 2*radius+1), # cart. ref. frame
                                        np.linspace(by - radius, by + radius, 2*radius + 1))
@@ -749,12 +758,12 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
         ax = plt.subplot(1, 2, 1)
         plt.imshow(image_original.T, interpolation='none', cmap='gray', origin='lower')  #, norm=LogNorm())
         plt.hold(True)
-        for i in range(0, 2*radius+1, 4):
+        for i in range(0, 2*radius+1, 2):
             y = by + i - radius
-            for j in range(0, 2*radius+1, 4):
+            for j in range(0, 2*radius+1, 2):
                 x = bx + j - radius  # col
-                ax.arrow(x, y, weights[j, i]*grad_y[j, i], weights[j, i]*grad_x[j, i],  # good!
-                         head_width=0.2, head_length=0.2, fc='r', ec='r')
+                ax.arrow(x, y, 10000*weights[j, i]*grad_y[j, i], 10000*weights[j, i]*grad_x[j, i],
+                         head_width=0.2, head_length=0.2, fc='r', ec='r', width=0.1)
         plt.show()
         plt.subplot(1, 2, 2); plt.bar(np.arange(n_bins_ori), hist, color='0.5', align='center')
         plt.xticks(np.linspace(0, n_bins_ori, 5), ['0', '\pi/2',  '\pi',  '3\pi/2', '2\pi'])
