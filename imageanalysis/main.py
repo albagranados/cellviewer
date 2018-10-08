@@ -21,19 +21,18 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 experiment_author = ''; file_dir = ''; file_name = ''
 
 file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/']  #,
-             #'/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']
-file_name = 'hFb.2_driftcorrectedlist_85120_105135'  # if is_dataset=0, then one single file
+             #  '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']  # >= 1
+is_dataset = 0  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
+file_name = 'hFb.2_driftcorrectedlist_85120_105135'  # if is_dataset=0, then one single file (in file_dirs)
 fileExt = '.txt'
-is_storm = 0
-perform = dict(image_processing=1, image_analysis=1)
-is_dataset = 0
+is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
+run = dict(image_processing=1, image_analysis=1)  # run image_processing and or image_analysis
 
 feature_all = []  # list of all features obtained for each training image in file_dirs
-
 print '\n\n _______START FULL ANALYSIS_______ '; inini_time = time.time()
 print ' _________________________________'
 
-if perform['image_processing']:
+if run['image_processing']:
     for file_dir in file_dirs:
         for jj, fileid in enumerate(os.listdir(file_dir)):
             if not is_dataset and (jj > 0): break
@@ -42,7 +41,6 @@ if perform['image_processing']:
             print '\n\n\n _______ file no.%d _______ ' % jj
             # # ============== INPUT PARAMETERS ========
             # # ========================================
-            # cell_no = str(0) + str(2)
             dict_inputfile = dict(file_dir=file_dir, file_name=file_name, fileExt=fileExt, is_storm=is_storm,
                                                       out_channel='all',
                                   ispp=1, compute_ROI=0, crop=1, crop_range=[85, 120, 105, 135],
@@ -72,7 +70,6 @@ if perform['image_processing']:
                 # # ============== ROI =============================
                 # # ================================================
                 print '\n _______PRE-PROCESSING_______'
-                reload(iproc); reload(stat); reload(vproc); reload(util)
 
                 if dict_inputfile.get('compute_ROI'):
                     if not dict_inputfile.get('crop'):
@@ -113,7 +110,7 @@ if perform['image_processing']:
                     print ("\n\n***FINISHED : ROI computed and saved as non-storm file (total time =  %.2f seconds)" % (time.time() - inini_time))
                     exit()
 
-                # # ====== IMAGE GENERATION ===================
+                # # ====== GENERATE IMAGE =====================
                 # # ===========================================
                 if dict_inputfile.get('pixelate'):
                     print 'Pixelating...',
@@ -176,7 +173,6 @@ if perform['image_processing']:
             # # ===========================================
             print '\n _______IMAGE PROCESSING_______'; ini_time = time.time()
             plt.close('all')
-            reload(vproc); reload(iproc); reload(stat)
 
             print 'Intensity-dependent computations...'
             dict_sift = dict(scale_pixel_size=scale_pixel_size, resolution=1,
@@ -226,7 +222,6 @@ if perform['image_processing']:
 
             feature['file_name'] = file_name; feature['image'] = image; feature['vor'] = vor
             feature_all.append(feature)
-            # plt.close('all')
 
             dict_output = dict(image_area=image.shape[0]*image.shape[1]*analysis_pixel_size**2,
                                ntotal=points.shape[0],
@@ -252,7 +247,7 @@ if perform['image_processing']:
 
 # # ====== IMAGE ANALYSIS ====================
 # # ==========================================
-if perform['image_analysis']:
+if run['image_analysis']:
     plt.close('all')
     reload(stat); reload(iproc); reload(vproc); reload(util)
     # # ==== CREATE VOCABULARY, unsupervised =====
