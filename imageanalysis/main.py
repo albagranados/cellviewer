@@ -20,13 +20,13 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/']  #,
+file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/1/Ch1/']  #,
              #  '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']  # >= 1
 is_dataset = 0  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
-file_name = 'hFb.2_driftcorrectedlist_85120_105135'  # if is_dataset=0, then one single file (in file_dirs)
+file_name = 'synth_clustered_sig80_mu7_ncl10_r50_Nc50_1'  # if is_dataset=0, then one single file (in file_dirs)
 fileExt = '.txt'
 is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
-run = dict(image_processing=1, image_analysis=1)  # run image_processing and or image_analysis
+run = dict(image_processing=1, image_analysis=0)  # run image_processing and or image_analysis
 
 feature_all = []  # list of all features obtained for each training image in file_dirs
 print '\n\n _______START FULL ANALYSIS_______ '; inini_time = time.time()

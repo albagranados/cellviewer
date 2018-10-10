@@ -79,7 +79,7 @@ class pointpattern():
 
             if plot:
                 fig, ax = plt.subplots()
-                ax.plot(self.points[:, 0], self.points[:, 1], markersize=0.5, alpha=0.5); ax.hold(True)
+                ax.plot(self.points[:, 0], self.points[:, 1], 'k.', markersize=0.8, alpha=0.5); ax.hold(True)
                 ax.set_xlim(self.points[:, 0].min(), self.points[:, 0].max())
                 ax.set_ylim(self.points[:, 1].min(), self.points[:, 1].max())
                 ax.set_aspect('equal', adjustable='box'); ax.hold(False)
