@@ -593,9 +593,9 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       area_g11 <- -length_scale_g11*amplitude_g11*(exp(-1/(length_scale_g11)*parameters_g11$r0)-1)
       
       if (fitting == 'expsq'){
-        clusterradiusR_g12 <- 2*sqrt(length_scale_g12)
-        clusterradiusR_g22 <- 2*sqrt(length_scale_g22)
-        clusterradiusR_g11 <- 2*sqrt(length_scale_g11)
+        clusterradiusR_g12 <- sqrt(length_scale_g12)
+        clusterradiusR_g22 <- sqrt(length_scale_g22)
+        clusterradiusR_g11 <- sqrt(length_scale_g11)
         kappa_g12 <- 1/(amplitude_g12*pi*length_scale_g12)  # number of clusters per area
         kappa_g22 <- 1/(amplitude_g22*pi*length_scale_g22)  # number of clusters per area
         kappa_g11 <- 1/(amplitude_g11*pi*length_scale_g11)  # number of clusters per area
@@ -1219,7 +1219,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       save(data, data_allrange, units, parameters_g11, parameters_g22, parameters_g12, density, npoints,
            r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
-                        '_2experiments.RData'), collapse = ''))
+                        '_', fitting, '_2experiments.RData'), collapse = ''))
     }
   }
   if (pptype=="unmarked"){
@@ -1281,7 +1281,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       area_g11 <- -length_scale_g11*amplitude_g11*(exp(-1/(length_scale_g11)*parameters_g11$r0)-1)
       
       if (fitting == 'expsq'){
-        clusterradiusR_g11 <- 2*sqrt(length_scale_g11)
+        clusterradiusR_g11 <- sqrt(length_scale_g11)
         kappa_g11 <- 1/(amplitude_g11*pi*length_scale_g11)  # number of clusters per area
         phi_g11 <- amplitude_g11/4   # rho_cluster/rho_average
         # Nclusters_g11 <- <- amplitude_g11*pi*length_scale_g11*density$level1
@@ -1633,7 +1633,7 @@ statistical_analysis <- function(path_to_experiments, pptype, fitting='exp', sav
       parameters_g11 <- parameters_g11_aux
       save(data, data_allrange, units, parameters_g11, density, npoints, r_eval, levels1, levels2, 
            file=paste(c(paste(c(path_to_experiments[1], paste(c(levels1,levels2), collapse = '')), collapse='/'), 
-                        filename_experiments, '.RData'), collapse = ''))
+                        '_', fitting, filename_experiments, '.RData'), collapse = ''))
     }
   }
 }

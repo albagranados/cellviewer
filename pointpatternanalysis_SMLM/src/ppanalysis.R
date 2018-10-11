@@ -24,9 +24,9 @@ source("utilities.R")
 
 # # dual
 # pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"  # NA
+# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
 # levels1 = 'SMC1'; levels2 = 'SMC3'
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'
+# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'  # set always two paths to experiments to run the statistical analysis
 # path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated'
 # 
 # storm_file = 0
@@ -35,28 +35,17 @@ source("utilities.R")
 
 # single
 pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-exp_name1 <- "exp1"; exp_name2 <- NULL  # NULL if only one dataset
+exp_name1 <- "R50Ncl50L7N10"; exp_name2 <- NULL  # NULL if only one dataset
 levels1 = '1'; levels2 = '1'
-path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/1'
-path_to_experiment2 <- NULL # NULL if only one dataset
+path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/synth_clustered_sig80_mu7_ncl10_r50_Nc50'
+path_to_experiment2 <- NULL # NULL if only one dataset (only one experiment)
 
 storm_file=0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
-# # mono
-# pptype='unmarked'; units = 'nm'; units_out = 'nm'; unit_size=1
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
-# levels1 = 'p'; levels2 = ''
-# path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/1'
-# path_to_experiment2 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/1'
-#  
-# storm_file = 0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
-
 ### compute
-compute_ppsummaries <- data.frame(run=0,
+compute_ppsummaries <- data.frame(run=1,
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
@@ -82,7 +71,7 @@ longitudinal_dataset$fitting <- as.character(longitudinal_dataset$fitting)
 if (units == 'pixels'){
   r_eval = seq(0, 4, length.out=200)
 } else{
-  r_eval = seq(0, 640, length.out=200)
+  r_eval = seq(0, 4*unit_size, length.out=200)
 }
 
 # -------------------- Dual color: MARKED POINT PATTERN ------
@@ -241,12 +230,12 @@ if (pptype == "marked"){
           correlationrange_12 = r_eval[which(c(0,diff(sign(g_12$iso-1)))!=0)[1]]  # brut force
           correlationrange_22 = r_eval[which(c(0,diff(sign(g_22$iso-1)))!=0)[1]]  # brut force
           correlationrange_11 = r_eval[which(c(0,diff(sign(g_11$iso-1)))!=0)[1]]  # brut force
-          g12_all[[j]] <- data.frame(r=r_eval, g12=g_12$iso)
+          g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso) # correlation function for each file/cell/window
+          g12_all[[j]] <- data.frame(r=r_eval, g12=g_12$iso) 
           g22_all[[j]] <- data.frame(r=r_eval, g22=g_22$iso)
-          g11_all[[j]] <- data.frame(r=r_eval, g11=g_11$iso)
-          g12_r0_all[j] = correlationrange_12
+          g11_r0_all[j] = correlationrange_11  # first crossing with lines g11=1 (no correlation)
+          g12_r0_all[j] = correlationrange_12  
           g22_r0_all[j] = correlationrange_22
-          g11_r0_all[j] = correlationrange_11
           cat('Done.\n')
           
           if (compute_ppsummaries$plot_functions){
