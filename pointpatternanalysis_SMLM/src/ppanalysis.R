@@ -37,7 +37,7 @@ source("utilities.R")
 pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
 exp_name1 <- "R50Ncl50L7N10"; exp_name2 <- NULL  # NULL if only one dataset
 levels1 = '1'; levels2 = '1'
-path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/synth_clustered_sig80_mu7_ncl10_r50_Nc50'
+path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/synth_clustered_sig40_mu7_ncl50_r50_Nc50'
 path_to_experiment2 <- NULL # NULL if only one dataset (only one experiment)
 
 storm_file=0
@@ -45,14 +45,14 @@ exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ### compute
-compute_ppsummaries <- data.frame(run=1,
+compute_ppsummaries <- data.frame(run=0,
                                   nearestneighbour=0,
                                   Kfunction=1,
                                     Lfunction=1,
                                   crosscorrelation=1,
                                   markconnection=0,
                                   envelopes=0,
-                                  plot_functions=1,
+                                  plot_functions=0,
                                   save = 1)
 longitudinal_dataset <- data.frame(run=1,
                                     generate = 1,
@@ -62,8 +62,8 @@ longitudinal_dataset <- data.frame(run=1,
                                       plot_2experiments = 1,
                                       save = 1,
                                     statanalysis = 1,
-                                      fitting = 'expsq' # Thomas model
-                                      # fitting = 'exp'  # PC-PALM
+                                      # fitting = 'expsq' # Thomas model
+                                      fitting = 'exp'  # PC-PALM
                                    )
 longitudinal_dataset$fitting <- as.character(longitudinal_dataset$fitting)
 
