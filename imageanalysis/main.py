@@ -9,7 +9,7 @@ from src import vprocessing as vproc, iprocessing as iproc, statistics as stat, 
 # def main():
 #     # all the stuff
 
-plt.close('all')
+# plt.close('all')
 # set directories
 parent_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis'   # os.chdir(parent_dir)
 source_dir = parent_dir + '/src/'; sys.path.insert(0, source_dir)
@@ -20,10 +20,10 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/1/Ch1/']  #,
+file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/']  #,
              #  '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']  # >= 1
 is_dataset = 0  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
-file_name = 'synth_clustered_sig80_mu7_ncl10_r50_Nc50_1'  # if is_dataset=0, then one single file (in file_dirs)
+file_name = 'hFb4_driftcorrectedlist_80110_130165'  # if is_dataset=0, then one single file (in file_dirs)
 fileExt = '.txt'
 is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
 run = dict(image_processing=1, image_analysis=0)  # run image_processing and or image_analysis
@@ -65,7 +65,7 @@ if run['image_processing']:
 
                 print '\ttotal number of localizations = %d' % points.shape[0]
                 vproc.plot_points(points)
-                # plt.savefig(output_dir + file_name + '_pp.pdf', bbox_inches='tight')
+                plt.savefig(output_dir + file_name + '_pp.pdf', bbox_inches='tight')
 
                 # # ============== ROI =============================
                 # # ================================================
@@ -124,24 +124,18 @@ if run['image_processing']:
                     print '\n _______VORONOI ANALYSIS_______'; ini_time = time.time()
                     reload(vproc); reload(iproc)
 
-                    start_time = time.time()
                     print 'Computing Voronoi tessellation... '
                     vor = Voronoi(points_roi)  # compute Voronoi tessellation
-                    print time.time()-start_time
 
                     print 'Computing Voronoi descriptors...'
-                    start_time = time.time()
                     vproc.compute_parameters(vor, dict_inputfile)   # new attribute in vor object: vor.areas
-                    print time.time()-start_time
                     print "\tnuclear area = %.0f" % float(vor.areas_total), '[o. pixel size]2'
 
-                    start_time = time.time()
                     print 'Converting Voronoi tessellation into image (i.e., interpolate)...',
                     image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
                                                         interpolate_method=dict_image.get('interpolate_method'),
                                                         fill_value=0.0,
                                                         density_transform=dict_image['detect_densitytransform'])  # log 4 detect
-                    print time.time()-start_time
                     image_descr = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
                                                               interpolate_method=dict_image.get('interpolate_method'),
                                                               fill_value=0.0,
@@ -182,7 +176,7 @@ if run['image_processing']:
                              t=10, feature_name='blob',  # 0.8, scale_ini=80
                              thresholding=0, threshold_percent=0.5, num_features='all', scale_range_is='nm',
                              scale_ini=50,
-                             scale_end=600,  # diam. of search, if pixel->analysispixel
+                             scale_end=1000,  # diam. of search, if pixel->analysispixel
                              scale_spacing='odd', nscales=150,
                              scale_resolution=dict_inputfile.get('resolution'),  # 'scale_resolution': 1, # (radius) in
                              # scale_range_is (if [nm] and STORM -> min. 20nm)
