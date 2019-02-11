@@ -22,27 +22,27 @@ source("utilities.R")
 
 ### select data
 
-# # dual
-# pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-# exp_name1 <- "DMSO"; exp_name2 <- "ActD"
-# levels1 = 'SMC1'; levels2 = 'SMC3'
-# path_to_experiment1 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in DMSO Controls'  # set always two paths to experiments to run the statistical analysis
-# path_to_experiment2 = '/home/alba/ISIS/nfs/users/jsolon/agranados/data/vicky/2017-06-18_HeLa_DualColor_SMC1_SMC3/SMC1_SMC3 in ActD Treated'
-# 
-# storm_file = 0
-# exp_names <- c(exp_name1, exp_name2)
-# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+# dual
+pptype='marked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+exp_name1 <- "DMSO"; exp_name2 <- "ActD"
+levels1 = 'PolII'; levels2 = 'SMC1'
+path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa DMSO Controls'  # set always two paths to experiments to run the statistical analysis
+path_to_experiment2 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2017-12-14_HeLa_DualColor_RNApolII_SMC1/RNApolII_SMC1 in HeLa ActD treated'
 
-# single
-pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
-exp_name1 <- "R50Ncl50L7N10"; exp_name2 <- NULL  # NULL if only one dataset
-levels1 = '1'; levels2 = '1'
-path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/synth_clustered_sig40_mu7_ncl50_r50_Nc50'
-path_to_experiment2 <- NULL # NULL if only one dataset (only one experiment)
-
-storm_file=0
+storm_file = 0
 exp_names <- c(exp_name1, exp_name2)
 path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
+
+# # single
+# pptype='unmarked'; units = 'pixels'; units_out = 'nm'; unit_size=160 #nm/px
+# exp_name1 <- "R50Ncl50L7N10"; exp_name2 <- NULL  # NULL if only one dataset
+# levels1 = '1'; levels2 = '1'
+# path_to_experiment1 = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/synthetic_chiara_Baumgart2016/synth_clustered_sig40_mu7_ncl50_r50_Nc50'
+# path_to_experiment2 <- NULL # NULL if only one dataset (only one experiment)
+# 
+# storm_file=0
+# exp_names <- c(exp_name1, exp_name2)
+# path_to_experiments <- c(path_to_experiment1, path_to_experiment2)
 
 ### compute
 compute_ppsummaries <- data.frame(run=0,
@@ -56,14 +56,14 @@ compute_ppsummaries <- data.frame(run=0,
                                   save = 1)
 longitudinal_dataset <- data.frame(run=1,
                                     generate = 1,
-                                      reso_r = 20,
+                                      reso_r = 0,
                                       stat_rrange_probs = 0,
                                       units = units_out,
                                       plot_2experiments = 1,
                                       save = 1,
-                                    statanalysis = 1,
-                                      # fitting = 'expsq' # Thomas model
-                                      fitting = 'exp'  # PC-PALM
+                                    statanalysis = 0,
+                                      fitting = 'exp' # Thomas model
+                                      # fitting = 'exp'  # PC-PALM
                                    )
 longitudinal_dataset$fitting <- as.character(longitudinal_dataset$fitting)
 

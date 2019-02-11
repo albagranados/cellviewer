@@ -125,24 +125,25 @@ for (j in 1:num_realizations){
 #                   win = owin(c(0,sqrt(area)), c(0,sqrt(area))),
 #                   drop=TRUE, saveLambda=FALSE, saveparents=TRUE)
 
-num_realizations <- 1
-area <- 60*60  # all units: STORM pixels
-density_c <- 325   # constant, points/pixel^2
-enrichment <- 5000  # density cluster / density background
+num_realizations <- 5
+area <- 12*12  # all units: STORM pixels
+density_c <-  16/300*160*160   # constant, points/pixel^2
+enrichment <- 300  # density cluster / density background
 density_b <- density_c/enrichment
 nbackground <- floor(area*density_b)
-num_clusters <- 20
+num_clusters <- 50
 
 col_palette <-  c(rgb(173,216,230,max = 255,alpha=125), rgb(255,165,0,max = 255,alpha=125))
 for (j in 1:num_realizations){
-  fileName <- paste(c('synthetic_circlerectangle_enrich', enrichment, '_densityc',
+  fileName <- paste(c('synthetic_triangle_enrich', enrichment, '_densityc',
                       round(density_c), 'px2_', 'numclusters', num_clusters, '_', j), collapse='')
 
-  epsilon <- 0.02*sqrt(area)
-  centreclusters_1 <- cbind(runif(num_clusters, min = 2*epsilon, max = 0.25*sqrt(area)-epsilon),
+  epsilon <- 0.05*sqrt(area)
+  centreclusters_1 <- cbind(runif(num_clusters, min = 2*epsilon, max = 1*sqrt(area)-2*epsilon),
                           runif(num_clusters, min = 2*epsilon, max = sqrt(area)-2*epsilon))
-  centreclusters_2 <- cbind(runif(num_clusters, min = 0.25*sqrt(area)+epsilon, max = 0.5*sqrt(area)-epsilon),
-                           runif(num_clusters, min = 2*epsilon, max = sqrt(area)-2*epsilon))
+  centreclusters_2 <- centreclusters_1
+    # cbind(runif(num_clusters, min = 0.25*sqrt(area)+epsilon, max = 0.5*sqrt(area)-epsilon),
+    #                        runif(num_clusters, min = 2*epsilon, max = sqrt(area)-2*epsilon))
   centreclusters_3 <- cbind(runif(num_clusters, min = 0.5*sqrt(area)+epsilon, max = 0.75*sqrt(area)-2*epsilon),
                            runif(num_clusters, min = 2*epsilon, max = sqrt(area)-2*epsilon))
   centreclusters_4 <- cbind(runif(num_clusters, min = 0.75*sqrt(area)+epsilon, max = sqrt(area)-2*epsilon),
@@ -155,23 +156,23 @@ for (j in 1:num_realizations){
   points_cluster <- rpoint(0, win=owin(c(0,sqrt(area)), c(0,sqrt(area))))
   for (i in 1:num_clusters){
     # circles 1
-    radius <- rnorm(1, mean = runif(1, min = 30/160, max = 30/160), sd = 0)
+    radius <- rnorm(1, mean = runif(1, min = 10/160, max = 10/160), sd = 0)
     Nclusters <- floor(density_c*(pi*radius^2))
     pp_cluster <- circle("uniform", n=Nclusters, radius=radius, centre=centreclusters_1[i,])
     points <- superimpose(pp_cluster,points)
-    col <- "red"
+    col <- "black"
     points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
 
-    # circles 2
-    radius <- rnorm(1, mean = runif(1, min = 100/160, max = 100/160), sd = 0)
-    Nclusters <- floor(density_c*(pi*radius^2))
-    pp_cluster <- circle("uniform", n=Nclusters, radius=radius, centre=centreclusters_2[i,])
-    points <- superimpose(pp_cluster,points)
-    col <- "blue"
-    points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+    # # circles 2
+    # radius <- rnorm(1, mean = runif(1, min = 100/160, max = 100/160), sd = 0)
+    # Nclusters <- floor(density_c*(pi*radius^2))
+    # pp_cluster <- circle("uniform", n=Nclusters, radius=radius, centre=centreclusters_2[i,])
+    # points <- superimpose(pp_cluster,points)
+    # col <- "blue"
+    # points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
     
     # # triangle
-    # height <- runif(1, min = 70/160, max = 200/160)
+    # height <- runif(1, min = 100/160, max = 150/160)
     # gamma <- runif(1, min = 10, max = 15)
     # rot <- runif(1, min = 0, max = 170)
     # Nclusters <- floor(density_c*(tan(gamma*pi/180)*height^2))
@@ -192,27 +193,27 @@ for (j in 1:num_realizations){
     # col <- "green"
     # points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
 
-    # a rectange 1
-    height <- runif(1, min = 60/160, max = 60/160)
-    width <- height*runif(1, min = 0.5, max = 0.7)
-    rot <- runif(1, min = 0, max = 170);
-    Nclusters <- floor(density_c*width*height)
-    pp_cluster <- rpoint(Nclusters, win=quadrilateral(cenx=centreclusters_3[i,1], ceny=centreclusters_3[i,2],
-                                      rot=rot, height=height, width=width))
-    points <- superimpose(pp_cluster,points)
-    col <- "green"
-    points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
-    
-    # a rectange 2
-    height <- runif(1, min = 200/160, max = 200/160)
-    width <- height*runif(1, min = 0.5, max = 0.7)
-    rot <- runif(1, min = 0, max = 170);
-    Nclusters <- floor(density_c*width*height)
-    pp_cluster <- rpoint(Nclusters, win=quadrilateral(cenx=centreclusters_4[i,1], ceny=centreclusters_4[i,2],
-                                                      rot=rot, height=height, width=width))
-    points <- superimpose(pp_cluster,points)
-    col <- "black"
-    points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+    # # a rectange 1
+    # height <- runif(1, min = 60/160, max = 60/160)
+    # width <- height*runif(1, min = 0.5, max = 0.7)
+    # rot <- runif(1, min = 0, max = 170);
+    # Nclusters <- floor(density_c*width*height)
+    # pp_cluster <- rpoint(Nclusters, win=quadrilateral(cenx=centreclusters_3[i,1], ceny=centreclusters_3[i,2],
+    #                                   rot=rot, height=height, width=width))
+    # points <- superimpose(pp_cluster,points)
+    # col <- "green"
+    # points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+    # 
+    # # a rectange 2
+    # height <- runif(1, min = 200/160, max = 200/160)
+    # width <- height*runif(1, min = 0.5, max = 0.7)
+    # rot <- runif(1, min = 0, max = 170);
+    # Nclusters <- floor(density_c*width*height)
+    # pp_cluster <- rpoint(Nclusters, win=quadrilateral(cenx=centreclusters_4[i,1], ceny=centreclusters_4[i,2],
+    #                                                   rot=rot, height=height, width=width))
+    # points <- superimpose(pp_cluster,points)
+    # col <- "black"
+    # points(pp_cluster, cex=0.1, main='', pch=16, col=col, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
     
   }
   # closepdf(paste(fileName, ".pdf", sep = ''))
