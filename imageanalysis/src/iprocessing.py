@@ -295,7 +295,7 @@ def get_blob(image, kwargs, image_descr=None):
     t = kwargs.get('t', 1)
     original_pixel_size = kwargs.get('original_pixel_size', 1)
     scale_pixel_size = kwargs.get('scale_pixel_size', 1)
-    pixel_size = scale_pixel_size * original_pixel_size
+    pixel_size = scale_pixel_size * original_pixel_size  # = analysis pixel size
     nscales = kwargs.get('nscales', 1)
     scale_resolution = kwargs.get('scale_resolution', 1)  # only for odd spacing
     max_filter_width = kwargs.get('max_filter_width', 3)
@@ -331,8 +331,8 @@ def get_blob(image, kwargs, image_descr=None):
                 scale_resolution = np.ceil(scale_resolution/pixel_size)
                 print '\t\tWarning: if scale_resolution [nm] < analysis_pixel_size [nm], then scale_resolution = ' \
                       'analysis_pixel_size:'
-                print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' % (scale_resolution,
-                                                                                                    pixel_size)
+                print '\t\t\t\tscale_resolution = %.2f [nm] and analysis_pixel_size = %.2f [nm]' \
+                      % (scale_resolution*pixel_size, pixel_size)
             scale_ini = np.ceil((scale_ini - 1) / 2.)
             scale_end = np.ceil((scale_end - 1) / 2.)
             if max_filter_depth is None: max_filter_depth = nscales + 1
@@ -382,10 +382,10 @@ def get_blob(image, kwargs, image_descr=None):
         strength = laplacian_mod[local_maxima_locations]
         scale = scale_range[local_maxima_locations[0]]  # (1 + local_maxima_locations[0])  # 1d array
 
-        from src import statistics as stat
-        stat.plot_hist(strength, num_bins=50, xlabel=r'strength (Laplacian) NO THRESHOLD')
-        # stat.plot_boxplot(strength, bptype='violin', ylabel=r'strength (Laplacian) NO THRESHOLD')
-        plt.savefig('strength_boxplot.pdf', bbox_inches='tight')
+        # from src import statistics as stat
+        # stat.plot_hist(strength, num_bins=50, xlabel=r'strength (Laplacian) NO THRESHOLD')
+        # # stat.plot_boxplot(strength, bptype='violin', ylabel=r'strength (Laplacian) NO THRESHOLD')
+        # plt.savefig('strength_boxplot.pdf', bbox_inches='tight')
         diameter = pixel_size * 3 * np.sqrt(scale)
 
         # begin: thresholding before orientation computation (used to be in find_feature)
@@ -945,49 +945,3 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
     return histogram
 
-
-def nnd_feature(feature, dict_sift):
-
-    from sklearn.neighbors import NearestNeighbors
-    import statistics as stat
-    import utilities as util
-
-    feature_name = dict_sift.get('feature_name')
-    analysis_pixel_size = dict_sift.get('scale_pixel_size') * dict_sift.get('original_pixel_size', 1)
-
-    argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
-    scale = feature.get('scale')  # 1d-array
-
-    scales = np.unique(np.append(scale, float('inf')))
-    number_features = np.histogram(scale, bins=scales)
-
-    if feature_name == 'blob':
-        num_ini = 0
-        dist_all_features = []
-        fig, ax = plt.subplots()
-        for ii, num in enumerate(number_features[0]):
-            # t = scale[num_ini]
-            x = argmaxgrad[0][num_ini:num_ini+num]
-            y = argmaxgrad[1][num_ini:num_ini+num]
-            blobs_xy = np.array([x, y]).T
-            nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
-            distances, indices = nbrs.kneighbors(blobs_xy)
-            num_ini = num_ini + num
-            # dist_all_features.append(3*np.sqrt(distances[:, 1])*analysis_pixel_size)
-            dist_all_features.append(distances[:, 1]*analysis_pixel_size)
-            # ax.boxplot(distances[1]*scale_pixel_size, 3*np.sqrt(t)*scale_pixel_size)
-            # ax.hold(True)
-
-    util.violin_plot(ax, dist_all_features, pos1=3*np.sqrt(scales)*analysis_pixel_size, bp=1,
-                     xlabel='scale - diameter [nm(physical unit)]',
-                     ylabel='nearest neighbor distance [nm(physical unit)]')
-
-    # x = argmaxgrad[0]
-    # y = argmaxgrad[1]
-    # blobs_xy = np.array([x, y]).T
-    # nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(blobs_xy)
-    # distances, indices = nbrs.kneighbors(blobs_xy)
-    #
-    # stat.plot_hist(distances[1]*scale_pixel_size)
-
-    # return nnd_localizations

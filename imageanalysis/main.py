@@ -1,7 +1,7 @@
 # modules
 import sys, os, time
 import numpy as np, matplotlib.pyplot as plt
-import cv2
+import cv2, pickle
 from scipy.spatial import Voronoi
 # my_modules
 from src import vprocessing as vproc, iprocessing as iproc, statistics as stat, utilities as util
@@ -9,7 +9,7 @@ from src import vprocessing as vproc, iprocessing as iproc, statistics as stat, 
 # def main():
 #     # all the stuff
 
-# plt.close('all')
+plt.close('all')
 # set directories
 parent_dir = '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis'   # os.chdir(parent_dir)
 source_dir = parent_dir + '/src/'; sys.path.insert(0, source_dir)
@@ -20,34 +20,42 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/']  #,
-             #  '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']  # >= 1
-is_dataset = 0  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
-file_name = 'hFb4_driftcorrectedlist_80110_130165'  # if is_dataset=0, then one single file (in file_dirs)
+file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/',
+             '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']
+# >= 1
+is_dataset = 1  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
+file_name = 'synthetic_circlerectangle_enrich20_densityc325px2_numclusters50_1'  # if is_dataset=0, then one single file (in
+#  file_dirs)
 fileExt = '.txt'
 is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
-run = dict(image_processing=1, image_analysis=0)  # run image_processing and or image_analysis
+run = dict(image_processing=0, image_analysis=1)  # run image_processing and or image_analysis
 
-feature_all = []  # list of all features obtained for each training image in file_dirs
+if run['image_processing'] == 0:
+    file_variables = open('/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/melike/Histones/crops_variables','rb')
+    [feature_all, file_dirs, dict_inputfile, dict_image, dict_sift] = pickle.load(file_variables)
+    file_variables.close()
+
 print '\n\n _______START FULL ANALYSIS_______ '; inini_time = time.time()
 print ' _________________________________'
 
 if run['image_processing']:
-    for file_dir in file_dirs:
+    feature_all = []  # list of all features obtained for each training image in file_dirs
+    for kk, file_dir in enumerate(file_dirs):  # each file_dir corresponds to one type of experimental data
         for jj, fileid in enumerate(os.listdir(file_dir)):
             if not is_dataset and (jj > 0): break
+            if jj > 1: break
             elif is_dataset: file_name = fileid.split(fileExt)[0]
 
             print '\n\n\n _______ file no.%d _______ ' % jj
             # # ============== INPUT PARAMETERS ========
             # # ========================================
+            analysis_pixel_size = 5  # 10 [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
             dict_inputfile = dict(file_dir=file_dir, file_name=file_name, fileExt=fileExt, is_storm=is_storm,
                                                       out_channel='all',
-                                  ispp=1, compute_ROI=0, crop=1, crop_range=[85, 120, 105, 135],
+                                  ispp=1, compute_ROI=0, crop=1, crop_range=[30, 60, 0, 60],
                                           pixelate=0,
                                           tessellate=1,
-                                  original_pixel_size=160, photonconv=0.14, resolution=1)   # [nm]/[pixel], e.g. STORM
-            analysis_pixel_size = 10  # 10 [nm] <<< 160 [nm] (STORM res.) -> scale pixel size anal.p.s/ori.p.s
+                                  original_pixel_size=160, photonconv=0.14, resolution=analysis_pixel_size)   # [nm]/[pixel], e.g. STORM
             scale_pixel_size = float(analysis_pixel_size)/dict_inputfile.get('original_pixel_size')
             dict_image = dict(scale_pixel_size=scale_pixel_size,
                               original_pixel_size=dict_inputfile.get('original_pixel_size'),
@@ -174,8 +182,8 @@ if run['image_processing']:
 
                              # feature detection
                              t=10, feature_name='blob',  # 0.8, scale_ini=80
-                             thresholding=0, threshold_percent=0.5, num_features='all', scale_range_is='nm',
-                             scale_ini=50,
+                             thresholding=1, threshold_percent=0.8, num_features='all', scale_range_is='nm',
+                             scale_ini=15,
                              scale_end=1000,  # diam. of search, if pixel->analysispixel
                              scale_spacing='odd', nscales=150,
                              scale_resolution=dict_inputfile.get('resolution'),  # 'scale_resolution': 1, # (radius) in
@@ -190,9 +198,7 @@ if run['image_processing']:
                              compute_sift_descr=1,
                              sigma_descr_times=2, window_descr_radtimes=1, n_hist=16, n_bins_descr=8, threshold_sat=0.2,
                              plot_graphics=0)
-            util.saveparameters(output_dir + file_name + '_parameters.txt', dict1=dict_inputfile, dict2=dict_image, dict3=dict_sift)
 
-            reload(iproc); plt.close('all')
             print 'Detecting and describing features (%s)...' % dict_sift.get('feature_name'); start_time = time.time()
             feature = iproc.find_feature(image, dict_sift, image_descr=image_descr)
             print ("\tDone (total time =  %.2f seconds)" % (time.time() - start_time))
@@ -214,7 +220,8 @@ if run['image_processing']:
                 plt.savefig(output_dir + file_name + '_features_pp.pdf', bbox_inches='tight')
                 print ("Done (time =  %.2f seconds)" % (time.time() - start_time))
 
-            feature['file_name'] = file_name; feature['image'] = image; feature['vor'] = vor
+            feature['file_name'] = file_name; feature['file_dir'] = file_dir
+            feature['image'] = image; feature['vor'] = vor
             feature_all.append(feature)
 
             dict_output = dict(image_area=image.shape[0]*image.shape[1]*analysis_pixel_size**2,
@@ -226,24 +233,37 @@ if run['image_processing']:
             util.saveparameters(output_dir + file_name + '_output.txt', dict1=dict_output)
             print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
-    # # ====== IMAGE PROCESSING - SAMPLE STATISTICS
-    # # ===========================================
-    print '\n _______SAMPLE STATISTICS_______'; ini_time = time.time()
-    reload(vproc); reload(iproc); reload(stat); reload(util)
-    print 'Computing feature statistics...'
+        # # ====== IMAGE PROCESSING - SAMPLE STATISTICS
+        # # ===========================================
+        print '\n _______SAMPLE STATISTICS_______'; ini_time = time.time()
+        print 'Computing feature statistics...'
 
-    if len(feature_all) > 1: savefile_suffix_all = output_dir + '_'.join(file_name.split('_')[0:-1])
-    else: savefile_suffix_all = output_dir + file_name
-    stat.statistic_descrip(feature_all, ispp=dict_inputfile['ispp'], pixel_size=analysis_pixel_size,
-                           savefile_suffix=savefile_suffix_all)
+        if len(feature_all) == 1: savefile_suffix_all = output_dir + file_name  # one file analyzed
+        else: savefile_suffix_all = output_dir + file_dirs[kk].split('/')[-2]
+        stat.statistic_descrip(feature_all, file_dirs=file_dirs[kk], ispp=dict_inputfile['ispp'],
+                               pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix_all,
+                               radius=0, area=0, density_cluster=0, area_voronoi=0, num_loc=0, density=0, nnd=1)
+    if len(file_dirs) > 1:
+        savefile_suffix_all = output_dir + file_dirs[0].split('/')[-3]
+        stat.statistic_descrip(feature_all, file_dirs=file_dirs[0:2], ispp=dict_inputfile['ispp'],
+                               pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix_all,
+                               radius=1, area=1, density_cluster=1, area_voronoi=0, num_loc=1, density=1, nnd=1)
+    util.saveparameters(savefile_suffix_all + '_parameters.txt', dict1=dict_inputfile, dict2=dict_image,
+                        dict3=dict_sift)
+    file_variables = open(savefile_suffix_all+'_variables', 'wb')
+    pickle.dump([feature_all, file_dirs, dict_inputfile, dict_image, dict_sift], file_variables); file_variables.close()
+    # np.save(savefile_suffix_all+'_feature_all.npy', feature_all)
     print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
+
+# feature_all_filtered, feature_pos_filtered, kmeans_filtered = \
+#                 stat.filter_features('experiment', feature_all, kmeans=None, ball_radius_percentile=1,
+#                                      diameter_range=[100,1000], experiment_name=file_dirs[1], threshold_percent=0.5)
 
 # # ====== IMAGE ANALYSIS ====================
 # # ==========================================
 if run['image_analysis']:
-    plt.close('all')
-    reload(stat); reload(iproc); reload(vproc); reload(util)
+    plt.close('all'); reload(stat); reload(iproc); reload(vproc); reload(util)
     # # ==== CREATE VOCABULARY, unsupervised =====
     if dict_sift.get('compute_orientation'):
         print '\n _______ IMAGE ANALYSIS_______'; ini_time = time.time()
@@ -254,44 +274,53 @@ if run['image_analysis']:
             histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
             histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in
                                     hist])
-            print 'size all histograms: ', len(histogram)
-            kmeans = stat.create_vocabulary(feature_all, dict_sift, n_cluster=k, init=init)
+            kmeans = stat.create_vocabulary(feature_all_filtered, dict_sift, n_cluster=k, init=init)
             sserror.append(kmeans.inertia_)
 
-            # feature_all_sub = stat.filter_features(feature_all, kmeans, ball_radius=4.5*10**-1)
+            feature_all_filtered, feature_pos_filtered, kmeans_filtered = \
+                stat.filter_features('strength', feature_all, kmeans=kmeans, ball_radius_percentile=1,
+                                     diameter_range=[100,1000], experiment_name=file_dirs[0], threshold_percent=0.5)
 
             # plot the feature class with k+1 according to the colorcode at k. Comment if it feels unnecessary.
             if k == k0: centers_permuted0 = kmeans.cluster_centers_
             if k > k0: centers_permuted0, kmeans = util.permute_labels(kmeans, k, centers_permuted0)
 
-            image_no = 0  # len(feature_all)-1
+            image_no = 3  # len(feature_all)-1
             feature_image = feature_all[image_no]
             image = feature_image['image']
             vor = feature_image['vor']
-            if len(feature_all) > 1:
-                savefile_suffix_all = output_dir + '_'.join(file_name.split('_')[0:-1]) + '_kmeans%d' % k
+            if len(file_dirs) > 1:
+                savefile_suffix_all = output_dir + file_dirs[0].split('/')[-3] + '_kmeans%d' % k
             else:
                 savefile_suffix_all = output_dir + feature_image['file_name'] + '_kmeans%d' % k
             stat.scatterplot_vocabulary(feature_all, kmeans, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
                                         savefile_suffix=savefile_suffix_all)
+            stat.scatterplot_vocabulary(feature_all, kmeans, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
+                                        savefile_suffix=savefile_suffix_all+'_filtered',
+                                        filter_pos=feature_pos_filtered)
             stat.sift2shape(kmeans, cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
 
             stat.words_characteristics(feature_all, kmeans.labels_, cmap=util.discrete_cmap(k, "jet"),
-                                       pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix_all)
+                                       pixel_size=dict_sift['original_pixel_size']*dict_sift['scale_pixel_size'],
+                                       savefile_suffix=savefile_suffix_all)
 
             # plots and statistics on one selected image, optional (change kmeans.labels_ -> kmeans_labels_image):
             kmeans_labels_image = util.select_labels_image(feature_all, kmeans.labels_, image_no=image_no)
-            savefile_suffix = output_dir + feature_image['file_name'] + '_kmeans%d' % k  # or None
-            stat.words_characteristics(feature_image, kmeans_labels_image, cmap=util.discrete_cmap(k, "jet"),
-                                       pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix)
+            # stat.words_characteristics(feature_image, kmeans_labels_image, cmap=util.discrete_cmap(k, "jet"),
+            #                            pixel_size=dict_sift['original_pixel_size']*dict_sift['scale_pixel_size'], savefile_suffix=None)
             iproc.plot_feature(image, feature_image, cmap='gray', norm='linear', plot_axis='on',
                                blob_color='class', ori_color=kmeans_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            savefile_suffix = output_dir + feature_image['file_name'] + '_kmeans%d' % k  # or None
             plt.savefig(savefile_suffix + '_features_image.pdf', bbox_inches='tight')
-            if dict_inputfile['ispp']:
-                vproc.plot_feature(vor, feature_image, dict_sift, show_points=True, cmap='gray', norm='log',
-                                   plot_axis='on', blob_color='class', ori_color=kmeans_labels_image,
-                                   ori_cmap=util.discrete_cmap(k, "jet"))
-                plt.savefig(savefile_suffix + '_features_pp.pdf', bbox_inches='tight')
+            kmeans_labels_image = util.select_labels_image(feature_all_filtered, kmeans_filtered.labels_, image_no=image_no)
+            iproc.plot_feature(image, feature_all_filtered[image_no], cmap='gray', norm='linear', plot_axis='on',
+                               blob_color='class', ori_color=kmeans_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            plt.savefig(savefile_suffix + '_features_image_filtered.pdf', bbox_inches='tight')
+            # if dict_inputfile['ispp']:
+            #     vproc.plot_feature(vor, feature_image, dict_sift, show_points=True, cmap='gray', norm='log',
+            #                        plot_axis='on', blob_color='class', ori_color=kmeans_labels_image,
+            #                        ori_cmap=util.discrete_cmap(k, "jet"))
+            #     plt.savefig(savefile_suffix + '_features_pp.pdf', bbox_inches='tight')
 
         fig2, ax2 = plt.subplots()
         ax2.plot(range(k0, kn+1), sserror, 'k.-', markersize=10)
