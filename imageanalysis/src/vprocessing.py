@@ -502,24 +502,17 @@ def localizations_feature(vor, feature, dict_sift):
     localizations within that feature (e.g., blob with radius 2*\sqrt{t})
     """
 
-    feature_name = dict_sift.get('feature_name')
     scale_pixel_size = dict_sift.get('scale_pixel_size')
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     scale = feature.get('scale')  # 1d-array
 
     ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
-
     number_localizations = np.zeros(shape=(len(argmaxgrad[0]),))
-
-    if feature_name == 'edge':
-        plt.plot(argmaxgrad[0], argmaxgrad[1], 'ko', markersize=3)
-
-    if feature_name == 'blob':
-        for ii, blob_y in enumerate(argmaxgrad[1]):
-            blob_x = argmaxgrad[0][ii]
-            radius = (np.sqrt(scale[ii]) * 1.5)*scale_pixel_size
-            count = np.where(np.sqrt((vor.points[:, 0] - (ox + blob_x*scale_pixel_size))**2 +
-                             (vor.points[:, 1] - (oy + blob_y*scale_pixel_size))**2) <= radius)
-            number_localizations[ii] = len(count[0])
+    for ii, blob_y in enumerate(argmaxgrad[1]):
+        blob_x = argmaxgrad[0][ii]
+        radius = (np.sqrt(scale[ii]) * 1.5)*scale_pixel_size
+        count = np.where(np.sqrt((vor.points[:, 0] - (ox + blob_x*scale_pixel_size))**2 +
+                         (vor.points[:, 1] - (oy + blob_y*scale_pixel_size))**2) <= radius)
+        number_localizations[ii] = len(count[0])
 
     return number_localizations

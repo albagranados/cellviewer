@@ -94,34 +94,6 @@ def image2pattern(image_roi, points, image_ptslabel):
     return points_roi
 
 
-def points_2dcrop(points, rangexy):
-    """
-    select smaller region
-
-    Input:
-    -------------
-    points (nx2 array)
-    rangexy (list of floats): [x0, x1, y0, y1] cropped area is [x0, x1]x[y0,y1]
-
-    Output:
-    --------------
-    new_points (nx2 array)
-    """
-
-    x0 = rangexy[0]; x1 = rangexy[1]; y0 = rangexy[2]; y1 = rangexy[3]
-    temp_pos = np.where(points[:, 0] > x0)
-    new_points = points[temp_pos]
-    temp_pos = np.where(new_points[:, 0] < x1)
-    new_points = new_points[temp_pos]
-
-    temp_pos = np.where(new_points[:, 1] > y0)
-    new_points = new_points[temp_pos]
-    temp_pos = np.where(new_points[:, 1] < y1)
-    new_points = new_points[temp_pos]
-
-    return new_points
-
-
 def image_crop(image, x0, x1, y0, y1):
     """
     select smaller region

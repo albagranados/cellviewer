@@ -475,3 +475,44 @@ def select_labels_image(feature_all, labels_all, image_no):
     kmeans_labels_image = labels_all[image_ref[image_no]:image_ref[image_no+1]]
 
     return kmeans_labels_image
+
+
+def points_2dcrop(points, rangexy):
+    """
+    select smaller region
+
+    Input:
+    -------------
+    points (nx2 array)
+    rangexy (list of floats): [x0, x1, y0, y1] cropped area is [x0, x1]x[y0,y1]
+
+    Output:
+    --------------
+    new_points (nx2 array)
+    """
+
+    x0 = rangexy[0]; x1 = rangexy[1]; y0 = rangexy[2]; y1 = rangexy[3]
+    temp_pos = np.where(points[:, 0] > x0)
+    new_points = points[temp_pos]
+    temp_pos = np.where(new_points[:, 0] < x1)
+    new_points = new_points[temp_pos]
+
+    temp_pos = np.where(new_points[:, 1] > y0)
+    new_points = new_points[temp_pos]
+    temp_pos = np.where(new_points[:, 1] < y1)
+    new_points = new_points[temp_pos]
+
+    return new_points
+
+
+def remove_points_rnd(points, percent=10):
+
+    """
+    Randomly remove points by percent [%]
+    """
+    num_points = points.shape[0]
+    rnd_pos = np.random.randint(num_points-1, size=int(num_points*(1-1/100.*percent)))
+
+    new_points = points[rnd_pos]
+
+    return new_points
