@@ -423,21 +423,26 @@ def discrete_cmap(N, base_cmap=None):
     #    return plt.cm.get_cmap(base_cmap, N)
     # The following works for string, None, or a colormap instance:
 
-    base = plt.cm.get_cmap(base_cmap)
+    # base = plt.cm.get_cmap(base_cmap)
+    # color_pos = np.array([0.05, 0.95, 0.5, 0.3, 0.7,
+    #                        0.44827586, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
+    #                        0.03448276, 0.65517241, 0.10344828, 0.82758621, 0.5862069 ,
+    #                        0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.27586207,
+    #                        1., 0.62068966, 0.4137931, 0.68965517, 0.72413793,
+    #                        0.79310345, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
+    # color_list = base(color_pos[0:N])
+    #
+    # cmap_name = base.name + str(N)
+    #
+    # return base.from_list(cmap_name, color_list, N)
 
-    max_size_voc = 30
-    # color_pos = np.random.permutation(np.linspace(0, 1, max_size_voc))
-    color_pos = np.array([0.05, 0.95, 0.5, 0.3, 0.7,
-                           0.44827586, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
-                           0.03448276, 0.65517241, 0.10344828, 0.82758621, 0.5862069 ,
-                           0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.27586207,
-                           1., 0.62068966, 0.4137931, 0.68965517, 0.72413793,
-                           0.79310345, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
-    color_list = base(color_pos[0:N])
-    # color_list = base(np.linspace(0, 1, N))
-    cmap_name = base.name + str(N)
+    import matplotlib as mpl
 
-    return base.from_list(cmap_name, color_list, N)
+    # return  mpl.colors.ListedColormap([(0,0,0), (0.9,0.62,0)])
+    colormap_rgb = [(0.9,0.62,0), (0.34,0.7,0.91), (0, 0.62, 0.45), (0.94,0.89,0.25), (0,0.45,0.7),
+                                      (0.83,0.368,0), (0.8,0.474,0.654)]
+    colormap = mpl.colors.ListedColormap(colormap_rgb[0:N])
+    return colormap
 
 
 def permute_labels(kmeans, k, centers_permuted0):

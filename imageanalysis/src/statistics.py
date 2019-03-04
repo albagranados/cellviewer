@@ -1,9 +1,9 @@
-import matplotlib
 import math
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
-matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
-matplotlib.rcParams.update({'font.size': 16})
+mpl.rcParams["text.usetex"] = True; mpl.rcParams['font.family'] = 'serif'  # configure latex plots
+mpl.rcParams.update({'font.size': 30})
 
 
 def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
@@ -140,11 +140,12 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
 
     Output:
     --------------
-    result (dict): cmeans, cmedians, ... see: https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.violinplot.html
+    result (dict): cmeans, cmedians, ... see: https://mpl.org/api/_as_gen/mpl.axes.Axes.violinplot.html
     """
 
     if not isinstance(data, list): data = [data]  # correct if not list input data
 
+    # alpha=0.3
     if yscale is 'log':
         data = [bp[np.where((bp != float('inf')) & (bp > 0))] for bp in data]
         values = [np.log10(bp) for bp in data]
@@ -153,6 +154,8 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
         values = [bp[np.where((bp != float('inf')) & (bp >= 0))] for bp in data]
     fig, ax = plt.subplots(figsize=(len(data)*1.5, len(data)*3))
     if bptype == 'violin':   # plot violin plot
+        # print ylabel
+        # print [np.mean(data) for data in values]
         result = ax.violinplot(values, widths=widths, showmeans=1, showmedians=True, showextrema=True)
         for ii, pc in enumerate(result['bodies']):
             pc.set_alpha(alpha)
@@ -170,6 +173,7 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
             pc.set_linewidth(2)
             pc.set_alpha(alpha)
             if pc == result['cmeans']:
+                # print 'mean in boxplot = ', result['cmeans']
                 pc.set_linestyle('--')
     else:  # plot box plot
         result = ax.boxplot(values)
@@ -181,6 +185,7 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
     # ax.set_xticks([y + 1 for y in range(len(values))])
     # ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
     if xticklabels == '': xticklabels=[str(i+1) for i in range(len(values))]
+    # xticklabels = [r'10\%', '20\%', '30\%', '40\%', '50\%', '60\%', '70\%', '80\%']
     plt.setp(ax, xticks=[y + 1 for y in range(len(values))], xticklabels=xticklabels, ylabel=ylabel, xlabel=xlabel)
     if text is not None: plt.title(text)
     plt.show()
@@ -210,8 +215,8 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
     if not isinstance(feature_all, list): feature_all = [feature_all]  # only one sample
     if not isinstance(file_dirs, list): file_dirs = [file_dirs]  # only one sample
 
-    if cluster_cluster:
-        for feature in feature_all: feature['clusterincluster'] = count_clusterincluster(feature, pixel_size)
+    # if cluster_cluster:
+    #     for feature in feature_all: feature['clusterincluster'] = count_clusterincluster(feature, pixel_size)
     feature_all_dir1 = []  # will be non-empty if >1 file_dirs, i.e., if we want to plot two histograms
     # corresponding to statistics of cluster descriptors of two experiments
     for ii, file_dir in enumerate(file_dirs):
@@ -219,30 +224,32 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
         elif ii == 1: feature_all_dir1 = [feature for feature in feature_all if feature['file_dir'] == file_dir]
         elif ii > 1: raise ValueError('error in statistic_descrip: only two histograms can be ovelaid.')
 
-    blob_diameters_all_dir0 = np.asarray([diameter for feature in feature_all_dir0 for diameter in feature['diameter']])
+    blob_diameters_all_dir0 = np.asarray([diameter for feature in feature_all_dir0 for jj, diameter in enumerate(
+                                feature['diameter']) if len(feature['histogram_descr'][jj]) > 0])
     cluster_density_all_dir0 = np.asarray([feature['argmaxgrad'][0].shape[0] / float(pixel_size**2 *
                                           feature['image'].shape[0] * feature['image'].shape[1]) for feature in
                                           feature_all_dir0])
     if feature_all_dir1:
-        blob_diameters_all_dir1 = np.asarray([diameter for feature in feature_all_dir1 for diameter in feature['diameter']])
+        blob_diameters_all_dir1 = np.asarray([diameter for feature in feature_all_dir1 for jj, diameter in
+                                              enumerate(feature['diameter']) if len(feature['histogram_descr'][jj]) > 0])
         cluster_density_all_dir1 = np.asarray([feature['argmaxgrad'][0].shape[0] /
                                                float(pixel_size ** 2 *feature['image'].shape[0] *feature['image'].shape[1]) for
                                                feature in feature_all_dir1])
     if radius:
         fig, ax = plot_hist(0.5*blob_diameters_all_dir0, xscale='log', xlabel=r'blob radius R [nm]', discrete=1,
-                            color='k', yscale='log')
+                            color='k', ylim=[0, 0.4])
         # plot_boxplot(0.5 * blob_diameters_all, bptype='violin', ylabel=r'blob radius R [nm]')
         if feature_all_dir1:
             plot_hist(0.5 * blob_diameters_all_dir1, fig=fig, ax=ax, xscale='log', xlabel=r'blob radius R [nm]',
-                      discrete=1, color='r', yscale='log')
+                      discrete=1, color='r', ylim=[0, 0.4])
         plt.savefig(savefile_suffix + '_blobradius.pdf', bbox_inches='tight')
     if area:
         fig, ax = plot_hist(np.pi*(blob_diameters_all_dir0/2.)**2, xscale='log', xlabel=r'blob area [nm2]',
-                  yscale='log', discrete=1)
+                            ylim=[0, 0.3], discrete=1)
         # plot_boxplot(np.pi * (blob_diameters_all / 2.) ** 2, bptype='violin', ylabel=r'blob area [nm2]')
         if feature_all_dir1:
             plot_hist(np.pi * (blob_diameters_all_dir1 / 2.) ** 2, fig=fig, ax=ax, xscale='log',
-                      xlabel=r'blob area [nm$^2$]', discrete=1, color='r', yscale='log')
+                      xlabel=r'blob area [nm$^2$]', discrete=1, ylim=[0, 0.3], color='r')
         plt.savefig(savefile_suffix + '_blobareas.pdf', bbox_inches='tight')
         # errorbar_featureresponse(feature, dict_sift, xlabel=r'blob diameter [nm]')
     # print '\tNumber of clusters:\t', feature_all[0]['argmaxgrad'][0].shape[0]
@@ -255,9 +262,11 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
                       xlabel=r'$\kappa$ ['r'blobs/nm$^2$]')
         plt.savefig(savefile_suffix + '_blobdensitieskappa.pdf', bbox_inches='tight')
     if ispp:
-        density_all_dir0 = np.asarray([den for feature in feature_all_dir0 for den in feature['density']])
+        density_all_dir0 = np.asarray([den for feature in feature_all_dir0 for jj, den in enumerate(feature[
+                                                            'density']) if len(feature['histogram_descr'][jj]) > 0])
         vor_areas_all_dir0 = np.asarray([area for feature in feature_all_dir0 for area in feature['vor'].areas])
-        num_loc_all_dir0 = np.asarray([nl for feature in feature_all_dir0 for nl in feature['number_localizations']])
+        num_loc_all_dir0 = np.asarray([nl for feature in feature_all_dir0 for jj, nl in enumerate(feature[
+                                        'number_localizations']) if len(feature['histogram_descr'][jj]) > 0])
         # percentage_number_localizations = np.asarray([numloc / points.shape[0] * 100 for feature in feature_all for
                                             # numloc in feature['number_localizations']])
         # vareas_statistics = sample_statistics(vor.areas[vor.areas < float('inf')]*
@@ -269,10 +278,11 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
         # print '\tNumber of loc. per blob: \t', feature_statistics, '[loc/blob]'
         # print '\tLocal blob densities: \t', densities_statistics, ' [loc/nm2]'
         if feature_all_dir1:
-            density_all_dir1 = np.asarray([den for feature in feature_all_dir1 for den in feature['density']])
+            density_all_dir1 = np.asarray([den for feature in feature_all_dir1 for jj, den in enumerate(feature[
+                                'density']) if len(feature['histogram_descr'][jj]) > 0])
             vor_areas_all_dir1 = np.asarray([area for feature in feature_all_dir1 for area in feature['vor'].areas])
-            num_loc_all_dir1 = np.asarray(
-                [nl for feature in feature_all_dir1 for nl in feature['number_localizations']])
+            num_loc_all_dir1 = np.asarray([nl for feature in feature_all_dir1 for jj, nl in
+                                           enumerate(feature['number_localizations']) if len(feature['histogram_descr'][jj]) > 0])
         if area_voronoi:
             fig, ax = plot_hist(vor_areas_all_dir0, xscale='log', num_bins=50, xlabel=r'Voronoi polygon area [nm$^2$]')
             # plot_boxplot(vor_areas_all, xscale='log', bptype='violin', ylabel=r'Voronoi polygon area [nm$^2$]')
@@ -281,36 +291,40 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
                           xlabel=r'Voronoi polygon 'r'area [nm$^2$]')
             plt.savefig(savefile_suffix + '_voronoiareas.pdf', bbox_inches='tight')
         if num_loc:
-            fig, ax = plot_hist(num_loc_all_dir0, xscale='log', num_bins=50, xlim=[1, 10**3], ylim=[0,0.3],
-                      xlabel=r'N$^{cluster}$ ['r'points/blob]', yscale='log')
+            fig, ax = plot_hist(num_loc_all_dir0, xscale='log', num_bins=50, xlim=[1, 10**3], ylim=[0,0.2],
+                                xlabel=r'N$^{cluster}$ ['r'points/blob]')
             # plot_boxplot(num_loc_all, xscale='log', bptype='violin', ylabel=r'N$^{cluster}$ [points/cluster]')
             if feature_all_dir1:
-                plot_hist(num_loc_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, xlim=[1, 10 ** 3], ylim=[0, 0.3],
-                          color='r', xlabel=r'N$^{cluster}$ ['r'points/blob]', yscale='log')
+                plot_hist(num_loc_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, xlim=[1, 10 ** 3], ylim=[0,0.2],
+                          color='r', xlabel=r'N$^{cluster}$ ['r'points/blob]')
             plt.savefig(savefile_suffix + '_blobnumloc.pdf', bbox_inches='tight')
         if density:
-            fig, ax = plot_hist(density_all_dir0, xscale='log', num_bins=50, ylim=[0,0.3],
+            fig, ax = plot_hist(density_all_dir0, xscale='log', num_bins=50, ylim=[0,0.2],
                                 xlabel=r'blob density [points/nm$^2$]')
             # plot_boxplot(density_all, bptype='violin', ylabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]')
             if feature_all_dir1:
-                plot_hist(density_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, ylim=[0,0.3], color='r',
+                plot_hist(density_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, ylim=[0,0.2], color='r',
                           xlabel=r'blob density ['r'points/nm$^2$]')
             plt.savefig(savefile_suffix + '_blobdensities.pdf', bbox_inches='tight')
         if nnd:
-            dist_all_features_dir0 = nnd_feature(feature_all_dir0, pixel_size)
-            fig, ax = plot_hist(dist_all_features_dir0, xscale='log', num_bins=50, ylim=[0,0.3],
+            dist_all_features_dir0 = np.asarray([cc for feature in feature_all_dir0 for jj, cc in enumerate(feature[
+                'nnd']) if len(feature['histogram_descr'][jj]) > 0])
+            # dist_all_features_dir0 = nnd_feature(feature_all_dir0, pixel_size)
+            fig, ax = plot_hist(dist_all_features_dir0, xscale='log', num_bins=50, ylim=[0,0.2],
                                 xlim=[0, 400], xlabel=r'nnd [nm]')
             if feature_all_dir1:
-                dist_all_features_dir1 = nnd_feature(feature_all_dir1, pixel_size)
-                plot_hist(dist_all_features_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, color='r', ylim=[0, 0.3],
+                # dist_all_features_dir1 = nnd_feature(feature_all_dir1, pixel_size)
+                dist_all_features_dir1 = np.asarray([cc for feature in feature_all_dir1 for jj, cc in enumerate(feature[
+                                                    'nnd']) if len(feature['histogram_descr'][jj]) > 0])
+                plot_hist(dist_all_features_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, color='r', ylim=[0, 0.2],
                           xlim=[0, 400], xlabel=r'nnd [nm]')
             plt.savefig(savefile_suffix + '_nnd.pdf', bbox_inches='tight')
         if cluster_cluster:
-            clusterincluster_all_dir0 = np.asarray([cc for feature in feature_all_dir0 for cc in feature[
-                                                   'clusterincluster']])
+            clusterincluster_all_dir0 = np.asarray([cc for feature in feature_all_dir0 for jj, cc in enumerate(feature[
+                                                   'clusterincluster']) if len(feature['histogram_descr'][jj]) > 0])
             if feature_all_dir1:
-                clusterincluster_all_dir1 = np.asarray([cc for feature in feature_all_dir1 for cc in feature[
-                                                       'clusterincluster']])
+                clusterincluster_all_dir1 = np.asarray([cc for feature in feature_all_dir1 for jj, cc in enumerate(
+                                            feature['clusterincluster']) if len(feature['histogram_descr'][jj]) > 0])
             fig, ax = plot_hist(clusterincluster_all_dir0, xscale='log', num_bins=50, xlim=[1,10**2], ylim=[0, 0.4],
                                 xlabel=r'blobs in blobs [blobs/blobs]')
             if feature_all_dir1:
@@ -368,8 +382,8 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
     rms = np.sqrt(2*mu_x)
 
     if plot is True:
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
+        import mpl.colors as colors
+        import mpl.cm as cmx
 
         cmap = plt.cm.gray
         cNorm = colors.Normalize(vmin=0, vmax=np.max(rms))  # vmax=values[-1]) . LogNorm, Normalize
@@ -387,7 +401,8 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
     return rms
 
 
-def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile_suffix=None, filter_pos=None):
+def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile_suffix=None, filter_pos=None,
+                           cmap_charact=None, pixel_size=5):
     """
     This functions plots in the PC1-PC2 space the clustered distribution of all detected features to create the
     vocabulary.
@@ -421,12 +436,68 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
         del histogram, labels, X_reduced
         histogram = histogram_filtered; labels = labels_filtered; X_reduced = X_reduced_filtered
 
-    fig, ax = plt.subplots()
-    # plt.figure()
-    if cmap is None: cmap = plt.cm.get_cmap('Set1')
-    plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
-                alpha=0.7, cmap=cmap)
-    plt.hold(True)
+    fig, ax = plt.subplots(); alpha = 1
+    if cmap_charact is None:
+        if cmap is None: cmap = plt.cm.get_cmap('Set1')
+        sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
+                         alpha=alpha, facecolors="None", cmap=cmap, s=10)  # cmap)
+        sc.set_facecolor('none'); plt.hold(True)
+        plt.scatter(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
+                    X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], marker='*', s=10 ** 2,
+                    color=[cmap(ii) for ii in range(n_cluster)])
+    else:
+        cmap = plt.cm.get_cmap('jet')
+        if cmap_charact is 'strength':
+            labels = np.asarray([feature[cmap_charact][ii] for feature in feature_all
+                                for ii, orientation in enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
+            savefile_suffix += '_strength'
+        elif cmap_charact is 'area':
+            labels = np.log10(np.asarray([np.pi*(0.5*feature['diameter'][ii])**2 for feature in feature_all
+                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                 enumerate(orientation)]))
+            cmap_charact = r'blob area [nm$^2$] [10**]'; savefile_suffix += '_blobareas'
+        elif cmap_charact is 'density':
+            labels = np.log10(np.asarray([feature[cmap_charact][ii] for feature in feature_all
+                                    for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                    enumerate(orientation)]))
+            cmap_charact = r'blob density [points/nm$^2$] [10**]'; savefile_suffix += '_blobdensities'
+        elif cmap_charact is 'num_loc':
+            labels = np.log10(np.asarray([feature['number_localizations'][ii] for feature in feature_all
+                                   for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                   enumerate(orientation)]))
+            cmap_charact = r'N$^{cluster}$ ['r'points/blob] [10**]'; savefile_suffix += '_blobnumloc'
+        elif cmap_charact is 'nnd':
+            distances_nnd_features_all = nnd_feature(feature_all, pixel_size)
+            aux = 0; nnds = []
+            for feature in feature_all:
+                for ii, orientation in enumerate(feature['orientation']):
+                    for jj, ori in enumerate(orientation): nnds.append(distances_nnd_features_all[aux])
+                    aux += 1
+            labels = np.log10(np.asarray(nnds))
+            cmap_charact = 'nnd [nm] [10**]'; savefile_suffix += '_nnd'
+        elif cmap_charact is 'cluster_density':
+            labels = np.log10(np.asarray([feature['argmaxgrad'][0].shape[0] /
+                                            float(pixel_size * feature['image'].shape[0] * feature['image'].shape[1])
+                                            for feature in feature_all for ii, orientation in
+                                            enumerate(feature['orientation']) for jj, ori in enumerate(orientation)]))
+            cmap_charact = r'$\kappa$ [blobs/nm$^2$] [10**]'; savefile_suffix += '_blobdensitieskappa'
+        elif cmap_charact is 'experiment':
+            file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+            print '\t\t'
+            labels = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all
+                                      for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                      enumerate(orientation)]); alpha = 0.5
+            cmap = mpl.colors.ListedColormap(['red', 'black']); savefile_suffix += '_experiment'
+        elif cmap_charact is 'cluster_cluster':
+            for feature in feature_all: feature['clusterincluster'] = count_clusterincluster(feature, pixel_size)
+            labels = np.log10(np.asarray([feature['clusterincluster'][ii] for feature in feature_all
+                                              for ii, orientation in enumerate(feature['orientation'])
+                                              for jj, ori in enumerate(orientation)]))
+            cmap_charact = r'blobs in blobs [blobs/blobs]'; savefile_suffix += '_blobsinblobs'
+        sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
+                         alpha=alpha, facecolors="None", cmap=cmap, s=8)
+        # plt.colorbar(sc, label=cmap_charact)
+        sc.set_facecolor('none'); plt.hold(True)
     # aux = 0
     # orientation = feature.get('orientation')
     # argmaxgrad = feature.get('argmaxgrad')
@@ -436,16 +507,13 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
     #         #             xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
     #         ax.annotate('%d' % labels[aux], xy=(X_reduced[aux, 0], X_reduced[aux, 1]))
     #         aux += 1
-    plt.scatter(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
-                X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], marker='*', s=10**2,
-                color=[cmap(ii) for ii in range(n_cluster)])
     # plt.plot(cluster_centers_reduced[:, 0], cluster_centers_reduced[:, 1], 'k*', markersize=10)
     # for ii in range(n_cluster):
     #     ax.annotate('%d' % ii, xy=(X_reduced[histogram.shape[0] + ii, 0],
     #                                X_reduced[histogram.shape[0] + ii, 1]), size=40)
     # ax.annotate('%.d', (X_reduced[hist_ind, s0], X_reduced[hist_ind, 1]), size=10)
     plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$')  # ;plt.title('k=%d' % n_cluster)
-    ax.set_ylim([-0.8,0.8]); ax.set_xlim([-0.8, 0.8])
+    ax.set_ylim([-0.8, 0.8]); ax.set_xlim([-0.8, 0.6])
     plt.show(); plt.hold(False)
 
     if savefile_suffix is not None: plt.savefig(savefile_suffix + '.pdf', bbox_inches='tight')
@@ -515,7 +583,7 @@ def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"
 def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual word', pixel_size=1,
                             savefile_suffix=None,
                             radius=1, area=1, num_loc=1, density=1, nnd=0, strength=1, cluster_density=0, experiment=0,
-                            cluster_cluster=0,
+                            cluster_cluster=1,
                             diameter_range=[-float('inf'), float('inf')]):
     """
     This function plots histograms and violin plots of the scales, densities, etc., corresponding to each cluster in the
@@ -640,9 +708,11 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
             sign, accept = significance_test(experiments_words[0], experiments_words[1])
             text = sign
             print '\t\t\tExperiment: H0 is', bool(accept), '-->', sign
+        # plot_boxplot(experiments_words, bptype='violin', xlabel=xlabel,
+        #              ylabel=file_dirs[0].split('/')[-2]+'-'+file_dirs[1].split('/')[-2], cmap=cmap, widths=0.8,
+        #              alpha=0.5, text=text)
         plot_boxplot(experiments_words, bptype='violin', xlabel=xlabel,
-                     ylabel=file_dirs[0].split('/')[-2]+'-'+file_dirs[1].split('/')[-2], cmap=cmap, widths=0.8,
-                     alpha=0.5, text=text)
+                     ylabel=r'TSA-hFb $\qquad\qquad\qquad$ hFb', cmap=cmap, widths=0.8, alpha=0.5, text=text)
         if savefile_suffix is not None:
             plt.savefig(savefile_suffix + '_experiment_words.pdf', bbox_inches='tight')
     if cluster_cluster:
@@ -672,10 +742,10 @@ def sift2shape(kmeans, n_hist=16, n_bins_descr=8, cmap=None, savefile_suffix=Non
 
     """
 
-    # matplotlib.rcParams.update({'font.size': 10})
+    # mpl.rcParams.update({'font.size': 10})
 
     if cmap is None: cmap = plt.cm.get_cmap('Set1')
-    # matplotlib.rcParams.update({'font.size': 10})
+    # mpl.rcParams.update({'font.size': 10})
 
     for no, hist in enumerate(kmeans.cluster_centers_):
         max_ori = np.max(hist)

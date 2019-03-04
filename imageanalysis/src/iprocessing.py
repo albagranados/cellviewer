@@ -666,7 +666,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                     elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
                     plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
                              [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)],
-                              color=o_color, linewidth=1)
+                              color=o_color, linewidth=0.5)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
@@ -675,7 +675,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                 if len(orientation[ii]) == 0: b_color = 'None'
                 else: b_color = blob_cmap(mean)
             ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
-                    by, color=b_color, linewidth=1)
+                    by, color=b_color, linewidth=0.5)
             # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(scale[ii]), strength), color='r')
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(blob_cmap, label='3$\sqrt{t}$ [pixel - analysis]')
@@ -697,13 +697,19 @@ def orientation_hist(image, bx, by, lx, ly, radius, sigma_ori, n_bins_ori, peak_
 
     hist = np.zeros(shape=n_bins_ori)  # lx.shape=image.shape (row,cols), transpose from reading image =>
     # bx-by=row-col in this case!
+    if (bx-radius <= 0) or (bx+radius >= image.shape[1]) or (by-radius <= 0) or (by + radius >= image.shape[2]):
+        # print 'out'
+        return []
+    # print bx-radius, bx+radius+1
+    # print by-radius, by+radius+1
+    # print 'lx.shape', 'ly.shape', lx.shape, ly.shape
     grad_x = lx[bx-radius:bx+radius+1, by-radius:by+radius+1]
     grad_y = ly[bx-radius:bx+radius+1, by-radius:by+radius+1]
+    # print 'grad_x.shape', grad_x.shape, 'grad_y.shape', grad_y.shape
     # print 'lx.shape, ly.shape =', lx.shape, ly.shape
     # fig, ax = plot_image(lx.T, cmap='jet', interpolation='none', hold=True)
-    if np.isnan(grad_x).any() or np.isnan(grad_y).any() or \
-       bx-radius < 0 or bx+radius > image.shape[1] or by-radius < 0 or by + radius > image.shape[2]:
-        print 'out'
+    if np.isnan(grad_x).any() or np.isnan(grad_y).any():
+        # print 'out'
         return []
     locgrid_x, locgrid_y = np.meshgrid(np.linspace(bx - radius, bx + radius, 2*radius+1), # cart. ref. frame
                                        np.linspace(by - radius, by + radius, 2*radius + 1))
@@ -769,7 +775,6 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
     from matplotlib.colors import LogNorm
 
     orientation = np.asarray(orientation)
-
     if orientation.size == 0:
         # print '=============================== Because no main orienations, compute_orientation returns []'
         return []
@@ -801,15 +806,24 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
     histogram = []
     for ori in orientation:
+        # print '\n\n'
+        # print 'ori=', ori
+        ori = round(ori, 2)  # avoid cos -1 for 3.141516
         R = np.array([[np.cos(ori), -np.sin(ori)],
                       [np.sin(ori), np.cos(ori)]])
+        # print 'ori=', ori
         R_inv = R.T
         corners = (R.dot(radius*np.array([[-1, -1, 1, 1], [-1, 1, 1, -1]]))+np.array([[bx], [by]])).T
         m = (corners[[1, 2, 3, 0], 1] - corners[..., 1])/(corners[[1, 2, 3, 0], 0] - corners[..., 0])
+        # print m
+        # print ori/(np.pi*0.5) % 1
+        # m[np.where(np.isinf(m))[0]] = 10000  # numerical solution: if m[ii]=='inf', then replace by large number
+        # m[np.where(np.abs(m) < 10**(-2))[0]] = 0
         c = corners[..., 1]-corners[..., 0]*m  # notes 18/5/17
         ind = int((ori-np.pi/2.)//(0.5*np.pi))
         ind0 = ind % 4; ind1 = (ind+1) % 4; ind2 = (ind+2) % 4; ind3 = (ind+3) % 4
-        if ori/(np.pi*0.5) % 1 == 0:
+        # if (ori/(np.pi*0.5) % 1) == 0:
+        if abs(ori/(np.pi*0.5) % 1) < 10**(-10):
             pos = np.where((grid_x < corners[ind0, 0])
                            & (grid_y > m[(ind1-1) % 4]*grid_x + c[(ind1-1) % 4])
                            & (grid_x > corners[(ind2-1) % 4, 0])
@@ -819,27 +833,32 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
                            & (grid_y > m[ind1] * grid_x + c[ind1])
                            & (grid_y < m[ind2] * grid_x + c[ind2])
                            & (grid_y < m[ind3] * grid_x + c[ind3]))
-
+        # print pos
         pos_ref = R_inv.dot(np.array([pos[1]-bx, pos[0]-by]))
-        hist_ind = np.floor((pos_ref[0]+radius)//(2.*radius/n_hist_x*1.000001) + n_hist_x*((pos_ref[1]+radius)//(
-                   2.*radius/n_hist_x)*1.000001))
+        a = (pos_ref[0]+radius)//(2.*radius/n_hist_x*1.01) + n_hist_x*((pos_ref[1]+radius)//(
+                   2.*radius/n_hist_x)*1.01)
+        # print 'a = ', a, 'max = ', np.max(a)
+        hist_ind = np.floor((pos_ref[0]+radius)//(2.*radius/n_hist_x*1.01) + n_hist_x*((pos_ref[1]+radius)//(
+                   2.*radius/n_hist_x)*1.01))  # each \in{0,...,15} [16=4\times4 histograms]
+        # print hist_ind, 'max = ', np.max(hist_ind)
         grad_x = lx[pos[1], pos[0]]; grad_y = ly[pos[1], pos[0]]
         if np.isnan(grad_x).any() or np.isnan(grad_y).any():
             # print '=============================== blob in nan region. compute_orientation returns []'
             return []
-        ori_all = (np.arctan2(grad_x, grad_y) - ori)*180.//np.pi % 360
+        ori_all = (np.arctan2(grad_x, grad_y) - ori)*180.//np.pi % 360  # each component \in {0, ..., 359} [deg]
 
         weights = np.exp(-((pos[0]-by)**2 + (pos[1]-bx)**2)/(2*radius**2))
         contr = np.multiply(weights, np.sqrt(grad_x**2 + grad_y**2))  # contribution to the histogram
 
         # build the histogram
-        hist = np.zeros(shape=(n_hist*n_bins_descr))
-        ori_all_bins = np.floor(ori_all / (360 / n_bins_descr))
-        # print '\n(bx,by)=', bx, by, ' ******************ori=', ori
+        hist = np.zeros(shape=(n_hist*n_bins_descr))  # 128 dim.
+        ori_all_bins = np.floor(ori_all / (360 / n_bins_descr))  # each value \in{0, ..., 7}
+        # print '(bx,by)=', bx, by, ' ******************ori=', ori, '; radius=', radius
         # print np.min(hist_ind), np.min(np.arctan2(grad_x, grad_y) - ori), np.min(ori_all), np.min(ori_all_bins)
         # print np.max(hist_ind), np.max(np.arctan2(grad_x, grad_y) - ori), np.max(ori_all), np.max(ori_all_bins)
         # print 'hist_ind[0]=', hist_ind[0]
         # print ori_all[0], ori_all_bins[0]
+        # print (n_bins_descr * hist_ind + ori_all_bins)
         bins_temp = (n_bins_descr * hist_ind + ori_all_bins).astype(int)
         for i, bins in enumerate(bins_temp):
             hist[bins] += contr[i]
