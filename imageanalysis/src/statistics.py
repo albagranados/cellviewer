@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 mpl.rcParams["text.usetex"] = True; mpl.rcParams['font.family'] = 'serif'  # configure latex plots
-mpl.rcParams.update({'font.size': 30})
+mpl.rcParams.update({'font.size': 24})
 
 
 def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
@@ -204,7 +204,7 @@ def sample_statistics(data):
 
 def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suffix=None,
                       radius=1, area=1, density_cluster=1, area_voronoi=1, num_loc=1, density=1, nnd=0,
-                      cluster_cluster=1):
+                      cluster_cluster=1, strength=1):
     """
     plot and save graphs regarding detection of clusters (diameter, densities...)
 
@@ -226,15 +226,20 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
 
     blob_diameters_all_dir0 = np.asarray([diameter for feature in feature_all_dir0 for jj, diameter in enumerate(
                                 feature['diameter']) if len(feature['histogram_descr'][jj]) > 0])
-    cluster_density_all_dir0 = np.asarray([feature['argmaxgrad'][0].shape[0] / float(pixel_size**2 *
-                                          feature['image'].shape[0] * feature['image'].shape[1]) for feature in
+    cluster_density_all_dir0 = np.asarray([(feature['argmaxgrad'][0].shape[0]-feature['histogram_descr'].count([]))/
+                                           float(pixel_size**2 *feature['image'].shape[0] * feature['image'].shape[1]) for feature in
                                           feature_all_dir0])
+    strength_all_dir0 = np.asarray([strength for feature in feature_all_dir0
+                            for jj, strength in enumerate(feature['strength']) if len(feature['histogram_descr'][jj]) > 0])
     if feature_all_dir1:
         blob_diameters_all_dir1 = np.asarray([diameter for feature in feature_all_dir1 for jj, diameter in
                                               enumerate(feature['diameter']) if len(feature['histogram_descr'][jj]) > 0])
-        cluster_density_all_dir1 = np.asarray([feature['argmaxgrad'][0].shape[0] /
-                                               float(pixel_size ** 2 *feature['image'].shape[0] *feature['image'].shape[1]) for
-                                               feature in feature_all_dir1])
+        cluster_density_all_dir1 = np.asarray([(feature['argmaxgrad'][0].shape[0]-feature['histogram_descr'].count([]))/
+                                           float(pixel_size**2 *feature['image'].shape[0] * feature['image'].shape[1]) for feature in
+                                          feature_all_dir1])
+        strength_all_dir1 = np.asarray([strength for feature in feature_all_dir1
+                                        for jj, strength in enumerate(feature['strength']) if
+                                        len(feature['histogram_descr'][jj]) > 0])
     if radius:
         fig, ax = plot_hist(0.5*blob_diameters_all_dir0, xscale='log', xlabel=r'blob radius R [nm]', discrete=1,
                             color='k', ylim=[0, 0.4])
@@ -256,11 +261,19 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
     # print '\tDensity of clusters:\t', feature_all[0]['argmaxgrad'][0].shape[0] / float(pixel_size *
     #        feature_all[0]['image'].shape[0] * feature_all[0]['image'].shape[1]), '[cluster/nm2]'
     if density_cluster:
+        print cluster_density_all_dir0
         fig, ax = plot_hist(cluster_density_all_dir0, xscale='log', xlabel=r'$\kappa$ ['r'blobs/nm$^2$]')
         if feature_all_dir1:
             plot_hist(cluster_density_all_dir1, fig=fig, ax=ax, color='r', xscale='log',
                       xlabel=r'$\kappa$ ['r'blobs/nm$^2$]')
         plt.savefig(savefile_suffix + '_blobdensitieskappa.pdf', bbox_inches='tight')
+    if strength:
+        fig, ax = plot_hist(strength_all_dir0, xscale='log', xlabel=r'strength - laplacian, max$_t\{\Delta_{'
+                                                                r'\gamma-norm}\}$', ylim=[0,0.1])
+        if feature_all_dir1:
+            plot_hist(strength_all_dir1, fig=fig, ax=ax, color='r', xscale='log',
+                      xlabel=r'strength - laplacian, max$_t\{\Delta_{\gamma-norm}\}$', ylim=[0,0.1])
+        plt.savefig(savefile_suffix + '_strength.pdf', bbox_inches='tight')
     if ispp:
         density_all_dir0 = np.asarray([den for feature in feature_all_dir0 for jj, den in enumerate(feature[
                                                             'density']) if len(feature['histogram_descr'][jj]) > 0])
@@ -303,7 +316,7 @@ def statistic_descrip(feature_all, file_dirs, ispp=1, pixel_size=1, savefile_suf
                                 xlabel=r'blob density [points/nm$^2$]')
             # plot_boxplot(density_all, bptype='violin', ylabel=r'cluster densities $\rho^{cluster}$ [points/nm$^2$]')
             if feature_all_dir1:
-                plot_hist(density_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, ylim=[0,0.2], color='r',
+                plot_hist(density_all_dir1, fig=fig, ax=ax, xscale='log', num_bins=50, ylim=[0,0.15], color='r',
                           xlabel=r'blob density ['r'points/nm$^2$]')
             plt.savefig(savefile_suffix + '_blobdensities.pdf', bbox_inches='tight')
         if nnd:
@@ -401,8 +414,8 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
     return rms
 
 
-def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile_suffix=None, filter_pos=None,
-                           cmap_charact=None, pixel_size=5):
+def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, savefile_suffix=None, filter_pos=None,
+                           cmap_charact=None, pixel_size=5, histogram=None):
     """
     This functions plots in the PC1-PC2 space the clustered distribution of all detected features to create the
     vocabulary.
@@ -411,22 +424,25 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
 
     if not isinstance(feature_all, list): feature_all = [feature_all]
 
-    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
-    histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
-    if len(histogram) == 0:
-        print 'error: please, compute orientation and descriptors histograms for SIFT'
-        return None
+    if histogram is None:
+        histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+        histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
+        if len(histogram) == 0:
+            print 'error: please, compute orientation and descriptors histograms for SIFT'
+            return None
 
-    labels = kmeans.labels_
-    cluster_centers = kmeans.cluster_centers_  # kmeans.cluster_centers_[0] = centroid of cluster 0
-
+    labels = siftclusters.labels_
     print '\tcomputing PCA for visualization...'
     pca = PCA(n_components=2)
+
+    if not hasattr(siftclusters, 'cluster_centers_'):
+        siftclusters.cluster_centers_ = np.empty(shape=(0,128)); cluster_centers = siftclusters.cluster_centers_
+    else:
+        cluster_centers = siftclusters.cluster_centers_ # siftclusters.cluster_centers_[0] = centroid of
     X = np.append(histogram, cluster_centers, axis=0)  # shape (n_samples, n_features)
+
     X_reduced = pca.fit_transform(X)  # array-like, shape (n_samples, n_components)
-    # histogram_reduced = pca.fit_transform(histogram)  # array-like, shape (n_samples, n_components)
-    # cluster_centers_reduced = pca.fit_transform(cluster_centers)  # array-like, shape (n_samples, n_components)
-    # print cluster_centers_reduced
+    print '\t\t\t PC explained variance: ', pca.explained_variance_
     if filter_pos is not None:
         X_reduced_filtered = np.append(X_reduced[0:X_reduced.shape[0]-2][filter_pos],
                                        X_reduced[X_reduced.shape[0]-2:], axis=0)
@@ -439,12 +455,22 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
     fig, ax = plt.subplots(); alpha = 1
     if cmap_charact is None:
         if cmap is None: cmap = plt.cm.get_cmap('Set1')
-        sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
-                         alpha=alpha, facecolors="None", cmap=cmap, s=10)  # cmap)
-        sc.set_facecolor('none'); plt.hold(True)
-        plt.scatter(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
-                    X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], marker='*', s=10 ** 2,
-                    color=[cmap(ii) for ii in range(n_cluster)])
+        shape = ['o', 'v'] # plot marker as a function of experiemnt
+        file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+        print '\t\t\t(scatter plot: o ->', file_dirs[0].split('/')[-2], '; v ->', file_dirs[1].split('/')[-2], ')'
+        labels_exp = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all
+                                  for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                  enumerate(orientation)])
+        for ii, fd in enumerate(file_dirs):
+            pos = np.where(labels_exp == ii)[0]
+            sc = plt.scatter(X_reduced[pos, 0], X_reduced[pos, 1], c=labels[pos],
+                             alpha=alpha, facecolors="None", cmap=cmap, s=10, marker=shape[ii])  # cmap)
+            # sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
+            #                  alpha=alpha, facecolors="None", cmap=cmap, s=10)  # cmap)  # same markers
+            sc.set_facecolor('none'); plt.hold(True)
+            # plt.scatter(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
+            #             X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], marker='*', s=10 ** 2,
+            #             color=[cmap(ii) for ii in range(n_cluster)])
     else:
         cmap = plt.cm.get_cmap('jet')
         if cmap_charact is 'strength':
@@ -483,7 +509,8 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
             cmap_charact = r'$\kappa$ [blobs/nm$^2$] [10**]'; savefile_suffix += '_blobdensitieskappa'
         elif cmap_charact is 'experiment':
             file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
-            print '\t\t'
+            print '\t\t\t(scatter plot: color red ->', file_dirs[0].split('/')[-2], '; color black ->', \
+                file_dirs[1].split('/')[-2], ')'
             labels = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all
                                       for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                       enumerate(orientation)]); alpha = 0.5
@@ -509,11 +536,13 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
     #         aux += 1
     # plt.plot(cluster_centers_reduced[:, 0], cluster_centers_reduced[:, 1], 'k*', markersize=10)
     # for ii in range(n_cluster):
-    #     ax.annotate('%d' % ii, xy=(X_reduced[histogram.shape[0] + ii, 0],
-    #                                X_reduced[histogram.shape[0] + ii, 1]), size=40)
-    # ax.annotate('%.d', (X_reduced[hist_ind, s0], X_reduced[hist_ind, 1]), size=10)
+    #     pos = np.where(siftclusters.labels_== ii)[0][0]
+    #     ax.annotate('%d' % ii, xy=(X_reduced[pos, 0], X_reduced[pos, 1]), size=20)
+    #     # ax.annotate('%d' % ii, xy=(X_reduced[histogram.shape[0] + ii, 0],
+    #     #                            X_reduced[histogram.shape[0] + ii, 1]), size=40)
+    # # ax.annotate('%.d', (X_reduced[hist_ind, s0], X_reduced[hist_ind, 1]), size=10)
     plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$')  # ;plt.title('k=%d' % n_cluster)
-    ax.set_ylim([-0.8, 0.8]); ax.set_xlim([-0.8, 0.6])
+    # ax.set_ylim([-0.8, 0.8]); ax.set_xlim([-0.8, 0.6])
     plt.show(); plt.hold(False)
 
     if savefile_suffix is not None: plt.savefig(savefile_suffix + '.pdf', bbox_inches='tight')
@@ -532,7 +561,7 @@ def scatterplot_vocabulary(feature_all, kmeans, n_cluster=3, cmap=None, savefile
     #         hist_ind += 1
 
 
-def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"):
+def create_vocabulary(algorithm, feature_all, kwargs_sift={}, n_cluster=3, weight=0):
     """
     This function
 
@@ -542,10 +571,11 @@ def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"
 
     Output:
     ---------
-    kmeans: attributs are labels_, cluster_centers_
+    siftclusters: attributs are labels_, cluster_centers_
 
     """
     from sklearn.cluster import KMeans
+    from sklearn.cluster import AgglomerativeClustering
 
     if not isinstance(feature_all, list): feature_all = [feature_all]
 
@@ -555,11 +585,34 @@ def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"
     if len(histogram) == 0:
         print 'error: please, compute orientation and descriptors histograms for SIFT'
         return None
+    if algorithm is 'kmeans':
+        if weight:
+            # # # experiment
+            # file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+            # labels = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all
+            #                      for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+            #                      enumerate(orientation)])
+            # # blob size
+            labels = np.asarray([feature['strength'][ii] for feature in feature_all
+                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+                                 enumerate(orientation)])
+            # # # normalize to maximum value in histograms to avoid extra numerical error
+            lmax = np.max(labels); hmax = np.max(histogram)
+            labels = 1./lmax*labels*hmax
+            histogram = np.append(histogram, np.array(labels).reshape(histogram.shape[0], 1),axis=1)
+            # histogram /= np.linalg.norm(histogram)
+            # histogram[np.where(histogram > 0.2)] = 0.2
+            # histogram /= np.linalg.norm(histogram)
+            # w1 = 1; w2 = 1
+            w1 = (np.sqrt(np.mean(2*np.var(histogram[:, 0:-1], 0))))**-1
+            w2 = (np.sqrt(2*np.var(histogram[:, -1], 0)))**-1
+            histogram[:, 0:-1] = w1*histogram[:, 0:-1]; histogram[:, -1] = w2*histogram[:, -1]
+        clusters = KMeans(n_clusters=n_cluster, random_state=0, init="k-means++").fit(histogram)
+    elif algorithm is 'hierarchical':
+        clusters = AgglomerativeClustering(n_clusters=n_cluster, affinity='euclidean', linkage='ward').fit(histogram)
 
-    kmeans = KMeans(n_clusters=n_cluster, random_state=0, init=init).fit(histogram)
-
-    # labels = kmeans.labels_
-    # cluster_centers = kmeans.cluster_centers_  # kmeans.cluster_centers_[0] = centroid of cluster 0
+    # labels = siftclusters.labels_
+    # cluster_centers = siftclusters.cluster_centers_  # siftclusters.cluster_centers_[0] = centroid of cluster 0
     # n_bins_descr = kwargs_sift.get('n_bins_descr', 4)
     # n_hist = kwargs_sift.get('n_hist', 4)
 
@@ -577,11 +630,11 @@ def create_vocabulary(feature_all, kwargs_sift={}, n_cluster=3, init="k-means++"
     #         plt.ylim([0, max_ori])
     #         plt.hold(True)
 
-    return kmeans
+    return clusters, histogram
 
 
-def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual word', pixel_size=1,
-                            savefile_suffix=None,
+def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual word', ylabel='', pixel_size=1,
+                            savefile_suffix=None, pt='_words',
                             radius=1, area=1, num_loc=1, density=1, nnd=0, strength=1, cluster_density=0, experiment=0,
                             cluster_cluster=1,
                             diameter_range=[-float('inf'), float('inf')]):
@@ -608,18 +661,18 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
               cmap=cmap, xlabel=xlabel, xticks=np.unique(labels_filtered)*0.4,
               xtickslabel=[str(e) for e in np.unique(labels_filtered)+1], alpha=0.5)
     fig.set_figheight(len(np.unique(labels_filtered))*4); fig.set_figwidth(len(np.unique(labels_filtered))*2)
-    if savefile_suffix is not None: plt.savefig(savefile_suffix + '_histogram_words.pdf', bbox_inches='tight')
+    if savefile_suffix is not None: plt.savefig(savefile_suffix + '_histogram' + pt + '.pdf', bbox_inches='tight')
     print '\tStatistical test of significance between cluster-words characteristics:'
     if radius:
         diameters_words = [diameters[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
-        if len(diameters_words)==2:
+        if len(diameters_words) == 2:
             sign, accept = significance_test(diameters_words[0], diameters_words[1])
             print '\t\t\tRadius: H0 is', bool(accept), '-->', sign
             text = sign
         plot_boxplot([dd*0.5 for dd in diameters_words], bptype='violin', xlabel=xlabel,
                      ylabel=r'blob radius R [nm]', cmap=cmap, widths=0.5, alpha=0.5, yscale='log', text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobradius_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobradius' + pt + '.pdf', bbox_inches='tight')
     if area:
         diameters_words = [diameters[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
@@ -629,7 +682,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
             text = sign
         plot_boxplot([np.pi*(dd*0.5)**2 for dd in diameters_words], bptype='violin', xlabel=xlabel,
                      ylabel=r'blob area [nm$^2$]', cmap=cmap, widths=0.8, alpha=0.5, yscale='log', text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobareas_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobareas' + pt + '.pdf', bbox_inches='tight')
     if strength:
         strengths = np.asarray([feature['strength'][ii] for feature in feature_all
                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
@@ -642,7 +695,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
         plot_boxplot(strengths_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'strength - laplacian, max$_t\{\Delta_{\gamma-norm}\}$', cmap=cmap, widths=0.5,
                      alpha=0.5, text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_strength_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_strength' + pt + '.pdf', bbox_inches='tight')
     if density:
         densities = np.asarray([feature['density'][ii] for feature in feature_all
                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
@@ -655,21 +708,21 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
             text = sign
         plot_boxplot(densities_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'blob density [points/nm$^2$]', cmap=cmap, widths=0.8, alpha=0.5, yscale='log', text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobdensities_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobdensities' + pt + '.pdf', bbox_inches='tight')
     if num_loc:
         num_locs = np.asarray([feature['number_localizations'][ii] for feature in feature_all
                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                 enumerate(orientation)])
         num_locs_words = [num_locs[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
-        if len(num_locs_words)==2:
+        if len(num_locs_words) == 2:
             sign, accept = significance_test(num_locs_words[0], num_locs_words[1])
             text = sign
             print '\t\t\tNumber of localizations: H0 is', bool(accept), '-->', sign
         plot_boxplot(num_locs_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'N$^{cluster}$ ['r'points/blob]', cmap=cmap, widths=0.8, alpha=0.5, yscale='log',
                      text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobnumloc_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_blobnumloc' + pt + '.pdf', bbox_inches='tight')
     if nnd:
         distances_nnd_features_all = nnd_feature(feature_all, pixel_size)
         aux = 0; nnds = []
@@ -687,9 +740,9 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
             print '\t\t\tNearest-neighbor distance: H0 is', bool(accept), '-->', sign
         plot_boxplot(nnds_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'nnd [nm]', cmap=cmap, widths=0.8, alpha=0.5, yscale='log', text=text)
-        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_nnd_words.pdf', bbox_inches='tight')
+        if savefile_suffix is not None: plt.savefig(savefile_suffix + '_nnd' + pt + '.pdf', bbox_inches='tight')
     if cluster_density:
-        cluster_densities = np.asarray([feature['argmaxgrad'][0].shape[0]/
+        cluster_densities = np.asarray([(feature['argmaxgrad'][0].shape[0] - feature['histogram_descr'].count([]))/
                                         float(pixel_size*feature['image'].shape[0]*feature['image'].shape[1])
                                         for feature in feature_all for ii, orientation in
                                         enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
@@ -697,24 +750,26 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
         plot_boxplot(cluster_densities_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'$\kappa$ ['r'blobs/nm$^2$]', cmap=cmap, widths=0.8, alpha=0.5, yscale='log')
         if savefile_suffix is not None:
-            plt.savefig(savefile_suffix + '_blobdensitieskappa_words.pdf', bbox_inches='tight')
+            plt.savefig(savefile_suffix + '_blobdensitieskappa' + pt + '.pdf', bbox_inches='tight')
     if experiment:
         file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
         experiments = np.asarray([np.where(feature['file_dir']==file_dirs)[0][0] for feature in feature_all
                                   for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                   enumerate(orientation)])
         experiments_words = [experiments[np.where(labels == l)[0]] for l in np.unique(labels)]
-        if len(experiments_words)==2:
+        if len(experiments_words) == 2:
             sign, accept = significance_test(experiments_words[0], experiments_words[1])
             text = sign
             print '\t\t\tExperiment: H0 is', bool(accept), '-->', sign
+            print '\t\t\t\t[NB: words statist. descrip. EXPERIMENT coded 0-1 as: ', [fd.split('/')[-2]
+                                                                                     for fd in file_dirs] , ']'
         # plot_boxplot(experiments_words, bptype='violin', xlabel=xlabel,
         #              ylabel=file_dirs[0].split('/')[-2]+'-'+file_dirs[1].split('/')[-2], cmap=cmap, widths=0.8,
         #              alpha=0.5, text=text)
         plot_boxplot(experiments_words, bptype='violin', xlabel=xlabel,
-                     ylabel=r'TSA-hFb $\qquad\qquad\qquad$ hFb', cmap=cmap, widths=0.8, alpha=0.5, text=text)
+                     ylabel=ylabel, cmap=cmap, widths=0.8, alpha=0.5, text=text)
         if savefile_suffix is not None:
-            plt.savefig(savefile_suffix + '_experiment_words.pdf', bbox_inches='tight')
+            plt.savefig(savefile_suffix + '_experiment' + pt + '.pdf', bbox_inches='tight')
     if cluster_cluster:
         for feature in feature_all:
             feature['clusterincluster'] = count_clusterincluster(feature, pixel_size)
@@ -722,17 +777,17 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
                                           for ii, orientation in enumerate(feature['orientation'])
                                           for jj, ori in enumerate(orientation)])
         cluster_in_clusters_words = [cluster_in_clusters[np.where(labels == l)[0]] for l in np.unique(labels)]
-        if len(cluster_in_clusters_words)==2:
+        if len(cluster_in_clusters_words) == 2:
             sign, accept = significance_test(cluster_in_clusters_words[0], cluster_in_clusters_words[1])
             text = sign
             print '\t\t\tBlobs in blobs: H0 is', bool(accept), '-->', sign
         plot_boxplot(cluster_in_clusters_words, bptype='violin', xlabel=xlabel,
                      ylabel=r'blobs in blobs [blobs/blobs]', yscale='log', cmap=cmap, widths=0.5, alpha=0.5, text=text)
         if savefile_suffix is not None:
-            plt.savefig(savefile_suffix + '_blobsinblobs_words.pdf', bbox_inches='tight')
+            plt.savefig(savefile_suffix + '_blobsinblobs' + pt + '.pdf', bbox_inches='tight')
 
 
-def sift2shape(kmeans, n_hist=16, n_bins_descr=8, cmap=None, savefile_suffix=None, alpha=0.7):
+def sift2shape(siftclusters, n_hist=16, n_bins_descr=8, cmap=None, savefile_suffix=None, alpha=0.7):
     """
     After unsupervised-clustered algorithm for vocabulary contruction, build histograms and/or shapes of the estimated
     words (or centroids)
@@ -747,7 +802,7 @@ def sift2shape(kmeans, n_hist=16, n_bins_descr=8, cmap=None, savefile_suffix=Non
     if cmap is None: cmap = plt.cm.get_cmap('Set1')
     # mpl.rcParams.update({'font.size': 10})
 
-    for no, hist in enumerate(kmeans.cluster_centers_):
+    for no, hist in enumerate(siftclusters.cluster_centers_):
         max_ori = np.max(hist)
         fig, axes = plt.subplots(nrows=4, ncols=4, sharex='col', sharey='row') # fig.suptitle(r'word %d' % (no+1))
         plt.setp(axes, xticks=np.linspace(0, n_bins_descr, 5), xticklabels=['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])
@@ -765,9 +820,7 @@ def sift2shape(kmeans, n_hist=16, n_bins_descr=8, cmap=None, savefile_suffix=Non
             plt.savefig(savefile_suffix + '_sift2shapeWORD%d' % no + '.pdf', bbox_inches='tight')
 
 
-def filter_features(criterion, feature_all, kmeans=None, ball_radius_percentile=50,
-                    diameter_range=[-float('inf'), float('inf')], experiment_name=None, threshold_percent=0.5,
-                    word_id=0, min_numloc=1):
+def filter_features(criterion, feature_all, kwargs, siftclusters=None):
     """
     Function to filter detected features considering PC1-PC2 plots with different criteria
 
@@ -775,22 +828,23 @@ def filter_features(criterion, feature_all, kmeans=None, ball_radius_percentile=
     ball_radius = percentile all distnaces in that label
     criterion == 'blob_size' filters according to blob diameter. This requires parameter diameter,
     criterion == 'experiment' filters according to experiment (file_dir). This require parameter experiment_name
-    criterion == 'strength
+    criterion == 'strength'
     criterion == 'numlocs' with minimum number of localizations per blob as input parameter
+    criterion == 'words', with word_id as input parameter
     """
     import copy
-
     if not isinstance(feature_all, list): feature_all = [feature_all]
 
     diameters = np.asarray([feature['diameter'][ii] for feature in feature_all
                  for ii, orientation in enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
     num_features = diameters.shape[0]
-    kmeans_filtered = None
+    print '\t\t\tnumber of features before filtering: ', num_features
+    siftclusters_filtered = None
     if criterion is 'histogram_distance':
-        if kmeans is None:
-            print 'error: need kmeans computations.'
-        labels = kmeans.labels_
-        cluster_centers = kmeans.cluster_centers_  # kmeans.cluster_centers_[0] = centroid of cluster 0
+        ball_radius_percentile = kwargs.get('ball_radius_percentile', 50)
+        if siftclusters is None: print 'error: need siftclusters computations.'
+        labels = siftclusters.labels_
+        cluster_centers = siftclusters.cluster_centers_  # siftclusters.cluster_centers_[0] = centroid of cluster 0
         histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
         histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
         if len(histogram) == 0:
@@ -800,32 +854,76 @@ def filter_features(criterion, feature_all, kmeans=None, ball_radius_percentile=
             feature_pos_label = np.where(labels == label)
             distances = np.linalg.norm(histogram[feature_pos_label] - cluster_centers[label], axis=1)
             ball_radius = np.percentile(distances, ball_radius_percentile)
-            print 'For cluster label ', label, ', plot ploint PC1-PC2 at a distance to cluster centers less than ', \
+            print '\t\t\tFiltering: cluster label ', label, ', filter PC at a distance to centeroid less than ', \
                 ball_radius
             feature_pos_label_outball = np.where(distances > ball_radius)
             feature_pos_out = np.append(feature_pos_out, feature_pos_label[0][feature_pos_label_outball[0]])
         feature_pos_out = np.sort(feature_pos_out)
-        kmeans_filtered = copy.deepcopy(kmeans)
-        kmeans_filtered.labels_ = np.delete(kmeans_filtered.labels_, feature_pos_out)
+        siftclusters_filtered = copy.deepcopy(siftclusters)
+        siftclusters_filtered.labels_ = np.delete(siftclusters_filtered.labels_, feature_pos_out)
     if criterion is 'words':
-        if kmeans is None:
-            print 'error: need kmeans computations.'
-        labels = kmeans.labels_
+        word_id = kwargs.get('word_id', 0)
+        if siftclusters is None: print 'error: need siftclusters computations.'
+        labels = siftclusters.labels_
         feature_pos_out = np.where(labels != word_id)[0]
-        kmeans_filtered = copy.deepcopy(kmeans)
-        kmeans_filtered.labels_ = np.delete(kmeans_filtered.labels_, feature_pos_out)
+        siftclusters_filtered = copy.deepcopy(siftclusters)
+        siftclusters_filtered.labels_ = np.delete(siftclusters_filtered.labels_, feature_pos_out)
     elif criterion is 'blob_size':
+        diameter_range = kwargs.get('diameter_range', [-float('inf'), float('inf')])
         feature_pos_out = np.where((diameters < diameter_range[0]) | (diameters > diameter_range[1]))[0]
     elif criterion is 'experiment':
+        experiment_name = kwargs.get('experiment_name', 0)
         feature_pos_out = np.where(np.asarray([feature['file_dir'] != experiment_name for kk, feature in enumerate(feature_all)
                                    for orientation in feature['orientation'] for ori in orientation], dtype=int) == 1)[0]
     elif criterion is 'strength':
-        strengths = np.asarray([feature['strength'][ii] for feature in feature_all
-                                for ii, orientation in enumerate(feature['orientation']) for jj, ori in
-                                enumerate(orientation)])
-        threshold = np.max(strengths) - threshold_percent * (np.max(strengths) - np.min(strengths))
-        feature_pos_out = np.where(strengths < threshold)[0]
+        threshold_percent = kwargs.get('threshold_percent', None)
+        threshold_value = kwargs.get('threshold_value', None)
+        # strengths = np.asarray([feature['strength'][ii] for feature in feature_all
+        #                         for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+        #                         enumerate(orientation)])
+        # if threshold_percent is not None:
+        #     threshold = np.max(strengths) - threshold_percent * (np.max(strengths) - np.min(strengths))
+        # elif threshold_value is not None: threshold = threshold_value
+        # feature_pos_out = np.where(strengths < threshold)[0]
+        strengths_imno = np.asarray([(feature['strength'][ii], imno) for imno, feature in enumerate(feature_all)
+                                        for ii, orientation in enumerate(feature['orientation'])
+                                        for jj, ori in enumerate(orientation)])
+        for imno, feature in enumerate(feature_all):
+            strengths = strengths_imno[np.where(strengths_imno[:, 1] == imno)[0]][:, 0]
+            # fig, ax = plot_hist(strengths, xscale='log', xlabel=r'strength - laplacian, max$_t\{\Delta_{'
+            #                                                             r'\gamma-norm}\}$', ylim=[0, 0.1])
+            if threshold_percent is not None:
+                threshold = np.max(strengths) - threshold_percent * (np.max(strengths) - np.min(strengths))
+            elif threshold_value is not None: threshold = threshold_value
+            else:  # if no threshold is given, filter by clustering strength distribution - remove lower strength
+                from sklearn.cluster import KMeans
+                from sklearn.decomposition import PCA
+                clusters = KMeans(n_clusters=2, random_state=0, init="k-means++"). \
+                    fit(np.reshape(strengths, (strengths.shape[0], 1)))
+                labels = clusters.labels_
+                position_out = np.where(np.argmin(clusters.cluster_centers_) == labels)[0]
+                threshold = np.max(strengths[position_out])
+            if imno == 0:
+                feature_pos_out = np.where((strengths_imno[:, 0] < threshold) & (strengths_imno[:, 1] == imno))[0]
+            else:
+                feature_pos_out = np.concatenate([feature_pos_out, np.where((strengths_imno[:, 0] < threshold) &
+                                                                            (strengths_imno[:, 1] == imno))[0]])
+            print '\t\t\t\t filtering feature in image ', imno, 'with strength threshold ', threshold
+            # # filter by clustering strength distribution image to image
+            # from sklearn.cluster import KMeans
+            # from sklearn.decomposition import PCA
+            # clusters = KMeans(n_clusters=2, random_state=0, init="k-means++").\
+            #                     fit(np.reshape(strengths,(strengths.shape[0],1)))
+            # labels = clusters.labels_
+            # position_out = np.where(np.argmin(clusters.cluster_centers_) == labels)[0]
+            # print '\t\t\t\t filtering feature in image ', imno, 'with strength threshold ', np.max(strengths[
+            #                                                                                             position_out])
+            # if imno == 0: feature_pos_out = np.where(strengths_imno[:, 1] == imno)[0][position_out]
+            # else:
+            #     feature_pos_out = np.concatenate([feature_pos_out,
+            #                                       np.where(strengths_imno[:, 1] == imno)[0][position_out]])
     elif criterion is 'numloc':
+        min_numloc = kwargs.get('min_numloc', 1)
         num_locs = np.asarray([feature['number_localizations'][ii] for feature in feature_all
                                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                 enumerate(orientation)])
@@ -842,29 +940,19 @@ def filter_features(criterion, feature_all, kmeans=None, ball_radius_percentile=
     aux = 0; blob_loc_prev = None; blob_image_prev = None
     for pos in feature_pos_out:
         pos_ori = pos
-        # print 'labels[pos] = ', labels[pos]
-        # print 'argmaxgrad_feature_pos[pos] = ', argmaxgrad_feature_pos[pos]
-        # print 'feature_all[image_nos[pos]][orientation][argmaxgrad_feature_pos[pos]]', feature_all[image_nos[pos]][
-        #     'orientation'][argmaxgrad_feature_pos[pos]]
-        # print 'ori_feature_pos[pos_ori]', ori_feature_pos[pos_ori]
-        # print 'ori_feature_pos[pos_ori]=', ori_feature_pos[pos_ori], '; argmaxgrad_feature_pos[pos]=', argmaxgrad_feature_pos[pos]
         if blob_loc_prev == argmaxgrad_feature_pos[pos] and blob_image_prev == image_nos[pos]:  # feature in same blob
             aux += 1; pos_ori -= aux
-            # print 'IN. ori_feature_pos[pos_ori] = ', ori_feature_pos[pos_ori]
         else: aux = 0
-        # print 'before deletion, feature_all_filtered: ', feature_all_filtered[image_nos[pos]]['orientation'][
-        #     argmaxgrad_feature_pos[pos]]
         feature_all_filtered[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]] = \
             np.delete(feature_all_filtered[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]],
                       ori_feature_pos[pos_ori])
         del feature_all_filtered[image_nos[pos]]['histogram_descr'][argmaxgrad_feature_pos[pos]][ori_feature_pos[
             pos_ori]]
-        # print 'image_nos[pos]=', image_nos[pos], 'argmaxgrad_feature_pos[pos]=', argmaxgrad_feature_pos[pos]
-        # print 'after deletion, ', feature_all_filtered[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]]
-        # print 'after deletion, ', feature_all_filtered[image_nos[pos]]['histogram_descr'][argmaxgrad_feature_pos[pos]]
         blob_loc_prev = argmaxgrad_feature_pos[pos]; blob_image_prev = image_nos[pos]
 
-    return feature_all_filtered, feature_pos_filtered, kmeans_filtered
+    print '\t\t\tnumber of features after filtering: ', num_features-feature_pos_out.shape[0]
+
+    return feature_all_filtered, feature_pos_filtered, siftclusters_filtered
 
 
 def nnd_feature(feature_all, pixel_size):
@@ -911,7 +999,7 @@ def significance_test(data1, data2, alpha=0.05, alpha1=0.01, alpha2=0.001):
         else: return '*', accept
 
 
-def count_clusterincluster(feature, pixel_size, max_clusterincluster=100):
+def count_clusterincluster(feature, pixel_size, max_clusterincluster=50):
     """
     Count number of features within intensity-dependent and feature-based clusters (default: blobs)
 
@@ -947,3 +1035,114 @@ def count_clusterincluster(feature, pixel_size, max_clusterincluster=100):
         clusterincluster[ii] = cluster_in_pos[0].shape[0]
 
     return clusterincluster
+
+
+def compute_silhouette(data, labels, cmap=None, savefile_suffix=None):
+
+    from sklearn.metrics import silhouette_samples, silhouette_score
+
+    silhouette_avg = silhouette_score(data, labels)
+    # print("For n_clusters =", n_clusters, "The average silhouette_score is :", silhouette_avg)
+    sample_silhouette_values = silhouette_samples(data, labels)
+
+    n_clusters = np.unique(labels).shape[0]
+    fig, ax = plt.subplots(); ax.set_ylim([0, len(data) + (n_clusters + 1) * 10])
+    y_lower = 10
+    for i in range(n_clusters):
+        ith_cluster_silhouette_values = sample_silhouette_values[labels == i]
+        ith_cluster_silhouette_values.sort()
+
+        size_cluster_i = ith_cluster_silhouette_values.shape[0]
+        y_upper = y_lower + size_cluster_i
+
+        ax.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_silhouette_values,
+                          facecolor=cmap(i), edgecolor=cmap(i), alpha=0.7)
+        # ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+        y_lower = y_upper + 10
+
+    ax.set_xlabel(r'silhouette coefficient $s(i)$')
+    ax.set_ylabel("cluster - word")
+
+    # The vertical line for average silhouette score of all the values
+    ax.axvline(x=silhouette_avg, color='k', linestyle="--")
+
+    ax.set_yticks([])  # Clear the yaxis labels / ticks
+    # ax.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+    if savefile_suffix is not None:
+        fig.savefig(savefile_suffix + '_silhouette.pdf', bbox_inches='tight')
+
+    return silhouette_avg
+
+
+def reduce_dimensionality(criterion, feature_all, kwargs, siftclusters=None):
+
+    import copy
+    if not isinstance(feature_all, list): feature_all = [feature_all]
+
+    diameters = np.asarray([feature['diameter'][ii] for feature in feature_all
+                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
+    num_features = diameters.shape[0]
+    print '\t\t\tnumber of features before filtering: ', num_features
+    siftclusters_filtered = None
+    if criterion is 'histogram_distance':
+        ball_radius_percentile = kwargs.get('ball_radius_percentile', 50)
+        if siftclusters is None: print 'error: need siftclusters computations.'
+        labels = siftclusters.labels_
+        cluster_centers = siftclusters.cluster_centers_  # siftclusters.cluster_centers_[0] = centroid of cluster 0
+        histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+        histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
+        if len(histogram) == 0:
+            print 'error: please, compute orientation and descriptors histograms for SIFT'; return None
+        feature_pos_out = np.array([], dtype=int)
+        for label in np.unique(labels):
+            feature_pos_label = np.where(labels == label)
+            distances = np.linalg.norm(histogram[feature_pos_label] - cluster_centers[label], axis=1)
+            ball_radius = np.percentile(distances, ball_radius_percentile)
+            print '\t\t\tFiltering: cluster label ', label, ', filter PC at a distance to centeroid less than ', \
+                ball_radius
+            feature_pos_label_outball = np.where(distances > ball_radius)
+            feature_pos_out = np.append(feature_pos_out, feature_pos_label[0][feature_pos_label_outball[0]])
+        feature_pos_out = np.sort(feature_pos_out)
+        siftclusters_filtered = copy.deepcopy(siftclusters)
+        siftclusters_filtered.labels_ = np.delete(siftclusters_filtered.labels_, feature_pos_out)
+    if criterion is 'words':
+        word_id = kwargs.get('word_id', 0)
+        if siftclusters is None: print 'error: need siftclusters computations.'
+        labels = siftclusters.labels_
+        feature_pos_out = np.where(labels != word_id)[0]
+        siftclusters_filtered = copy.deepcopy(siftclusters)
+        siftclusters_filtered.labels_ = np.delete(siftclusters_filtered.labels_, feature_pos_out)
+    elif criterion is 'blob_size':
+        diameter_range = kwargs.get('diameter_range', [-float('inf'), float('inf')])
+        feature_pos_out = np.where((diameters < diameter_range[0]) | (diameters > diameter_range[1]))[0]
+    elif criterion is 'experiment':
+        experiment_name = kwargs.get('experiment_name', 0)
+        feature_pos_out = np.where(np.asarray([feature['file_dir'] != experiment_name for kk, feature in enumerate(feature_all)
+                                   for orientation in feature['orientation'] for ori in orientation], dtype=int) == 1)[0]
+    feature_pos_filtered = np.delete(range(num_features), feature_pos_out)
+    feature_all_filtered = copy.deepcopy(feature_all)
+    argmaxgrad_feature_pos = []; image_nos = []; ori_feature_pos = []
+    for ii, feature in enumerate(feature_all):  # for all images/windows
+        for jj, ori in enumerate(feature['orientation']):
+            for kk, o in enumerate(ori):  # only count if !=[]
+                image_nos.append(ii)  # for each label/feature/ori position, what is the corresponding image
+                argmaxgrad_feature_pos.append(jj) # for each feature position, position of argmaxgrad in that image
+                ori_feature_pos.append(kk)  # for each feature position, position of ori in that orientation
+    aux = 0; blob_loc_prev = None; blob_image_prev = None
+    for pos in feature_pos_out:
+        pos_ori = pos
+        if blob_loc_prev == argmaxgrad_feature_pos[pos] and blob_image_prev == image_nos[pos]:  # feature in same blob
+            aux += 1; pos_ori -= aux
+        else: aux = 0
+        feature_all_filtered[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]] = \
+            np.delete(feature_all_filtered[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]],
+                      ori_feature_pos[pos_ori])
+        del feature_all_filtered[image_nos[pos]]['histogram_descr'][argmaxgrad_feature_pos[pos]][ori_feature_pos[
+            pos_ori]]
+        blob_loc_prev = argmaxgrad_feature_pos[pos]; blob_image_prev = image_nos[pos]
+
+    print '\t\t\tnumber of features after filtering: ', num_features-feature_pos_out.shape[0]
+
+    return feature_all_filtered, feature_pos_filtered, siftclusters_filtered
+

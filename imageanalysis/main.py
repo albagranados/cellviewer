@@ -21,24 +21,21 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/',
-             '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']
+file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/classification/circles'
+             '/circles_lownoise/',
+             '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/classification/rectangles/rectangles_lownoise/']
 # >= 1
 is_dataset = 1  # 0 if run analysis with one file ('file_name'); 1 if all files in file_dir(s)
-file_name = '3_list_drift_corrected_100140_170210'  # if is_dataset=0, then one single file (in
+file_name = 'WAPL_KO_DMSO_000_list_drift_0816-1116_allChs_4060_2540'  # if is_dataset=0, then one single file (in
 #  file_dirs)
 fileExt = '.txt'
 is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
-run = dict(image_processing=1, image_analysis=1)  # run image_processing and or image_analysis
+run = dict(image_processing=0, image_analysis=1)  # run image_processing and or image_analysis
 
 if run['image_processing'] == 0:
-    file_variables = open('/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/melike/Histones/crops_variables','rb')
+    file_variables = open('/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/test/pointpattern/circle_rectangle_lownoise/circles_variables','rb')
     [feature_all, file_dirs, dict_inputfile, dict_image, dict_sift] = pickle.load(file_variables)
     file_variables.close()
-    feature_all_filtered, feature_pos_filtered, kmeans_filtered = stat.filter_features('numloc', feature_all,
-                    kmeans=None, ball_radius_percentile=1, diameter_range=[100, 1000], experiment_name=file_dirs[0],
-                    threshold_percent=0.5, min_numloc=2)
-    feature_all = feature_all_filtered
 
 print '\n\n _______START FULL ANALYSIS_______ '; ininini_time = time.time()
 print ' _________________________________'
@@ -47,6 +44,7 @@ if run['image_processing']:
     inini_time = time.time()
     feature_all = []  # list of all features obtained for each training image in file_dirs
     for kk, file_dir in enumerate(file_dirs):  # each file_dir corresponds to one type of experimental data
+        if not is_dataset and (kk > 0): break
         for jj, fileid in enumerate(sorted(os.listdir(file_dir)), start=0):
             if not is_dataset and (jj > 0): break
             # if jj > 1: break
@@ -158,7 +156,7 @@ if run['image_processing']:
                     print('Done.')
                     print 'Plotting Voronoi zero-rank densities image...'
                     iproc.plot_image(image, cmap='jet', norm='lin', plot_axis='on')
-                    plt.savefig(output_dir + file_name + '_densities_image.pdf', bbox_inches='tight'); print 'Saved.'
+                    # plt.savefig(output_dir + file_name + '_densities_image.pdf', bbox_inches='tight'); print 'Saved.'
 
                     # print 'Plotting Voronoi zero-rank densities point pattern...'
                     # threshold = float(2*vor.densities_average); vproc.threshold(vor, thr=threshold)
@@ -189,9 +187,10 @@ if run['image_processing']:
 
                              # feature detection
                              t=10, feature_name='blob',  # 0.8, scale_ini=80
-                             thresholding=1, threshold_percent=0.8, num_features='all', scale_range_is='nm',
+                             thresholding=1, threshold_percent=0.9, threshold_value=None, num_features=200,
+                             scale_range_is='nm',
                              scale_ini=15,
-                             scale_end=1000,  # diam. of search, if pixel->analysispixel
+                             scale_end=400,  # diam. of search, if pixel->analysispixel
                              scale_spacing='odd', nscales=150,
                              scale_resolution=dict_inputfile.get('resolution'),  # 'scale_resolution': 1, # (radius) in
                              # scale_range_is (if [nm] and STORM -> min. 20nm)
@@ -242,39 +241,41 @@ if run['image_processing']:
             # util.saveparameters(output_dir + file_name + '_output.txt', dict1=dict_output)
             print ("Done (total time =  %.2f seconds)" % (time.time() - ini_time))
 
-            print 'Computing feature statistics of one image...'
-            savefile_suffix = output_dir + feature['file_name']
-            stat.statistic_descrip(feature, file_dirs=file_dirs[kk], ispp=dict_inputfile['ispp'],
-                                   pixel_size=dict_image['scale_pixel_size']*dict_image['original_pixel_size'],
-                                   savefile_suffix=savefile_suffix,
-                                   radius=1, area=1, density=1, num_loc=1, nnd=1, density_cluster=1, area_voronoi=0,
-                                   cluster_cluster=1)
-        if jj > 0:  # dir with more than one file analyzed
-            savefile_suffix = output_dir + file_dirs[kk].split('/')[-2]
-            print 'Computing feature statistics of dataset in', file_dirs[kk].split('/')[-2], '...'
-            stat.statistic_descrip(feature_all, file_dirs=file_dirs[kk], ispp=dict_inputfile['ispp'],
-                                   pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix,
-                                   radius=1, area=1, density_cluster=1, area_voronoi=0, num_loc=1,
-                                   density=1, nnd=1, cluster_cluster=1)
-    if len(file_dirs) > 1:
+            if not is_dataset:
+                print 'Computing feature statistics of one image...'
+                savefile_suffix = output_dir + feature['file_name']  # filename
+                stat.statistic_descrip(feature, file_dirs=file_dirs[kk], ispp=dict_inputfile['ispp'],
+                                       pixel_size=dict_image['scale_pixel_size']*dict_image['original_pixel_size'],
+                                       savefile_suffix=savefile_suffix,
+                                       radius=0, area=1, density=1, num_loc=1, nnd=1, density_cluster=1, area_voronoi=0,
+                                       cluster_cluster=1)
+        # if jj > 0:  # dir with more than one file analyzed
+        #     savefile_suffix = output_dir + file_dirs[kk].split('/')[-2]  # name current filedir
+        #     print 'Computing feature statistics of dataset in %s',  savefile_suffix, '...'
+        #     stat.statistic_descrip(feature_all, file_dirs=file_dirs[kk], ispp=dict_inputfile['ispp'],
+        #                            pixel_size=analysis_pixel_size, savefile_suffix=savefile_suffix,
+        #                            radius=0, area=1, density_cluster=1, area_voronoi=0, num_loc=1,
+        #                            density=1, nnd=1, cluster_cluster=1)
+    if kk > 0:  # more than one datasets/experiment
+        # savefile_suffix = output_dir + 'circlesrectangles'
         savefile_suffix = output_dir + file_dirs[0].split('/')[-3]
-        print 'Computing feature statistics of 2 datasets in', file_dirs[0].split('/')[-3], '...'
+        print 'Computing feature statistics of 2 datasets in', savefile_suffix, '...'
         stat.statistic_descrip(feature_all, file_dirs=file_dirs[0:2], ispp=dict_inputfile['ispp'],
                                pixel_size=dict_image['scale_pixel_size']*dict_image['original_pixel_size'],
                                savefile_suffix=savefile_suffix,
-                               radius=1, area=1, density=1, num_loc=1, nnd=1, density_cluster=1, area_voronoi=0,
-                               cluster_cluster=1)
+                               radius=0, area=1, density=1, num_loc=1, nnd=1, density_cluster=1, area_voronoi=1,
+                               cluster_cluster=1, strength=1)
         # same graph as before with boxplots
-        labels = np.asarray([np.where(feature['file_dir']==np.asarray(file_dirs))[0][0] for feature in feature_all
+        labels = np.asarray([np.where(feature['file_dir'] == np.asarray(file_dirs))[0][0] for feature in feature_all
                                   for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                   enumerate(orientation)])  # trick
         stat.words_statistic_descrip(feature_all, labels, cmap=mpl.colors.ListedColormap(['black', 'red']),
-                                     xlabel=r'hFb $\quad$TSA-hFb',
+                                     xlabel=r'circle $\quad$rectangle', #r'hFb $\quad$TSA-hFb',
                                      pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
-                                     savefile_suffix=savefile_suffix,
-                                     radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1, experiment=1,
+                                     savefile_suffix=savefile_suffix, pt='_experiments',
+                                     radius=0, area=1, num_loc=1, density=1, nnd=1, strength=1, experiment=1,
                                      cluster_density=1, cluster_cluster=1)
-        # boxplots for one dir and multiple images
+        # # boxplots for one dir and multiple images
         # stat.words_statistic_descrip(feature_all, np.asarray([ff for ff, feature in enumerate(feature_all)
         #                              for ii, orientation in enumerate(feature['orientation']) for jj, ori in
         #                              enumerate(orientation)]), cmap=mpl.colors.ListedColormap(['black', 'black']),
@@ -289,93 +290,112 @@ if run['image_processing']:
     pickle.dump([feature_all, file_dirs, dict_inputfile, dict_image, dict_sift], file_variables); file_variables.close()
     print ("Done (total time =  %.2f seconds)" % (time.time() - inini_time))
 
-
-# filter detected features by different criteria, and run analyis.
-feature_all_filtered, feature_pos_filtered, kmeans_filtered = \
-                stat.filter_features('num_loc', feature_all, kmeans=None, ball_radius_percentile=1,
-                                     diameter_range=[100,1000], experiment_name=file_dirs[1], threshold_percent=0.6,
-                                     min_numloc=2)
-feature_all = feature_all_filtered
-
 # # ====== IMAGE ANALYSIS ====================
 # # ==========================================
+feature_all_original = feature_all  # save original features before filtering etc.
+# feature_all = feature_all_original
+dict_analysis = dict(filter=1, name=['strength'],
+                               ball_radius_percentile=5, diameter_range=[40, 1000], word_id=[1], min_numloc=3,
+                               experiment_name=file_dirs[1], threshold_percent=None, threshold_value=None)
+if dict_analysis['filter']:
+    try: siftclusters
+    except NameError: siftclusters = None
+    feature_all_filtered = feature_all; siftclusters_filtered = siftclusters
+    if (dict_analysis['name'] is 'word_id') or (dict_analysis['name'] is 'histogram_distance') and siftclusters is None:
+        print 'error: run image_analysis before filtering by labels (word ids)'
+    for ii, fn in enumerate(dict_analysis['name']):  # filter detected features by different criteria
+        print 'filtering according to', fn
+        feature_all_filtered, feature_pos_filtered, siftclusters_filtered = \
+                        stat.filter_features(fn, feature_all_filtered, dict_analysis, siftclusters=siftclusters_filtered)
+        if ii == 0: feature_pos_filtered_prev = feature_pos_filtered; continue
+        feature_pos_filtered_prev = feature_pos_filtered_prev[feature_pos_filtered]
+    feature_pos_filtered = feature_pos_filtered_prev
+    feature_all = feature_all_filtered
+
 if run['image_analysis']:
-    plt.close('all'); reload(stat); reload(iproc); reload(vproc); reload(util)
+    plt.close('all')
+    reload(stat); reload(iproc); reload(vproc); reload(util)
     # # ==== CREATE VOCABULARY, unsupervised =====
+    # feature_all_reduced = stat.reduce_dimensionality('kmeans', feature_all, dict_sift, n_cluster=500)
+    # feature_all
     if dict_sift.get('compute_orientation'):
         print '\n _______ IMAGE ANALYSIS_______'; inini_time = time.time()
-        init = 'k-means++'
-        k0 = 2; kn = 2; sserror = []  # build bag of words - unsupervised kmeans
-        for k in range(k0, kn+1):
+        k0 = 5; kn = 6; sserror = []; avsilhouette = []  # build bag of words - unsupervised learning
+        for k in range(k0, kn+1, 1):
             print 'Creating vocabulary with %d words...' % k
-            histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
-            histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in
-                                    hist])
-            kmeans = stat.create_vocabulary(feature_all, dict_sift, n_cluster=k, init=init)
-            sserror.append(kmeans.inertia_)
+            siftclusters, histogram_weighted = stat.create_vocabulary('kmeans', feature_all, dict_sift,
+                                                                      n_cluster=k, weight=0)
+            # # #  plot the feature class with k+1 according to the colorcode at k. Comment if it feels unnecessary.
+            # # if k == k0: centers_permuted0 = siftclusters.cluster_centers_
+            # # if k > k0: centers_permuted0, siftclusters = util.permute_labels(siftclusters, k, centers_permuted0)
 
-            # plot the feature class with k+1 according to the colorcode at k. Comment if it feels unnecessary.
-            if k == k0: centers_permuted0 = kmeans.cluster_centers_
-            if k > k0: centers_permuted0, kmeans = util.permute_labels(kmeans, k, centers_permuted0)
-
-            image_no = 3  # len(feature_all)-1
-            feature_image = feature_all[image_no]
-            image = feature_image['image']
-            vor = feature_image['vor']
             if len(file_dirs) > 1:
-                savefile_suffix_all = output_dir + file_dirs[0].split('/')[-3] + '_kmeans%d' % k
+                savefile_suffix_all = output_dir + file_dirs[0].split('/')[-3] + '_siftclusters%d' % k
             else:
-                savefile_suffix_all = output_dir + feature_image['file_name'] + '_kmeans%d' % k
-            stat.scatterplot_vocabulary(feature_all, kmeans, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
+                savefile_suffix_all = output_dir + feature_image['file_name'] + '_siftclusters%d' % k
+            stat.scatterplot_vocabulary(feature_all, siftclusters, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
                                         savefile_suffix=savefile_suffix_all, cmap_charact=None,
-                                        pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'])
-            stat.sift2shape(kmeans, cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
-
-            stat.words_statistic_descrip(feature_all, kmeans.labels_, cmap=util.discrete_cmap(k, "jet"),
+                                        pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
+                                        histogram=histogram_weighted)
+            # stat.sift2shape(siftclusters, cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
+            stat.words_statistic_descrip(feature_all, siftclusters.labels_, cmap=util.discrete_cmap(k, "jet"),
                                          pixel_size=dict_sift['original_pixel_size']*dict_sift['scale_pixel_size'],
+                                         ylabel=r'circle $\qquad\qquad\qquad$ rectangle',
                                          savefile_suffix=savefile_suffix_all,
-                                         radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1,
-                                         experiment=1, cluster_density=1, cluster_cluster=1)
-            # plots and statistics on one selected image, optional (change kmeans.labels_ -> kmeans_labels_image):
-            kmeans_labels_image = util.select_labels_image(feature_all, kmeans.labels_, image_no=image_no)
-            iproc.plot_feature(image, feature_image, cmap='jet', norm='linear', plot_axis='on',
-                               blob_color='class', ori_color=kmeans_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
-            savefile_suffix = output_dir + feature_image['file_name'] + '_kmeans%d' % k  # or None
-            plt.savefig(savefile_suffix + '_features_image.pdf', bbox_inches='tight')
+                                         radius=0, area=1, num_loc=1, density=1, nnd=0, strength=1,
+                                         experiment=1, cluster_density=0, cluster_cluster=0)
+            # plots and statistics on one selected image, optional (change siftclusters.labels_ -> siftclusters_labels_image):
+            image_no = 0; feature_image = feature_all[image_no]; image = feature_image['image']; vor = feature_image['vor']
+            siftclusters_labels_image = util.select_labels_image(feature_all, siftclusters.labels_, image_no=image_no)
+            # iproc.plot_feature(image, feature_image, cmap='jet', norm='linear', plot_axis='on',
+            #                    blob_color='class', ori_color=siftclusters_labels_image,
+            #                    ori_cmap=util.discrete_cmap(k, "jet"))
+            savefile_suffix = output_dir + feature_image['file_name'] + '_siftclusters%d' % k  # or None
+            # plt.savefig(savefile_suffix + '_features_image.pdf', bbox_inches='tight')
             if dict_inputfile['ispp']:
                 vproc.plot_feature(vor, feature_image, dict_sift, show_points=True, cmap='gray', norm='log',
-                                   plot_axis='on', blob_color='class', ori_color=kmeans_labels_image,
+                                   plot_axis='on', blob_color='class', ori_color=siftclusters_labels_image,
                                    ori_cmap=util.discrete_cmap(k, "jet"))
                 plt.savefig(savefile_suffix + '_features_pp.pdf', bbox_inches='tight')
 
-            # # filtered PC points:
-            # feature_all_filtered, feature_pos_filtered, kmeans_filtered = \
-            #     stat.filter_features('histogram_distance', feature_all, kmeans=kmeans, ball_radius_percentile=1,
-            #                          diameter_range=[100, 1000], experiment_name=file_dirs[0], threshold_percent=0.1)
-            # stat.scatterplot_vocabulary(feature_all, kmeans, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
+            # # # filtered PC points:
+            # # feature_all_filtered, feature_pos_filtered, siftclusters_filtered = \
+            # #     stat.filter_features('strength', feature_all, siftclusters=siftclusters,
+            # #                          ball_radius_percentile=2, word_id=1,
+            # #                          diameter_range=[100, 1000], experiment_name=file_dirs[0], threshold_percent=0.1)
+            # stat.scatterplot_vocabulary(feature_all, siftclusters, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
             #                             savefile_suffix=savefile_suffix_all+'_filtered',
             #                             filter_pos=feature_pos_filtered)
-            # stat.words_statistic_descrip(feature_all_filtered, kmeans_filtered.labels_,
-            #                              cmap=util.discrete_cmap(k, "jet"),
-            #                              pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
-            #                              savefile_suffix=savefile_suffix_all+'_filtered',
-            #                              radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1,
-            #                              experiment=1, cluster_density=1, cluster_cluster=1)
-            # kmeans_labels_image = util.select_labels_image(feature_all_filtered, kmeans_filtered.labels_, image_no=image_no)
-            # iproc.plot_feature(image, feature_all_filtered[image_no], cmap='jet', norm='linear', plot_axis='on',
-            #                    blob_color='class', ori_color=kmeans_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
-            # plt.savefig(savefile_suffix + '_features_image_filtered.pdf', bbox_inches='tight')
-            # if dict_inputfile['ispp']:
-            #     vproc.plot_feature(vor, feature_all_filtered[image_no], dict_sift, show_points=True, cmap='gray', norm='log',
-            #                        plot_axis='on', blob_color='class', ori_color=kmeans_labels_image,
-            #                        ori_cmap=util.discrete_cmap(k, "jet"))
-            #     plt.savefig(savefile_suffix + '_features_pp_filtered.pdf', bbox_inches='tight')
+            # # stat.words_statistic_descrip(feature_all_filtered, siftclusters_filtered.labels_,
+            # #                              cmap=util.discrete_cmap(k, "jet"), ylabel=r'ActD$\quad$DMSO',
+            # #                              pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
+            # #                              savefile_suffix=savefile_suffix_all+'_filtered',
+            # #                              radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1,
+            # #                              experiment=1, cluster_density=1, cluster_cluster=1)
+            # # siftclusters_labels_image = util.select_labels_image(feature_all_filtered, siftclusters_filtered.labels_, image_no=image_no)
+            # # iproc.plot_feature(image, feature_all_filtered[image_no], cmap='jet', norm='linear', plot_axis='on',
+            # #                    blob_color='class', ori_color=siftclusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            # # plt.savefig(savefile_suffix + '_features_image_filtered.pdf', bbox_inches='tight')
+            # # if dict_inputfile['ispp']:
+            # #     vproc.plot_feature(vor, feature_all_filtered[image_no], dict_sift, show_points=True, cmap='gray', norm='log',
+            # #                        plot_axis='on', blob_color='class', ori_color=siftclusters_labels_image,
+            # #                        ori_cmap=util.discrete_cmap(k, "jet"))
+            # #     plt.savefig(savefile_suffix + '_features_pp_filtered.pdf', bbox_inches='tight')
+
+            if hasattr(siftclusters, 'inertia_'): sserror.append(siftclusters.inertia_)
+            silhouette = stat.compute_silhouette(histogram_weighted, siftclusters.labels_,
+                                                 cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
+            avsilhouette.append(silhouette)
 
         fig2, ax2 = plt.subplots()
         ax2.plot(range(k0, kn+1), sserror, 'k.-', markersize=10)
         ax2.set_ylabel('total within sum of squares'); ax2.set_xlabel(r'number of clusters $k$')
-        fig2.savefig('_'.join(savefile_suffix_all.split('_')[0:-1]) + '_withinsumofsquares.pdf',
-                     bbox_inches='tight')
+        fig2.savefig('_'.join(savefile_suffix_all.split('_')[0:-1]) + '_withinsumofsquares.pdf', bbox_inches='tight')
+
+        fig3, ax3 = plt.subplots()
+        ax3.plot(range(k0, kn+1), avsilhouette, 'k.-', markersize=10)
+        ax3.set_ylabel('average silhouette coefficient'); ax3.set_xlabel(r'number of clusters $k$')
+        fig3.savefig('_'.join(savefile_suffix_all.split('_')[0:-1]) + '_avsilhouette.pdf', bbox_inches='tight')
         print ("Done (total time =  %.2f seconds)" % (time.time() - inini_time))
 
 print ("\n\n***FINISHED ANALYSIS (total time =  %.2f seconds)" % (time.time() - ininini_time))

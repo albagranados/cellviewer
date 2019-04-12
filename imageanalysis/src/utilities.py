@@ -419,53 +419,43 @@ def plot_frameno(points, frame_no):
 def discrete_cmap(N, base_cmap=None):
     """Create an N-bin discrete colormap from the specified input map"""
 
-    # Note that if base_cmap is a string or None, you can simply do
-    #    return plt.cm.get_cmap(base_cmap, N)
-    # The following works for string, None, or a colormap instance:
-
-    # base = plt.cm.get_cmap(base_cmap)
-    # color_pos = np.array([0.05, 0.95, 0.5, 0.3, 0.7,
-    #                        0.44827586, 0.17241379, 0.86206897, 0.55172414, 0.13793103,
-    #                        0.03448276, 0.65517241, 0.10344828, 0.82758621, 0.5862069 ,
-    #                        0.48275862, 0.37931034, 0.24137931, 0.06896552, 0.27586207,
-    #                        1., 0.62068966, 0.4137931, 0.68965517, 0.72413793,
-    #                        0.79310345, 0.89655172, 0.96551724, 0.34482759, 0.20689655])
-    # color_list = base(color_pos[0:N])
-    #
-    # cmap_name = base.name + str(N)
-    #
-    # return base.from_list(cmap_name, color_list, N)
-
     import matplotlib as mpl
+    if N < 8:
+        colormap_rgb = [(0.9,0.62,0), (0.34,0.7,0.91), (0, 0.62, 0.45), (0.94,0.89,0.25), (0,0.45,0.7),
+                                          (0.83,0.368,0), (0.8,0.474,0.654)]
+        colormap = mpl.colors.ListedColormap(colormap_rgb[0:N])
+    else:
+        import matplotlib.colors as mcolors
+        import matplotlib.cm as cm
 
-    # return  mpl.colors.ListedColormap([(0,0,0), (0.9,0.62,0)])
-    colormap_rgb = [(0.9,0.62,0), (0.34,0.7,0.91), (0, 0.62, 0.45), (0.94,0.89,0.25), (0,0.45,0.7),
-                                      (0.83,0.368,0), (0.8,0.474,0.654)]
-    colormap = mpl.colors.ListedColormap(colormap_rgb[0:N])
+        colormap = cm.viridis
+        normalize = mcolors.Normalize(vmin=0, vmax=N-1)
+        color = colormap(normalize(range(N)))
+        colormap = mpl.colors.ListedColormap(color)
     return colormap
 
 
-def permute_labels(kmeans, k, centers_permuted0):
+def permute_labels(siftclusters, k, centers_permuted0):
     """
     This function assignes a permuted version of the labels (or classes) just to be consistent with the colorcode of
     the previous iteration in k (number of clusters, words,...)
     """
 
-    labels_permuted = np.full_like(kmeans.labels_, -1)
-    centers_permuted = np.full_like(kmeans.cluster_centers_, -1)
+    labels_permuted = np.full_like(siftclusters.labels_, -1)
+    centers_permuted = np.full_like(siftclusters.cluster_centers_, -1)
     list_labels = []
     for l0, c in enumerate(centers_permuted0):
-        l1 = np.argmin(np.linalg.norm(c - kmeans.cluster_centers_, axis=1) ** 2)
-        labels_permuted[np.where(kmeans.labels_ == l1)] = l0
-        centers_permuted[l0] = kmeans.cluster_centers_[l1]
+        l1 = np.argmin(np.linalg.norm(c - siftclusters.cluster_centers_, axis=1) ** 2)
+        labels_permuted[np.where(siftclusters.labels_ == l1)] = l0
+        centers_permuted[l0] = siftclusters.cluster_centers_[l1]
         list_labels.append(l1)
     labels_permuted[np.where(labels_permuted == -1)] = k - 1
-    centers_permuted[k - 1] = kmeans.cluster_centers_[np.setdiff1d(range(k), list_labels)[0]]
-    kmeans.labels_ = labels_permuted
-    kmeans.cluster_centers_ = centers_permuted
+    centers_permuted[k - 1] = siftclusters.cluster_centers_[np.setdiff1d(range(k), list_labels)[0]]
+    siftclusters.labels_ = labels_permuted
+    siftclusters.cluster_centers_ = centers_permuted
     centers_permuted0 = centers_permuted
 
-    return centers_permuted0, kmeans
+    return centers_permuted0, siftclusters
 
 
 def select_labels_image(feature_all, labels_all, image_no):
@@ -477,9 +467,9 @@ def select_labels_image(feature_all, labels_all, image_no):
         num_features.append(aux)  # number of features or hist (!=[]) per image
         aux = 0
     image_ref = np.append(0, np.cumsum(num_features))
-    kmeans_labels_image = labels_all[image_ref[image_no]:image_ref[image_no+1]]
+    siftclusters_labels_image = labels_all[image_ref[image_no]:image_ref[image_no+1]]
 
-    return kmeans_labels_image
+    return siftclusters_labels_image
 
 
 def points_2dcrop(points, rangexy):

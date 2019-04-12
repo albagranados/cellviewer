@@ -364,8 +364,11 @@ def get_blob(image, kwargs, image_descr=None):
         thresholding = kwargs.get('thresholding', False)
         if thresholding:
             print '\tThresholding...',
-            threshold_percent = kwargs.get('threshold_percent', 0.4)  # default 40% down the maximum response
-            threshold = np.max(strength) - threshold_percent * (np.max(strength) - np.min(strength))
+            if kwargs.get('threshold_percent') is not None:
+                threshold_percent = kwargs.get('threshold_percent')  # default 40% down the maximum response
+                threshold = np.max(strength) - threshold_percent * (np.max(strength) - np.min(strength))
+            elif kwargs.get('threshold_value') is not None:
+                threshold = kwargs.get('threshold_value')
             temp = np.where(strength > threshold)  # tuple
             argmaxgrad_threshold = (argmaxgrad[0][temp[0]], argmaxgrad[1][temp[0]])
             argmaxgrad = argmaxgrad_threshold
@@ -869,6 +872,14 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
         # magnitudes by thresholding the values in the unit feature vector to each be no larger than 0.2,
         # and then renormalizing to unit length.
         hist /= np.linalg.norm(hist)
+
+        # # normalize descriptor vectors
+        # threshold_sat_norm = threshold_sat*np.linalg.norm(hist)
+        # hist[np.where(hist > threshold_sat_norm)] = threshold_sat_norm  # we reduce the influence of large gradient
+        # # magnitudes by thresholding the values in the unit feature vector to each be no larger than 0.2,
+        # # and then renormalizing to unit length.
+        # hist /= 1./512*np.linalg.norm(hist)
+        # hist[np.where(hist > 255)] = 255  # we reduce the influence of large gradient
 
         # print bx, by
         histogram.append(hist)
