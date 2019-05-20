@@ -511,3 +511,141 @@ def remove_points_rnd(points, percent=10):
     new_points = points[rnd_pos]
 
     return new_points
+
+
+def memory_usage():
+
+    import os
+
+    mem = str(os.popen('free -t -m').readlines())
+    """
+    Get a whole line of memory output, it will be something like below
+    ['             total       used       free     shared    buffers     cached\n',
+    'Mem:           925        591        334         14         30        355\n',
+    '-/+ buffers/cache:        205        719\n',
+    'Swap:           99          0         99\n',
+    'Total:        1025        591        434\n']
+     So, we need total memory, usage and free memory.
+     We should find the index of capital T which is unique at this string
+    """
+    T_ind = mem.index('T')
+    """
+    Than, we can recreate the string with this information. After T we have,
+    "Total:        " which has 14 characters, so we can start from index of T +14
+    and last 4 characters are also not necessary.
+    We can create a new sub-string using this information
+    """
+    mem_G = mem[T_ind + 14:-4]
+    """
+    The result will be like
+    1025        603        422
+    we need to find first index of the first space, and we can start our substring
+    from from 0 to this index number, this will give us the string of total memory
+    """
+    S1_ind = mem_G.index(' ')
+    mem_T = mem_G[0:S1_ind]
+    """
+    Similarly we will create a new sub-string, which will start at the second value.
+    The resulting string will be like
+    603        422
+    Again, we should find the index of first space and than the
+    take the Used Memory and Free memory.
+    """
+    mem_G1 = mem_G[S1_ind + 8:]
+    S2_ind = mem_G1.index(' ')
+    mem_U = mem_G1[0:S2_ind]
+
+    mem_F = mem_G1[S2_ind + 8:]
+    print 'Summary = ' + mem_G
+    print 'Total Memory = ' + mem_T + ' MB'
+    print 'Used Memory = ' + mem_U + ' MB'
+    print 'Free Memory = ' + mem_F + ' MB'
+
+    CPU_Pct = str(round(float(
+        os.popen('''grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage }' ''').readline()),
+                        2))
+
+    # print results
+    print("CPU Usage = " + CPU_Pct)
+
+
+def read_features(input_files, training_set=1):
+
+    import pickle
+
+    feature_all_aux = []; file_dirs = []
+    for kk in range(len(input_files)):
+        print '\t reading output variables in', input_files[kk]
+        file_variables = open(input_files[kk],'rb')
+        output = pickle.load(file_variables)
+        feature_all = output[0]; file_dir = output[1]; dict_inputfile = output[2]
+        dict_image = output[3]; dict_sift = output[4]
+        if len(output) < 6:
+            print '\t\tgenerating training set...'
+            trainingset_filenames = generate_training_set([input_files[kk]])
+        else: trainingset_filenames = output[5]
+        print '\t\t\tTraining set:'
+        for file_name in trainingset_filenames:
+            print '\t\t\t\t', file_name
+        print '\t\t\tsize of training set = ', len(trainingset_filenames), 'of', len(feature_all)
+        file_variables.close()
+        output = []; del output
+        if training_set:
+            files = [ii for ii, feature in enumerate(feature_all) if feature['file_name'] in trainingset_filenames]
+            feature_all_aux.append([feature_all[ii] for ii in files])
+        else: feature_all_aux.append(feature_all)
+        file_dirs.append(file_dir)
+    feature_all = []; del feature_all
+    feature_all = [feature for exp in feature_all_aux for feature in exp]; feature_all_aux = []; del feature_all_aux
+
+    if training_set:
+        return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, trainingset_filenames
+    else:
+        return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift
+
+
+def save_features_small(input_files):
+
+    import pickle
+    for kk in range(len(input_files)):
+        print '\t reading output variables in', input_files[kk]
+        file_variables = open(input_files[kk], 'rb')
+        output = pickle.load(file_variables)
+        feature_all = output[0]; file_dir = output[1]; dict_inputfile = output[2]
+        dict_image = output[3]; dict_sift = output[4]
+        if len(output) < 6:
+            trainingset_filenames = generate_training_set(input_files[kk])
+        else: trainingset_filenames = output[5]
+        file_variables.close()
+        output = []; del output
+        print '\t removing vor and image and saving to', input_files[kk]+'2'
+        for feature in feature_all:
+            print feature['file_name']
+            feature.pop('vor', None); feature.pop('image', None)
+        file_variables = open(input_files[kk]+'small', 'wb')
+        pickle.dump([feature_all, file_dir, dict_inputfile, dict_image, dict_sift, trainingset_filenames],
+                    file_variables)
+        file_variables.close()
+
+    return 1
+
+
+def generate_training_set(input_files):
+
+    import pickle, random
+    for kk in range(len(input_files)):
+        file_variables = open(input_files[kk],'rb')
+        [feature_all, file_dir, dict_inputfile, dict_image, dict_sift] = pickle.load(file_variables)
+        file_variables.close()
+
+        print '\t\tsaving training output variables in', input_files[kk]
+        trainingset = random.sample(range(len(feature_all)), k=int(0.8*len(feature_all)))
+        trainingset.sort()
+        trainingset_filenames = [feature['file_name'] for feat, feature in enumerate(feature_all) if feat in
+                                 trainingset]
+        file_variables = open(input_files[kk], 'wb')
+        pickle.dump([feature_all, file_dir, dict_inputfile, dict_image, dict_sift, trainingset_filenames],
+                    file_variables)
+        file_variables.close()
+
+    return trainingset_filenames

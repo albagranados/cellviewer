@@ -391,7 +391,7 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     return densities_image
 
 
-def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cmap='jet', norm=None,
+def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='gray', norm=None,
                  blob_color='strength', ori_color=None, ori_cmap=None):
     """
     Function for plotting scale-space feature on Vornoi tessellation (STORM pixel size)
@@ -462,7 +462,7 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                               np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
                              [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
                               np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
-                              color=o_color, linewidth=0.5)
+                              color=o_color, linewidth=1)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength':
@@ -476,7 +476,7 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=False, cma
                     b_color = blob_cmap(mean)
             ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
                           oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
-                          color=b_color, linewidth=0.5)
+                          color=b_color, linewidth=1)
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
 

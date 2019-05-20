@@ -947,3 +947,9 @@ def sift_descriptor(image, bx, by, lx, ly, radius, orientation, n_hist=16, n_bin
 
     return histogram
 
+
+def number_features(feature_all):
+
+    diameters = np.asarray([feature['diameter'][ii] for feature in feature_all
+                 for ii, orientation in enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
+    return diameters.shape[0]
