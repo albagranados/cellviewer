@@ -2,13 +2,38 @@ import math, time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-mpl.rcParams["text.usetex"] = True; mpl.rcParams['font.family'] = 'serif'  # configure latex plots
-mpl.rcParams.update({'font.size': 24})
+# params = {
+#     'text.latex.preamble': ['\\usepackage{gensymb}'],
+#     'image.origin': 'lower',
+#     'image.interpolation': 'nearest',
+#     'image.cmap': 'gray',
+#     'axes.grid': False,
+#     'savefig.dpi': 150,  # to adjust notebook inline plot size
+#     'axes.labelsize': 8, # fontsize for x and y labels (was 10)
+#     'axes.titlesize': 8,
+#     'font.size': 8, # was 10
+#     'legend.fontsize': 6, # was 10
+#     'xtick.labelsize': 8,
+#     'ytick.labelsize': 8,
+#     'text.usetex': True,
+#     'figure.figsize': [3.39, 2.10],
+#     'font.family': 'serif',
+# }
+params = {
+    'axes.labelsize': 20,  # fontsize for x and y labels (was 10)
+    'font.size': 24,  # was 10
+    'legend.fontsize': 8, # was 10
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10,
+    'text.usetex': True,
+    'font.family': 'serif',
+}
+mpl.rcParams.update(params)
 
 
 def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
-              xlabel={}, cmap=None, num_bins=100, xticks=None,
-              xtickslabel=None, alpha=1, discrete=0, xlim=None, ylim=[0, 0.95], color='k'):
+              xlabel='', cmap=None, num_bins=100, xticks=None,
+              xtickslabel=None, alpha=1, discrete=0, xlim=None, ylim=None, color='k'):
     """
     This function plots histograms. Range: min-max of data. Compared to plot_hist, this new version computes the
     histogram with bar function and considering the x-range discrete/categorical if necessary (scale is typically
@@ -26,7 +51,8 @@ def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
     bins (1d array): if it is not None, then bins=bins and 'lin' scale
 
     """
-    if fig is None: fig, ax = plt.subplots()
+    if fig is None:
+        fig, ax = plt.subplots()
 
     if xscale is 'log':
         data = data[np.where((data != float('inf')) & (data > 0))]  # eliminate areas that are set to inf, -1 or 0
@@ -35,10 +61,14 @@ def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
     unique, counts = np.unique(data, return_counts=True)
 
     if bins is not None:
-        n, bins, patches = ax.hist(data, bins=bins, histtype='bar', rwidth=0.4,
-                                    weights=np.zeros_like(data) + 1. / data.size, color='w')  # , color='k')
-        ax.set_aspect('equal')  #, adjustable='box')
+        if fig is None: fig, ax = plt.subplots(figsize=(10, 2))
+        if cmap is None:
+            n, bins, patches = ax.hist(data, bins=bins, histtype='bar', rwidth=1,
+                                    weights=np.zeros_like(data) + 1. / data.size, color='w', ec='k')  # , color='k')
+        # ax.set_aspect('equal')  #, adjustable='box')
         if cmap is not None:
+            n, bins, patches = ax.hist(data, bins=bins, histtype='bar', rwidth=2,
+                                    weights=np.zeros_like(data) + 1. / data.size, color='w', ec='w')  # , color='k')
             for c, p in zip(range(len(bins)-1), patches):
                 plt.setp(p, 'facecolor', cmap(c), alpha=alpha)
         if xticks is not None:
@@ -71,7 +101,8 @@ def plot_hist(data, fig=None, ax=None, bins=None, xscale='linear', yscale={},
         if yscale is 'log':
             ax.set_yscale('log')
 
-    plt.ylabel(r'frequency'); plt.xlabel(xlabel); ax.hold(1)
+    plt.ylabel(r'frequency'); ax.hold(1)
+    plt.xlabel(xlabel)
     ax.set_ylim(ylim); ax.set_xlim(xlim)
 
     return fig, ax
@@ -152,7 +183,7 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
         ylabel = ylabel + '$\quad$' + r'[$10**$]'
     else:
         values = [bp[np.where((bp != float('inf')) & (bp >= 0))] for bp in data]
-    fig, ax = plt.subplots(figsize=(len(data)*1.5, len(data)*3))
+    fig, ax = plt.subplots(figsize=(10, 5))  # figsize=(len(data)*1.5, len(data)*3))
     if bptype == 'violin':   # plot violin plot
         # print ylabel
         # print [np.mean(data) for data in values]
@@ -160,8 +191,7 @@ def plot_boxplot(data, yscale='lin', bptype='violin', xticklabels='', xlabel='',
         for ii, pc in enumerate(result['bodies']):
             pc.set_alpha(alpha)
             if cmap is None:
-                pc.set_facecolor('gray')
-                pc.set_linewidth(1)
+                pc.set_facecolor('gray'); pc.set_linewidth(1)
             else:
                 pc.set_facecolor(cmap(ii))
                 pc.set_linewidth(1)
@@ -414,13 +444,13 @@ def compute_rms_deviation(points, area, width, aspect_ratio, bg, kwargs, plot=Fa
     return rms
 
 
-def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, savefile_suffix=None,
-                           filter_pos=None, file_dirs=None,
-                           cmap_charact=None, pixel_size=5, histogram=None):
+def scatterplot_descriptors(feature_all, clusters, cmap=None, savefile_suffix=None,
+                            filter_pos=None, cmap_charact=None, pixel_size=5, histogram=None):
     """
     This functions plots in the PC1-PC2 space the clustered distribution of all detected features to create the
     vocabulary.
     """
+
     from sklearn.decomposition import PCA
 
     if not isinstance(feature_all, list): feature_all = [feature_all]
@@ -431,15 +461,16 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
         if len(histogram) == 0:
             print 'error: please, compute orientation and descriptors histograms for SIFT'
             return None
+    else: print '\t\tNB: input histogram should be output weighted histogram from function create_codewords.'
 
-    labels = siftclusters.labels_
+    # labels = clusters.labels_
+    labels = np.asarray([feature['word_label'][jj][ii] for feature in feature_all for jj, orientation in
+              enumerate(feature['orientation']) for ii, ori in enumerate(orientation)])
+    n_clusters = np.unique(labels).shape[0]
     print '\tcomputing PCA for visualization...'
     pca = PCA(n_components=2)
 
-    if not hasattr(siftclusters, 'cluster_centers_'):
-        siftclusters.cluster_centers_ = np.empty(shape=(0,128)); cluster_centers = siftclusters.cluster_centers_
-    else: cluster_centers = siftclusters.cluster_centers_
-    X = np.append(histogram, cluster_centers, axis=0)  # shape (n_samples, n_features)
+    X = np.append(histogram, clusters.cluster_centers_, axis=0)  # shape (n_samples, n_features)
     X_reduced = pca.fit_transform(X)  # array-like, shape (n_samples, n_components)
     print '\t\t\tPC explained variance: ', pca.explained_variance_
     if filter_pos is not None:
@@ -450,12 +481,10 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
         labels_filtered = labels[filter_pos]
         del histogram, labels, X_reduced
         histogram = histogram_filtered; labels = labels_filtered; X_reduced = X_reduced_filtered
-
     fig, ax = plt.subplots(); alpha = 0.7
-    # plt.figure(); alpha = 0.7
     if cmap_charact is None:
         if cmap is None: cmap = plt.cm.get_cmap('Set1')
-        shape = ['o', 'v'] # plot marker as a function of experiemnt
+        shape = ['o', 'v', 'D', '^', 's', 'P', '>', '<']  # plot marker as a function of experiemnt
         file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
         # print '\t\t\t(scatter plot: o ->', file_dirs[0].split('/')[-2], '; v ->', file_dirs[1].split('/')[-2], ')'
         labels_exp = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all
@@ -463,15 +492,15 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
                                   enumerate(orientation)])
         for ii, fd in enumerate(file_dirs):
             pos = np.where(labels_exp == ii)[0]
-            # sc = plt.scatter(X_reduced[pos, 0], X_reduced[pos, 1], c=labels[pos],
-            #                  alpha=alpha, facecolors="None", cmap=cmap, s=10, marker=shape[ii])  # cmap)
-            sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
-                             alpha=alpha, facecolors="None", cmap=cmap, s=10)  # cmap)  # same markers
+            sc = plt.scatter(X_reduced[pos, 0], X_reduced[pos, 1], c=labels[pos],
+                             alpha=alpha, facecolors="None", cmap=cmap, s=10, marker=shape[ii])  # cmap)
+            # sc = plt.scatter(X_reduced[0:histogram.shape[0], 0], X_reduced[0:histogram.shape[0], 1], c=labels,
+            #                  alpha=alpha, facecolors="None", cmap=cmap, s=10)  # cmap)  # same markers
             sc.set_facecolor('none'); plt.hold(True)
             # plt.scatter(X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 0],
             #             X_reduced[histogram.shape[0]:histogram.shape[0] + n_cluster, 1], marker='*', s=10 ** 2,
             #             color=[cmap(ii) for ii in range(n_cluster)])
-        cmap_charact = " ".join(str(x) for x in (np.unique(labels)+1))
+        cmap_charact = r'1, \ldots,' + str(n_clusters)  # " ".join(str(x) for x in (np.unique(labels)+1))
     else:
         cmap = plt.cm.get_cmap('jet')
         if cmap_charact is 'strength':
@@ -513,9 +542,7 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
             # color = ['red', 'black']
             # print '\t\t\t(scatter plot:', color[0], '->', file_dirs[0].split('/')[-2], ';', color[1], '->', \
             #     file_dirs[1].split('/')[-2], ')'
-            import matplotlib.cm as cm
-            import matplotlib.colors as mcolors
-            colormap = cm.viridis; normalize = mcolors.Normalize(vmin=0, vmax=len(file_dirs) - 1)
+            colormap = mpl.cm.viridis; normalize = mpl.colors.Normalize(vmin=0, vmax=len(file_dirs) - 1)
             color = colormap(normalize(range(len(file_dirs))))
             # for kk, col in enumerate(color):
             #     print '\t\t\tscatter plot (experiment): ', col, '->', file_dirs[kk].split('/')[-2]
@@ -523,7 +550,8 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
                                       for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                       enumerate(orientation)]); alpha = 0.5
             cmap = mpl.colors.ListedColormap(color)
-            cmap_charact = [fd.split('/')[-2] for fd in file_dirs]; savefile_suffix += '_experiment'
+            cmap_charact = ' - '.join([''.join(list(fd.split('/')[-2])[0:3]) for fd in file_dirs])
+            savefile_suffix += '_experiment'
         elif cmap_charact is 'cluster_cluster':
             for feature in feature_all: feature['clusterincluster'] = count_clusterincluster(feature, pixel_size)
             labels = np.log10(np.asarray([feature['clusterincluster'][ii] for feature in feature_all
@@ -550,7 +578,7 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
     #     # ax.annotate('%d' % ii, xy=(X_reduced[histogram.shape[0] + ii, 0],
     #     #                            X_reduced[histogram.shape[0] + ii, 1]), size=40)
     # # ax.annotate('%.d', (X_reduced[hist_ind, s0], X_reduced[hist_ind, 1]), size=10)
-    plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$')  # ;plt.title('k=%d' % n_cluster)
+    plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$')
     # ax.set_ylim([-0.8, 0.8]); ax.set_xlim([-0.8, 0.6])
     ax.set_aspect('equal', adjustable='box')
     plt.show(); plt.hold(False)
@@ -571,7 +599,7 @@ def scatterplot_vocabulary(feature_all, siftclusters, n_cluster=3, cmap=None, sa
     #         hist_ind += 1
 
 
-def create_vocabulary(algorithm, feature_all, kwargs_sift={}, n_cluster=3, weight=0):
+def create_codewords(algorithm, feature_in, kwargs_sift={}, n_cluster=3, weight=0, reduced_sample=1):
     """
     This function
 
@@ -581,20 +609,25 @@ def create_vocabulary(algorithm, feature_all, kwargs_sift={}, n_cluster=3, weigh
 
     Output:
     ---------
-    siftclusters: attributs are labels_, cluster_centers_
+    codewords_clusters, feature_codewords = dict(feature_all=feature_all_codewords, codewords_ref=codewords_ref)
+    codewords_ref is an array of size equal number of centroids, of triplet containing (kk=image_no, jj=argmaxgrad, ii=orientationpos)
 
     """
     from sklearn.cluster import KMeans
     from sklearn.cluster import AgglomerativeClustering
+    import copy
 
-    if not isinstance(feature_all, list): feature_all = [feature_all]
+    print 'Creating vocabulary with %d words...' % n_cluster; start_time = time.time()
 
-    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+    if not isinstance(feature_in, list): feature_in = [feature_in]
+
+    if reduced_sample:
+        feature_all_clustering, feature_pos_reduced = reduce_dimensionality(feature_in, method='class_equalsize')  # random!
+    else: feature_all_clustering = feature_in
+    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all_clustering]
     histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])  # some hist can be []
-    # print 'size all histograms: ', len(histogram)
     if len(histogram) == 0:
-        print 'error: please, compute orientation and descriptors histograms for SIFT'
-        return None
+        print 'error: please, compute orientation and descriptors histograms for SIFT'; return None
     if algorithm is 'kmeans':
         if weight:
             # # # experiment
@@ -603,47 +636,67 @@ def create_vocabulary(algorithm, feature_all, kwargs_sift={}, n_cluster=3, weigh
             #                      for ii, orientation in enumerate(feature['orientation']) for jj, ori in
             #                      enumerate(orientation)])
             # # blob size
-            labels = np.asarray([feature['strength'][ii] for feature in feature_all
+            labels = np.asarray([feature['strength'][ii] for feature in feature_all_clustering
                                  for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                  enumerate(orientation)])
             # # # normalize to maximum value in histograms to avoid extra numerical error
             lmax = np.max(labels); hmax = np.max(histogram)
             labels = 1./lmax*labels*hmax
             histogram = np.append(histogram, np.array(labels).reshape(histogram.shape[0], 1),axis=1)
-            # histogram /= np.linalg.norm(histogram)
-            # histogram[np.where(histogram > 0.2)] = 0.2
-            # histogram /= np.linalg.norm(histogram)
-            # w1 = 1; w2 = 1
+            # histogram /= np.linalg.norm(histogram); histogram[np.where(histogram > 0.2)] = 0.2
+            # histogram /= np.linalg.norm(histogram); w1 = 1; w2 = 1
             w1 = (np.sqrt(np.mean(2*np.var(histogram[:, 0:-1], 0))))**-1
             w2 = (np.sqrt(2*np.var(histogram[:, -1], 0)))**-1
             histogram[:, 0:-1] = w1*histogram[:, 0:-1]; histogram[:, -1] = w2*histogram[:, -1]
-        clusters = KMeans(n_clusters=n_cluster, random_state=0, init="k-means++").fit(histogram)
+            print '\t\tNB: modify output and return histogram_weighted.'
+        codewords_clusters = KMeans(n_clusters=n_cluster, random_state=0, init="k-means++").fit(histogram)
     elif algorithm is 'hierarchical':
-        clusters = AgglomerativeClustering(n_clusters=n_cluster, affinity='euclidean', linkage='ward').fit(histogram)
+        codewords_clusters = AgglomerativeClustering(n_clusters=n_cluster, affinity='euclidean', linkage='ward').fit(
+            histogram)
 
-    # labels = siftclusters.labels_
-    # cluster_centers = siftclusters.cluster_centers_  # siftclusters.cluster_centers_[0] = centroid of cluster 0
-    # n_bins_descr = kwargs_sift.get('n_bins_descr', 4)
-    # n_hist = kwargs_sift.get('n_hist', 4)
+    print ("Done (time =  %.2f seconds)" % (time.time() - start_time))
 
-    # # plot
-    # for jj in range(cluster_centers.shape[0]):
-    #     plt.figure()
-    #     max_ori = np.max(cluster_centers[jj])
-    #     for ii in range(0, n_hist * n_hist):
-    #         ind = 4 * (3 - ii // 4) + ii % 4
-    #         plt.subplot(4, 4, ii + 1)
-    #         plt.bar(np.arange(n_bins_descr), cluster_centers[jj][n_bins_descr * ind:n_bins_descr * ind +n_bins_descr],
-    #                 color='0.5',
-    #                 align='center')
-    #         plt.xticks(np.linspace(0, n_bins_descr, 5), ['0', '\pi/2', '\pi', '3\pi/2', '2\pi'])
-    #         plt.ylim([0, max_ori])
-    #         plt.hold(True)
+    if algorithm is 'hierarchical':
+        print '\t\tHierarchical clustering for codewords building. Beware that no centroids are computed.'
+        codewords_clusters.cluster_centers_ = np.empty(shape=(0, 128))
+        return codewords_clusters, histogram  # no data for centroids of clusters
 
-    return clusters, histogram
+    # # create feature list with the codewords only -------
+    n_cluster = np.unique(codewords_clusters.labels_).shape[0]
+    feature_all_codewords = copy.deepcopy(feature_all_clustering); codewords_ref = np.repeat(None, n_cluster)
+    feature_pos_out = np.array([], dtype=int)
+    for label in range(n_cluster):
+        feature_pos_label = np.where(codewords_clusters.labels_ == label)
+        distances = np.linalg.norm(histogram[feature_pos_label] - codewords_clusters.cluster_centers_[label], axis=1)
+        if feature_pos_label[0].shape[0] > 1:
+            feature_pos_label_outball = np.delete(range(feature_pos_label[0].shape[0]), np.argmin(distances))
+            feature_pos_out = np.append(feature_pos_out, feature_pos_label[0][feature_pos_label_outball])
+        image_no, feature_no, ori_no = feature_reference(feature_pos_label[0][np.argmin(distances)], feature_all_clustering)
+        codewords_ref[label] = (image_no, feature_no, ori_no)
+    feature_pos_out = np.sort(feature_pos_out)
+    argmaxgrad_feature_pos = []; image_nos = []; ori_feature_pos = []
+    for kk, feature in enumerate(feature_all_clustering):
+        for jj, ori in enumerate(feature['orientation']):
+            for ii, o in enumerate(ori):
+                image_nos.append(kk); argmaxgrad_feature_pos.append(jj); ori_feature_pos.append(ii)
+    aux = 0; blob_loc_prev = None; blob_image_prev = None
+    for pos in feature_pos_out:
+        pos_ori = pos
+        if blob_loc_prev == argmaxgrad_feature_pos[pos] and blob_image_prev == image_nos[pos]:  # feature in same blob
+            aux += 1; pos_ori -= aux
+        else: aux = 0
+        feature_all_codewords[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]] = \
+            np.delete(feature_all_codewords[image_nos[pos]]['orientation'][argmaxgrad_feature_pos[pos]],
+                      ori_feature_pos[pos_ori])
+        del feature_all_codewords[image_nos[pos]]['histogram_descr'][argmaxgrad_feature_pos[pos]][ori_feature_pos[
+            pos_ori]]
+        blob_loc_prev = argmaxgrad_feature_pos[pos]; blob_image_prev = image_nos[pos]
+    # # -----------------------------------------------------
+
+    return codewords_clusters, dict(feature_all=feature_all_codewords, codewords_ref=codewords_ref)
 
 
-def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual word', ylabel='', pixel_size=1,
+def codewords_statistics(feature_all, cmap, xlabel=r'codeword', ylabel='', pixel_size=1,
                             savefile_suffix=None, pt='_words', file_dirs=None,
                             radius=1, area=1, num_loc=1, density=1, nnd=0, strength=1, cluster_density=0, experiment=0,
                             cluster_cluster=1,
@@ -661,18 +714,23 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
     """
     if not isinstance(feature_all, list): feature_all = [feature_all]
 
+    labels = np.asarray([feature['word_label'][jj][ii] for feature in feature_all for jj, orientation in
+                                        enumerate(feature['orientation']) for ii, ori in enumerate(orientation)])
     diameters = np.asarray([feature['diameter'][ii] for feature in feature_all
                                     for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                     enumerate(orientation)])
     feature_pos = np.where((diameters > diameter_range[0]) | (diameters < diameter_range[1]))[0]
     labels_filtered = labels[feature_pos]
-    fig, ax = plot_hist(np.asarray(labels_filtered)*0.4,
-              bins=np.append(np.unique(labels_filtered), np.max(labels_filtered)+1)*0.4-0.2,
-              cmap=cmap, xlabel=xlabel, xticks=np.unique(labels_filtered)*0.4,
-              xtickslabel=[str(e) for e in np.unique(labels_filtered)+1], alpha=0.7)
+    n_clusters = count_features(feature_all)
+    fig, ax = plot_hist(np.asarray(labels_filtered), alpha=0.7, cmap=cmap, xlabel=xlabel,
+                        # xticks=np.unique(labels_filtered),
+                        bins=range(n_clusters+1),  #np.append(np.unique(labels_filtered),
+                        # np.max(labels_filtered)+1)*0.4-0.2,
+                        #xtickslabel=[str(e) for e in np.unique(labels_filtered)+1]
+                        )
     fig.set_figheight(len(np.unique(labels_filtered))*4); fig.set_figwidth(len(np.unique(labels_filtered))*2)
     if savefile_suffix is not None: plt.savefig(savefile_suffix + '_histogram' + pt + '.pdf', bbox_inches='tight')
-    print '\tStatistical test of significance between cluster-words characteristics:'
+    print '\tStatistical test of significance between codewords characteristics:'
     if radius:
         diameters_words = [diameters[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
@@ -686,7 +744,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
     if area:
         diameters_words = [diameters[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
-        if len(diameters_words)==2:
+        if len(diameters_words) == 2:
             sign, accept = significance_test(diameters_words[0], diameters_words[1])
             print '\t\t\tArea: H0 is ', bool(accept), '-->', sign
             text = sign
@@ -712,7 +770,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
                                 enumerate(orientation)])
         densities_words = [densities[np.where(labels == l)[0]] for l in np.unique(labels)]
         text = None
-        if len(densities_words)==2:
+        if len(densities_words) == 2:
             sign, accept = significance_test(densities_words[0], densities_words[1])
             print '\t\t\tDensity: H0 is ', bool(accept), '-->', sign
             text = sign
@@ -762,7 +820,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
         if savefile_suffix is not None:
             plt.savefig(savefile_suffix + '_blobdensitieskappa' + pt + '.pdf', bbox_inches='tight')
     if experiment:
-        if file_dirs is None: file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+        file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
         print '\t\t\t\t(NB: words statist. descrip. EXPERIMENT coded as: ', \
             [fd.split('/')[-2] for fd in file_dirs], ')'
         experiments = np.asarray([np.where(feature['file_dir'] == np.asarray(file_dirs))[0][0]
@@ -770,6 +828,7 @@ def words_statistic_descrip(feature_all, labels, cmap, xlabel=r'cluster - visual
                                   for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                   enumerate(orientation)])
         experiments_words = [experiments[np.where(labels == l)[0]] for l in np.unique(labels)]
+        text = ''
         if len(experiments_words) == 2:
             sign, accept = significance_test(experiments_words[0], experiments_words[1])
             text = sign
@@ -1098,7 +1157,7 @@ def compute_silhouette(data, labels, cmap=None, savefile_suffix=None):
     return silhouette_avg, silhouette_percentile
 
 
-def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', n_comp=30):
+def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', pca_comp=30):
 
     ini_time = time.time()
     import copy
@@ -1114,14 +1173,12 @@ def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', n_comp=30)
             siftclusters = MiniBatchKMeans(init='k-means++', n_clusters=n_cluster, batch_size=50,
                                            n_init=10, max_no_improvement=10, verbose=0).fit(histogram)
         elif method is 'kmeans':
-            siftclusters, histogram = create_vocabulary('kmeans', feature_all, n_cluster=n_cluster)
+            siftclusters, histogram = create_codewords('kmeans', feature_all, n_cluster=n_cluster)
             print '\t\t\t done.'
         labels = siftclusters.labels_
         cluster_centers = siftclusters.cluster_centers_
         feature_pos_out = np.array([], dtype=int)
-        diameters = np.asarray([feature['diameter'][ii] for feature in feature_all
-                     for ii, orientation in enumerate(feature['orientation']) for jj, ori in enumerate(orientation)])
-        num_features = diameters.shape[0]
+        num_features = count_features(feature_all)
         print '\t\t\tnumber of features before filtering: ', num_features
         for label in np.unique(labels):
             print '\n\n\n\n label = ', label
@@ -1160,9 +1217,9 @@ def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', n_comp=30)
         from sklearn.decomposition import PCA
         histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
         histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])
-        pca = PCA(n_components=n_comp)
+        pca = PCA(n_components=pca_comp)
         histogram_reduced = pca.fit_transform(histogram)  # array-like, shape (n_samples, n_components)
-        print '\t\t\tPC explained variance with', n_comp, 'components is: ', np.sum(pca.explained_variance_)
+        print '\t\t\tPC explained variance with', pca_comp, 'components is: ', np.sum(pca.explained_variance_)
         feature_all_filtered = copy.deepcopy(feature_all)
         num_feat = 0
         for feat_no, feature in enumerate(feature_all):
@@ -1188,12 +1245,12 @@ def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', n_comp=30)
         num_features = sum(class_size)
         feature_pos_out = np.array([], dtype=int)
         for l in np.unique(labels):
-            print '\t\t\texperiment/class', l, 'is reduced by', (class_size[l]-equalsize), 'features.'
-            feature_pos_label_out = random.sample(np.where(labels == l)[0], k=(class_size[l]-equalsize))
+            print '\t\t\texperiment/class', l, '(', file_dirs[l].split('/')[-2], ') is reduced by', \
+                (class_size[l]-equalsize), 'features.'
+            feature_pos_label_out = random.sample(np.where(labels == l)[0], k=(class_size[l]-equalsize))  # random!
             if len(feature_pos_label_out) > 0:
                 feature_pos_out = np.append(feature_pos_out, feature_pos_label_out)
         feature_pos_out = np.sort(feature_pos_out)
-        print feature_pos_out[0]
         feature_pos_filtered = np.delete(range(num_features), feature_pos_out)
         feature_all_filtered = copy.deepcopy(feature_all)
         argmaxgrad_feature_pos = []; image_nos = []; ori_feature_pos = []
@@ -1219,23 +1276,245 @@ def reduce_dimensionality(feature_all, n_cluster=50, method='kmeans', n_comp=30)
     print ("\t\tDone (total time =  %.2f seconds)" % (time.time() - ini_time))
 
 
-def codewords_hist(feature_all, siftclusters):
+def quantize_descriptors(feature_all, clusters, assignment='hard'):
 
     """
     Image representation.
 
-    This function generates an array-histogram for each image-roi (in feature[''] new key), used as input for the
+    This function generates an array-histogram for each image-roi (in feature['codewords_hist'] ), used as input for the
     classifier. Requires a previously computed vocabulary.
 
-    Creates new entries in the list of dictionaries feature_all as feature_all['vocabulary_histogram]. Input is a
-    mutable object - a list of dictionaries
+    Also new attribut feature['word_label'].
+
+    Creates new entries in the list of dictionaries feature_all as feature['codewords_hist]. Input is a mutable
+    object - a list of dictionaries
+
+    hard assignment (Fernando et al., 2012)
     """
 
-    n_clusters = np.unique(siftclusters.labels_).shape[0]
-    f0 = 0; aux = 0
-    for feature in feature_all:
-        for ori in feature['orientation']: aux += len(ori)
-        fn = f0 + aux; labels = siftclusters.labels_[f0:fn].tolist()
-        feature['codewords_hist'] = np.asarray([labels.count(l) for l in range(n_clusters)])
-        print feature['file_name'], '->', np.argmax(np.asarray([labels.count(l) for l in range(n_clusters)]))+1
-        f0 = fn; aux = 0
+    import copy
+
+    histogram_descr_all = [feature['histogram_descr'] for feature in feature_all]
+    histogram = np.asarray([hist_sub for histogram_descr in histogram_descr_all for hist in histogram_descr for hist_sub in hist])  # some hist can be []
+    labels = clusters.predict(histogram)   # array with labels corresponding to each feature vector in each image
+    n_clusters = np.unique(labels).shape[0]
+
+    print 'Quantize image features into a', n_clusters, '-dimensional vector...'; ini_time = time.time()
+    if assignment is 'hard':
+        f0 = 0; n_features = 0  # f0-to-fn is image (roi) range
+        for kk, feature in enumerate(feature_all):
+            feature['word_label'] = []
+            #  for jj, orientations in enumerate(feature['orientation']):
+                #  feature['word_label'][jj] = []
+                #  for ii, ori in enumerate(orientations): feature['word_label'][jj].append(labels[n_features+ii])
+            for jj, orientations in enumerate(feature['orientation']):
+                feature['word_label'].append(labels[(f0+n_features):(f0+n_features+len(orientations))])
+                n_features += len(orientations)
+            fn = f0 + n_features; words = labels[f0:fn].tolist()
+            feature['codewords_hist'] = np.asarray([words.count(l) for l in range(n_clusters)])
+            f0 = fn; n_features = 0
+    print ("Done (time =  %.2f seconds)" % (time.time() - ini_time))
+
+
+def count_features(feature_all):
+
+    """
+    This function counts the number of features (with no-empty orientation)
+    """
+
+    if not isinstance(feature_all, list): feature_all = [feature_all]
+
+    num_features = np.asarray([kk for kk, feature in enumerate(feature_all) for ii, orientation in
+                                enumerate(feature['orientation']) for jj, ori in enumerate(orientation)]).shape[0]
+    return num_features
+
+
+def plot_codewords(feature_all, feature_codewords, plot_num_features=3,
+                   savefile_suffix=None, dict_inputfile={}, dict_image={}, dict_sift={}):
+
+    """
+    This function plots image patches corresponding to the closes keypoint to the pre-computed cluster centroids in create_codewords (output feature_codewords)
+
+    The codewords are sorted in descending order according to the size of its membership (Fei2005).
+    The appearance of 10 codewords selected from the top 20 most likely codewords for this category model.
+
+    """
+    from src import iprocessing as iproc
+    from src import vprocessing as vproc
+    from src import utilities as util
+    from scipy.spatial import Voronoi
+
+    print 'Plot codewords histograms and most likely codewords for each class/category/experiment... '; ini_time = \
+        time.time()
+    labels = np.asarray([feature['word_label'][jj][ii] for feature in feature_all for jj, orientation in
+                         enumerate(feature['orientation']) for ii, ori in enumerate(orientation)])
+    n_clusters = np.unique(labels).shape[0]
+    file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+    # experiments = np.asarray([np.where(feature['file_dir'] == np.asarray(file_dirs))[0][0]
+    #                           for feature in feature_all
+    #                           for ii, orientation in enumerate(feature['orientation']) for jj, ori in
+    #                           enumerate(orientation)])
+    codewords_ref = feature_codewords['codewords_ref']; feature_all_codewords = feature_codewords['feature_all']
+    codewords_hist_exp = np.zeros(shape=(file_dirs.shape[0], n_clusters)); n_features_class = np.zeros(file_dirs.shape[0])
+    for cl, fd in enumerate(file_dirs):
+        n_features = 0
+        for feature in [feat for feat in feature_all if feat['file_dir'] == fd]:
+            codewords_hist_exp[cl, :] += feature['codewords_hist']
+            n_features += count_features(feature)
+        codewords_hist_exp[cl, :] = 1. / n_features * codewords_hist_exp[cl, :]
+        n_features_class[cl] = n_features
+    if savefile_suffix is not None:
+        ylim = [0, 1.1 * np.max(codewords_hist_exp)]
+        for cl, fd in enumerate(file_dirs):
+            colormap = mpl.cm.viridis; normalize = mpl.colors.Normalize(vmin=0, vmax=len(file_dirs) - 1)
+            color = colormap(normalize(range(len(file_dirs))))
+            cmap = mpl.colors.ListedColormap(np.asarray([color[np.where(feature_all[image_no]['file_dir'] ==
+                             file_dirs)[0][0]] for (image_no, feature_no, ori_no) in codewords_ref]))
+            # cmap_charact = [f.split('/')[-2].split('_')[0] for f in file_dirs] # print cmap_charact
+            fig, ax = plot_hist(np.asarray([el for l, rep in
+                                            enumerate(n_features_class[cl] * codewords_hist_exp[cl, :]) for el
+                                            in np.repeat(l, rep)]), bins=range(n_clusters + 1),
+                                cmap=cmap, xlabel=r'codewords',  # xticks=np.unique(labels)*0.2,alpha=0.7,
+                                xtickslabel=None,  # [str(e) for e in np.unique(labels) + 1],
+                                xlim=[-1, n_clusters], ylim=ylim, alpha=1)
+            plt.savefig(savefile_suffix + '_expercm' + '_' + fd.split('/')[-2] + '_codewords_hist.pdf', bbox_inches='tight')
+
+            cmap = util.discrete_cmap(n_clusters, "jet")
+            fig, ax = plot_hist(np.asarray([el for l, rep in
+                                            enumerate(n_features_class[cl] * codewords_hist_exp[cl, :]) for el
+                                            in np.repeat(l, rep)]), bins=range(n_clusters+1),
+                                            cmap=cmap, xlabel=r'codewords',  # xticks=np.unique(labels)*0.2,alpha=0.7,
+                                            xtickslabel=None,  # [str(e) for e in np.unique(labels) + 1],
+                                            xlim=[-1, n_clusters], ylim=ylim, alpha=1)
+            plt.savefig(savefile_suffix + '_' + fd.split('/')[-2] + '_codewords_hist.pdf', bbox_inches='tight')
+            #
+            # centroids_ids = np.argsort(codewords_hist_exp[cl, :])[-plot_num_features:][::-1]  # order codewords from
+            # # less frequent to most. Take indexes of last largest.
+            # print '\n\tClass =', fd.split('/')[-2], '\n\tFrequent codewords labels =', centroids_ids+1
+            # plt.figure(figsize=(8, 4))
+            # for cw, (image_no, feature_no, ori_no) in enumerate(codewords_ref[centroids_ids]):
+            #     print '\t\tPlot frequent codeword (image_no, feature_no, ori_no)=', (image_no, feature_no, ori_no)
+            #     feature_image = feature_all[image_no]
+            #     # image=feature_image['image']; vor=feature_image['vor']
+            #     dict_inputfile['file_dir'] = feature_image['file_dir']
+            #     dict_inputfile['file_name'] = feature_image['file_name']
+            #     if dict_inputfile.get('ispp'):
+            #         data = util.pointpattern(); data.read(dict_inputfile, plot=0)
+            #         points = data.points; vor = Voronoi(points)
+            #     vproc.compute_parameters(vor, dict_inputfile)  # new attribute in vor object: vor.areas
+            #     image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
+            #                                         interpolate_method=dict_image.get('interpolate_method'),
+            #                                         fill_value=0.0, density_transform=dict_image['detect_densitytransform'])
+            #     bx = feature_image['argmaxgrad'][0][feature_no]; by = feature_image['argmaxgrad'][1][feature_no]
+            #     sc = feature_image['scale'][feature_no]
+            #     plt.subplot(1, centroids_ids.shape[0], cw + 1)
+            #     plt.imshow(image[int(bx-2.5*np.sqrt(sc)):int(bx+2.5*np.sqrt(sc)), int(by-2.5*np.sqrt(sc)):int(by+2.5*np.sqrt(sc))].T,
+            #                cmap='jet', interpolation='none'); plt.xticks(()); plt.yticks(())
+            # plt.subplots_adjust(0.08, 0.02, 0.92, 0.85, 0.08, 0.23); plt.show()
+            # plt.savefig(savefile_suffix + '_' + fd.split('/')[-2] + '_codewords.pdf', bbox_inches='tight')
+
+    print ("Done (time =  %.2f seconds)" % (time.time() - ini_time))
+
+    return 1  # codewords_hist_exp
+
+
+def feature_reference(index, feature_all):
+
+    """
+    For a given position-index in a labelfeature array (such as clusters.labels_), this function returns the
+    corresponding (image/roi number (kk), argmax position (jj), orientation position (ii)
+    """
+
+    argmaxgrad_feature_pos = []; image_nos = []; ori_feature_pos = []
+    for kk, feature in enumerate(feature_all):
+        for jj, ori in enumerate(feature['orientation']):
+            for ii, o in enumerate(ori):
+                image_nos.append(kk); argmaxgrad_feature_pos.append(jj); ori_feature_pos.append(ii)
+
+    return image_nos[index], argmaxgrad_feature_pos[index], ori_feature_pos[index]
+
+
+def classify(feature_all, feature_all_test):
+
+    """"
+    array X of size [n_samples, n_features] holding the training samples, and an array y of class labels
+    (strings or integers), size [n_samples]:
+    """
+
+    from sklearn import svm
+
+    print 'Test images classification...'; ini_time = time.time()
+    file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+    n_classes = file_dirs.shape[0]
+    n_samples = len(feature_all); n_features = feature_all[0]['codewords_hist'].shape[0]
+    y = []; X = []
+    print '\tClasses codes: ', [(cl, fd.split('/')[-2]) for cl, fd in enumerate(file_dirs)]
+    print 'Known classes of test images:'
+    for cl, fd in enumerate(file_dirs):
+        for feature in [feat for feat in feature_all if feat['file_dir'] == fd]:
+            X.append(1./count_features(feature)*feature['codewords_hist'])
+            y.append(cl)
+            print feature['file_dir'].split('/')[-2], y[-1]
+    clf = svm.SVC(gamma='auto')
+    clf.fit(np.asarray(X).reshape(n_samples, n_features), np.asarray(y))
+
+    test = []; n_samples_test = len(feature_all_test)
+    for cl, fd in enumerate(file_dirs):
+        for feature in [feat for feat in feature_all_test if feat['file_dir'] == fd]:
+            test.append(1./count_features(feature)*feature['codewords_hist'])
+    labels_predict = clf.predict(np.asarray(test).reshape(n_samples_test, n_features))
+
+    print 'Prediction of test images:'
+    for no, feature in enumerate(feature_all_test):
+        print feature['file_dir'].split('/')[-2], labels_predict[no]
+
+    print ("Done (time =  %.2f seconds)" % (time.time() - ini_time))
+
+    return 1
+
+
+def scatterplot_bowvector(feature_all, feature_all_test=None, savefile_suffix=None):
+    """
+    This functions plots in the PC1-PC2 space the clustered distribution of all detected features to create the
+    vocabulary.
+    """
+
+    from sklearn.decomposition import PCA
+    from src import utilities as util
+
+    if not isinstance(feature_all, list): feature_all = [feature_all]
+
+    histograms = np.asarray([1./count_features(feature)*feature['codewords_hist'] for feature in feature_all])
+
+    pca = PCA(n_components=2)
+    X_reduced = pca.fit_transform(histograms)  # array-like, shape (n_samples, n_components)
+
+    file_dirs = np.unique(np.asarray([feature['file_dir'] for feature in feature_all]))
+    print '\tClasses codes: ', [(cl, fd.split('/')[-2]) for cl, fd in enumerate(file_dirs)]
+    labels = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all])
+
+    fig, ax = plt.subplots()
+    colormap = mpl.cm.viridis; normalize = mpl.colors.Normalize(vmin=0, vmax=len(file_dirs) - 1)
+    color = colormap(normalize(range(len(file_dirs)))); cmap = mpl.colors.ListedColormap(color)
+    sc = plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=labels, alpha=0.5, cmap=cmap, s=8)
+    sc.set_facecolor('none')
+
+    plt.hold(True)
+    histograms_test = np.asarray([1./count_features(feature)*feature['codewords_hist'] for feature in feature_all_test])
+    pca = PCA(n_components=2); X_reduced_test = pca.fit_transform(histograms_test)
+    labels_test = np.asarray([np.where(feature['file_dir'] == file_dirs)[0][0] for feature in feature_all_test])
+    sc = plt.scatter(X_reduced_test[:, 0], X_reduced_test[:, 1], c=labels_test, alpha=0.5, cmap=cmap, s=10,
+                     marker='^')
+    sc.set_edgecolor('none')
+
+    plt.xlabel(r'PC$_1$'); plt.ylabel(r'PC$_2$'); plt.xticks()
+    # ax.set_ylim([-0.8, 0.8]); ax.set_xlim([-0.8, 0.6])
+    ax.axes.get_xaxis().set_ticks([]); ax.axes.get_yaxis().set_ticks([])
+    ax.set_aspect('equal', adjustable='box')
+
+    cbar = util.colorbar(sc)
+    cbar.ax.set_yticklabels('')
+    cbar.set_label(r' - '.join([''.join(list(fd.split('/')[-2])[0:3]) for fd in file_dirs]))
+
+    if savefile_suffix is not None:
+        plt.savefig(savefile_suffix + '_scplot_bowvector2' + '.pdf', bbox_inches='tight')

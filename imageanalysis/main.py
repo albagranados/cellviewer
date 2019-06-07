@@ -21,37 +21,47 @@ if not os.path.exists(output_dir): os.makedirs(output_dir)
 # # ================================================
 experiment_author = ''; file_dir = ''; file_name = ''
 
-# exp_names = ['waplkd_dmso', 'waplkd_actd']
+# exp_names = ['hFb', 'hFbTSA']
+# file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/noTSA/',
+#               '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/melike/Histones/crops/TSA/']
+# exp_names = ['waplkdDMSO', 'waplkdACTD']
 # file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2018-05-18 aSMC1Rb HeLa Cas9 WAPLKO DMSO ActD/aSMC1 WAPL KO ActD AND aSMC1 WAPL KO DMSO_WINDOWS/aSMC1 WAPL KO DMSO/',
-#              '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2018-05-18 aSMC1Rb HeLa Cas9 WAPLKO DMSO ActD/aSMC1 WAPL KO ActD AND aSMC1 WAPL KO DMSO_WINDOWS/aSMC1 WAPL KO ActD/',
-#              ]
+#              '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/vicky/2018-05-18 aSMC1Rb HeLa Cas9 WAPLKO DMSO ActD/aSMC1 WAPL KO ActD AND aSMC1 WAPL KO DMSO_WINDOWS/aSMC1 WAPL KO ActD/']
 exp_names = ['mitoc', 'microt', 'lyso']
 file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/pablo/mithocondria/',
              '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/pablo/microtubules/',
              '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/guillaume/moleucles list of '
              'lysosomes/roi/']
+# exp_names = ['circles', 'rectangles']
+# file_dirs = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/classification/circles/circles_lownoise/',
+#             '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/data/test/pointpattern/classification'
+#             '/rectangles/rectangles_lownoise/']
 is_dataset = 1  # 0 if run analysis with one file ('file_name'); 1 if all files in fil'e_dir(s)
-file_name = '1_lyso_006_lis_dct_woch9_wobeads'
+file_name = ''
 fileExt = '.txt'
 is_storm = 0  # 0 if two-columns txt file with xc (x-corrected) and yc (y-corrected) from typical STORM output
-run = dict(image_processing=0, image_analysis=1)  # run image_processing and or image_analysis
+run = dict(training_set=1, image_processing=0, image_analysis=1, classifier=1)  # run image_processing and or
+# image_analysis
 
 if not run['image_processing']:
     reload(util)
+    # input_files = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/melike/Histones/noTSA'
+    #                '/hFb_variables',
+    #                 '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/melike/Histones/TSA/hFbTSA_variables']
     input_files = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/mitochondria'
                     '/mithoc_variables',
                     '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/microtubules'
                     '/microt_variables',
                     '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/lysosome'
-                    '/lyso_variables'
-                   ]
+                    '/lyso_variables']
     # input_files = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/test/pointpattern/circle_rectangle_lownoise/circles/circles_variables',
-    #                '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/test/pointpattern/circle_rectangle_lownoise/rectangles/rectangles_variables']
+    #                '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/test/pointpattern'
+    #                  '/circle_rectangle_lownoise/rectangles/rectangles_variables']
     # input_files = ['/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/vicky/2018-05-18 '
     #                'aSMC1Rb HeLa Cas9 WAPLKO DMSO ActD/aSMC1 WAPL KO ActD AND aSMC1 WAPL KO DMSO_WINDOWS/aSMC1 WAPL KO DMSO/waplkd_dmso_variables',
     #                '/home/alba/ownCloud/postdoc_CRG/coding/github/cellviewer/imageanalysis/output/vicky/2018-05-18 aSMC1Rb HeLa Cas9 WAPLKO DMSO ActD/aSMC1 WAPL KO ActD AND aSMC1 WAPL KO DMSO_WINDOWS/aSMC1 WAPL KO ActD/waplkd_actd_variables']
-    feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, trainingset_filenames = util.read_features(
-                    input_files, training_set=1)
+    feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, feature_all_test =  util.read_features(input_files,
+                                           training_set=run['training_set'], training_size=0.7, redo_trainingset=0)
     # util.save_features_small(input_files)
 
 print '\n\n _______START FULL ANALYSIS_______ '; ininini_time = time.time()
@@ -298,14 +308,14 @@ if run['image_processing']:
         labels = np.asarray([np.where(feature['file_dir'] == np.asarray(file_dirs))[0][0] for feature in feature_all
                                   for ii, orientation in enumerate(feature['orientation']) for jj, ori in
                                   enumerate(orientation)])  # trick
-        stat.words_statistic_descrip(feature_all, labels, cmap=mpl.colors.ListedColormap(['black', 'red']),
+        stat.codewords_statistics(feature_all, labels, cmap=mpl.colors.ListedColormap(['black', 'red']),
                                      xlabel=r'circle $\quad$rectangle', #r'hFb $\quad$TSA-hFb',
                                      pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
                                      savefile_suffix=savefile_suffix, pt='_experiments',
                                      radius=0, area=1, num_loc=1, density=1, nnd=1, strength=1, experiment=1,
                                      cluster_density=1, cluster_cluster=1)
         # # boxplots for one dir and multiple images
-        # stat.words_statistic_descrip(feature_all, np.asarray([ff for ff, feature in enumerate(feature_all)
+        # stat.codewords_statistics(feature_all, np.asarray([ff for ff, feature in enumerate(feature_all)
         #                              for ii, orientation in enumerate(feature['orientation']) for jj, ori in
         #                              enumerate(orientation)]), cmap=mpl.colors.ListedColormap(['black', 'black']),
         #                              xlabel='',
@@ -323,9 +333,9 @@ if run['image_processing']:
 feature_all_original = feature_all  # save original features before filtering etc.
 # feature_all = feature_all_original
 dict_analysis = dict(filter=0, name=['blob_size'],
-                               ball_radius_percentile=5, diameter_range=[300, 1000], word_id=[1], min_numloc=3,
+                               ball_radius_percentile=5, diameter_range=[100, 1000], word_id=[1], min_numloc=3,
                                experiment_name=file_dirs[0], threshold_percent=0.7, threshold_value=None,
-                     reduce_dimension=1, method_rd='class_equalsize')
+                     reduce_dimension=0, method_rd='class_equalsize')
 if dict_analysis['filter']:
     try: siftclusters
     except NameError: siftclusters = None
@@ -341,45 +351,53 @@ if dict_analysis['filter']:
     feature_pos_filtered = feature_pos_filtered_prev
     feature_all = feature_all_filtered
 
+# # # ==== CODEWORD MODEL =====
 if run['image_analysis']:
     plt.close('all')
     reload(stat); reload(iproc); reload(vproc); reload(util)
-    # # # ==== CREATE VOCABULARY, unsupervised =====
-    if dict_analysis['reduce_dimension']:
-        feature_all_reduced, feature_pos_reduced = stat.reduce_dimensionality(feature_all, method=dict_analysis[
-            'method_rd'], n_cluster=int(0.5*iproc.number_features(feature_all)))
-        feature_all_filtered = feature_all_reduced; feature_pos_filtered = feature_pos_reduced
-        feature_all = feature_all_reduced
+    # if dict_analysis['reduce_dimension']:
+    #     feature_all_reduced, feature_pos_reduced = stat.reduce_dimensionality(feature_all, method=dict_analysis[
+    #         'method_rd'], n_cluster=int(0.5*iproc.number_features(feature_all)))
+    #     feature_all_filtered = feature_all_reduced; feature_pos_filtered = feature_pos_reduced
+    #     feature_all = feature_all_reduced
     if dict_sift.get('compute_orientation'):
         print '\n _______ IMAGE ANALYSIS_______'; inini_time = time.time()
-        k0 = 4; kn = 4; sserror = []; avsilhouette = []; percentilesilhouette = []
+
+        k_pref = int(0.012*stat.count_features(feature_all))
+        print 'Preferred vocabulary size k >', k_pref  # see Gemert 2009
+        select_k = input('Do you want to select size of codeword? select 0-1 (NO-YES):\n')
+        if select_k:
+            k_pref = input('Enter k = ')
+        k0 = k_pref; kn = k_pref; k = k_pref
+        # k0 = 4; kn = 4
+        sserror = []; avsilhouette = []; percentilesilhouette = []
         for k in range(k0, kn+1, 1):
-            print 'Creating vocabulary with %d words...' % k
-            siftclusters, histogram_weighted = stat.create_vocabulary('kmeans', feature_all, dict_sift,
-                                                                      n_cluster=k, weight=0)
-            # # # #  plot the feature class with k+1 according to the colorcode at k. Comment if it feels unnecessary.
-            # # # if k == k0: centers_permuted0 = siftclusters.cluster_centers_
-            # # # if k > k0: centers_permuted0, siftclusters = util.permute_labels(siftclusters, k, centers_permuted0)
-            #
-            if len(file_dirs) > 1:
-                savefile_suffix_all = output_dir + ''.join(exp_names) + '_siftclusters%d' % k
-            else:
-                savefile_suffix_all = output_dir + feature_image['file_name'] + '_siftclusters%d' % k
-            stat.scatterplot_vocabulary(feature_all, siftclusters, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
-                                        savefile_suffix=savefile_suffix_all, cmap_charact=None,
-                                        file_dirs=file_dirs,
-                                        pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
-                                        histogram=histogram_weighted)
-            # # # # # stat.sift2shape(siftclusters, cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
-            stat.words_statistic_descrip(feature_all, siftclusters.labels_, cmap=util.discrete_cmap(k, "jet"),
-                                         pixel_size=dict_sift['original_pixel_size']*dict_sift['scale_pixel_size'],
-                                         ylabel=exp_names, file_dirs=file_dirs,
-                                         savefile_suffix=savefile_suffix_all,
-                                         radius=0, area=1, num_loc=1, density=1, nnd=0, strength=1,
-                                         experiment=1, cluster_density=0, cluster_cluster=0)
-            # stat.codewords_hist(feature_all, siftclusters)  # image representation
-            # # # # plots and statistics on one selected image, optional (change siftclusters.labels_ ->
-            # # siftclusters_labels_image):
+            if len(file_dirs) > 1: savefile_suffix_all = output_dir + ''.join(exp_names) + '_siftclusters%d' % k
+            else: savefile_suffix_all = output_dir + feature_image['file_name'] + '_siftclusters%d' % k
+
+            codewords_clusters, feature_codewords = stat.create_codewords('kmeans', feature_all, dict_sift,
+                                                                          n_cluster=k, reduced_sample=1)
+            stat.quantize_descriptors(feature_all, codewords_clusters)  # image representation.
+
+            stat.scatterplot_bowvector(feature_all, savefile_suffix=savefile_suffix_all)
+
+            stat.plot_codewords(feature_all, feature_codewords, plot_num_features=10, dict_inputfile=dict_inputfile,
+                                savefile_suffix=savefile_suffix_all, dict_image=dict_image, dict_sift=dict_sift) # util.discrete_cmap(k,"jet"))
+            stat.scatterplot_descriptors(feature_all, codewords_clusters, # cmap_charact='experiment',
+                                         cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all,
+                                         pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'])
+
+            stat.quantize_descriptors(feature_all_test, codewords_clusters)
+            stat.classify(feature_all, feature_all_test)
+            stat.scatterplot_bowvector(feature_all, feature_all_test=feature_all_test, savefile_suffix=savefile_suffix_all)
+            # # # # # stat.sift2shape(codewords_clusters, cmap=util.discrete_cmap(k, "jet"), savefile_suffix=savefile_suffix_all)
+            # stat.codewords_statistics(feature_all, cmap=util.discrete_cmap(k, "jet"),
+            #                              pixel_size=dict_sift['original_pixel_size']*dict_sift['scale_pixel_size'],
+            #                              ylabel=exp_names, file_dirs=file_dirs, savefile_suffix=savefile_suffix_all,
+            #                              radius=0, area=0, num_loc=0, density=0, nnd=0, strength=0,
+            #                              experiment=1, cluster_density=0, cluster_cluster=0)
+            # # # # plots and statistics on one selected image, optional (change codewords_clusters.labels_ ->
+            # # codewords_clusters_labels_image):
             # image_no = 30; feature_image = feature_all[image_no]
             # # image=feature_image['image']; vor=feature_image['vor']
             # dict_inputfile['file_dir'] = feature_image['file_dir']
@@ -388,46 +406,46 @@ if run['image_analysis']:
             # if dict_inputfile.get('ispp'):
             #     data = util.pointpattern(); data.read(dict_inputfile, save_output_dir=output_dir, plot=0)
             #     points = data.points; vor = Voronoi(points)
-            # siftclusters_labels_image = util.select_labels_image(feature_all, siftclusters.labels_, image_no=image_no)
+            # codewords_clusters_labels_image = util.select_labels_image(feature_all, codewords_clusters.labels_, image_no=image_no)
             # # vproc.compute_parameters(vor, dict_inputfile)  # new attribute in vor object: vor.areas
             # # image = vproc.densities_interpolate(vor, scale_pixel_size=dict_image.get('scale_pixel_size'),
             # #                                     interpolate_method=dict_image.get('interpolate_method'),
             # #                                     fill_value=0.0,
             # #                                     density_transform=dict_image['detect_densitytransform'])
             # # iproc.plot_feature(image, feature_image, cmap='jet', norm='linear', plot_axis='on',
-            # #                    blob_color='class', ori_color=siftclusters_labels_image,
+            # #                    blob_color='class', ori_color=codewords_clusters_labels_image,
             # #                    ori_cmap=util.discrete_cmap(k, "jet"))
             # # plt.savefig(savefile_suffix + '_features_image.pdf', bbox_inches='tight')
             # if dict_inputfile['ispp']:
             #     vproc.plot_feature(vor, feature_image, dict_sift, norm='log', blob_color='class',
-            #                        ori_color=siftclusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            #                        ori_color=codewords_clusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
             #     plt.savefig(savefile_suffix + '_features_pp.pdf', bbox_inches='tight')
 
-            # # # # filtered PC points:
-            # # feature_all_filtered, feature_pos_filtered, siftclusters_filtered = \
-            # #    stat.filter_features('strength', feature_all, siftclusters=siftclusters,
-            # #                        ball_radius_percentile=2, word_id=1,
-            # #                        diameter_range=[100, 1000], experiment_name=file_dirs[0], threshold_percent=0.1)
-            stat.scatterplot_vocabulary(feature_all, siftclusters, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
-                                        savefile_suffix=savefile_suffix_all+'_filtered',
-                                        filter_pos=feature_pos_filtered)
-            # stat.words_statistic_descrip(feature_all_filtered, siftclusters_filtered.labels_,
-            #                              cmap=util.discrete_cmap(k, "jet"), ylabel=r'ActD$\quad$DMSO',
-            #                              pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
-            #                              savefile_suffix=savefile_suffix_all+'_filtered',
-            #                              radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1,
-            #                              experiment=1, cluster_density=1, cluster_cluster=1)
-            # siftclusters_labels_image = util.select_labels_image(feature_all_filtered, siftclusters_filtered.labels_, image_no=image_no)
-            # iproc.plot_feature(image, feature_all_filtered[image_no], cmap='jet', norm='linear', plot_axis='on',
-            #                    blob_color='class', ori_color=siftclusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
-            # plt.savefig(savefile_suffix + '_features_image_filtered.pdf', bbox_inches='tight')
-            if dict_inputfile['ispp']:
-                vproc.plot_feature(vor, feature_all_filtered[image_no], dict_sift, norm='log', blob_color='class',
-                                   ori_color=siftclusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
-                plt.savefig(savefile_suffix + '_features_pp_filtered.pdf', bbox_inches='tight')
+            # # # # # filtered PC points:
+            # # # feature_all_filtered, feature_pos_filtered, codewords_clusters_filtered = \
+            # # #    stat.filter_features('strength', feature_all, siftclusters=codewords_clusters,
+            # # #                        ball_radius_percentile=2, word_id=1,
+            # # #                        diameter_range=[100, 1000], experiment_name=file_dirs[0], threshold_percent=0.1)
+            # stat.scatterplot_descriptors(feature_all, codewords_clusters, n_cluster=k, cmap=util.discrete_cmap(k, "jet"),
+            #                             savefile_suffix=savefile_suffix_all+'_filtered',
+            #                             filter_pos=feature_pos_filtered)
+            # # stat.codewords_statistics(feature_all_filtered, codewords_clusters_filtered.labels_,
+            # #                              cmap=util.discrete_cmap(k, "jet"), ylabel=r'ActD$\quad$DMSO',
+            # #                              pixel_size=dict_sift['original_pixel_size'] * dict_sift['scale_pixel_size'],
+            # #                              savefile_suffix=savefile_suffix_all+'_filtered',
+            # #                              radius=1, area=1, num_loc=1, density=1, nnd=1, strength=1,
+            # #                              experiment=1, cluster_density=1, cluster_cluster=1)
+            # # codewords_clusters_labels_image = util.select_labels_image(feature_all_filtered, codewords_clusters_filtered.labels_, image_no=image_no)
+            # # iproc.plot_feature(image, feature_all_filtered[image_no], cmap='jet', norm='linear', plot_axis='on',
+            # #                    blob_color='class', ori_color=codewords_clusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            # # plt.savefig(savefile_suffix + '_features_image_filtered.pdf', bbox_inches='tight')
+            # if dict_inputfile['ispp']:
+            #     vproc.plot_feature(vor, feature_all_filtered[image_no], dict_sift, norm='log', blob_color='class',
+            #                        ori_color=siftclusters_labels_image, ori_cmap=util.discrete_cmap(k, "jet"))
+            #     plt.savefig(savefile_suffix + '_features_pp_filtered.pdf', bbox_inches='tight')
 
-            if hasattr(siftclusters, 'inertia_'): sserror.append(siftclusters.inertia_)
-            silhouette, silhouette_percentile = stat.compute_silhouette(histogram_weighted, siftclusters.labels_,
+            if hasattr(codewords_clusters, 'inertia_'): sserror.append(codewords_clusters.inertia_)
+            silhouette, silhouette_percentile = stat.compute_silhouette(histogram_weighted, codewords_clusters.labels_,
                                          savefile_suffix=savefile_suffix_all, cmap=util.discrete_cmap(k, "jet"))
             avsilhouette.append(silhouette); percentilesilhouette.append(silhouette_percentile)
 

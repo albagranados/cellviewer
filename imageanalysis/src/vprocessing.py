@@ -392,7 +392,7 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
 
 
 def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='gray', norm=None,
-                 blob_color='strength', ori_color=None, ori_cmap=None):
+                 blob_color='strength', ori_color=None, ori_cmap=None, feature_ref=None):
     """
     Function for plotting scale-space feature on Vornoi tessellation (STORM pixel size)
 
@@ -458,28 +458,35 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='g
                         hist_ind += 1
                     elif blob_color == 'strength': o_color = blob_cmap.to_rgba(strength[ii])
                     elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
-                    plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
-                              np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
-                             [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
-                              np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
-                              color=o_color, linewidth=1)
+                    if feature_ref is None:
+                        plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
+                                  np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
+                                 [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
+                                  np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
+                                  color=o_color, linewidth=1)
+                    elif (feature_ref[0] == ii) and (feature_ref[1] == jj):
+                        plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
+                                  np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
+                                 [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
+                                  np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
+                                  color=o_color, linewidth=1)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
-            if blob_color == 'strength':
-                b_color = blob_cmap.to_rgba(strength[ii])
-            elif blob_color == 'scale':
-                b_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
+            if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
+            elif blob_color == 'scale': b_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
             elif blob_color == 'class':
-                if len(orientation[ii]) == 0:
-                    b_color = 'None'
-                else:
-                    b_color = blob_cmap(mean)
-            ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
-                          oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
-                          color=b_color, linewidth=1)
+                if len(orientation[ii]) == 0: b_color = 'None'
+                else: b_color = blob_cmap(mean)
+            if feature_ref is None:
+                ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
+                              oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
+                              color=b_color, linewidth=1)
+            elif feature_ref[0] == ii:
+                ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
+                              oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
+                              color=b_color, linewidth=1)
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
-
     if plot_axis is 'off':
         plt.axis(plot_axis)
         ax.axes.get_xaxis().set_ticks([])

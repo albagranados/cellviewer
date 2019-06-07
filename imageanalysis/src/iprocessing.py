@@ -103,7 +103,7 @@ def image_crop(image, x0, x1, y0, y1):
     return new_image
 
 
-def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='on', hold=False):
+def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='on', hold=False, patch=None):
     """
     Plot the image obtained with pattern2image... and more! NB: It plots the transpose as image[x][y]=points[x][y] (
     x-row; y-col)
@@ -114,20 +114,28 @@ def plot_image(image, cmap='gray', interpolation='none', norm=None, plot_axis='o
 
     """
     from matplotlib.colors import LogNorm
+    from matplotlib.path import Path
+    from matplotlib.patches import PathPatch
+
+    if patch is not None:
+        clip_on = True; path = Path(patch)
+        patch = PathPatch(path, facecolor='none')
+        # patch = [[1, 1], [1, 4], [6, 9], [6, 6], [1, 1]]
 
     fig, ax = plt.subplots()
     if norm is 'log':
-        plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower', norm=LogNorm())
+        im = plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower', norm=LogNorm(), clip_path = patch, clip_on=clip_on)
         # plt.colorbar()
     else:
-        plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower')
+        im = plt.imshow(image.T, interpolation=interpolation, cmap=cmap, origin='lower', clip_path = patch, clip_on=clip_on)
+
+    if clip_on:
+        plt.gca().add_patch(patch); im.set_clip_path(patch)
 
     # plt.colorbar()
     fig.hold(1)
     if plot_axis is 'off':
-        plt.axis(plot_axis)
-        ax.axes.get_xaxis().set_ticks([])
-        ax.axes.get_yaxis().set_ticks([])
+        plt.axis(plot_axis); ax.axes.get_xaxis().set_ticks([]); ax.axes.get_yaxis().set_ticks([])
 
     fig.hold(hold)
     return fig, ax
@@ -603,7 +611,7 @@ def get_gauss_filter(t=10):
 
 
 def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation='none', norm=None,
-                 plot_axis='on', blob_color='strength', ori_color=None, ori_cmap=None):
+                 plot_axis='on', blob_color='strength', ori_color=None, ori_cmap=None, feature_ref=None, patch=None, title=None):
     """
     Function for plotting scale-space feature
 
@@ -617,6 +625,7 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
     blob_color = 'strength', 'scale', 'class'
     ori_color (list) = if not None, for all orientations, assigned classes
     ori_cmap = if not None, discrete cmap for vocabulary - output clustering/unsupervised learing.
+    feature_ref = (feature_no, ori_no) index of specific feature and orientation to be plotted
 
     Output:
     --------
@@ -624,11 +633,32 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
     """
     from matplotlib.colors import LogNorm
     import matplotlib.colors as colors
-    from src import utilities as util
     from collections import Counter
 
-    fig, ax = plot_image(image, cmap=cmap, interpolation=interpolation, norm=norm, plot_axis=plot_axis, hold=True)
-    plt.hold(1)
+    if patch == 1:
+        bx = feature['argmaxgrad'][0][feature_ref[0]]; by = feature['argmaxgrad'][1][feature_ref[0]]
+        sc = feature['scale'][feature_ref[0]]
+        patch = [[bx-2.5*np.sqrt(sc), by-2.5*np.sqrt(sc)], [bx-2.5*np.sqrt(sc), by+2.5*np.sqrt(sc)],
+                 [bx+2.5*np.sqrt(sc), by+2.5*np.sqrt(sc)], [bx+2.5*np.sqrt(sc), by-2.5*np.sqrt(sc)],
+                 [bx - 2.5 * np.sqrt(sc), by - 2.5 * np.sqrt(sc)]]
+
+        # # Plot the results
+        # plt.figure(figsize=(4.2, 4))
+        # for i, patch in enumerate(kmeans.cluster_centers_):
+        #     plt.subplot(9, 9, i + 1)
+        #     plt.imshow(patch.reshape(patch_size), cmap=plt.cm.gray,
+        #                interpolation='nearest')
+        #     plt.xticks(())
+        #     plt.yticks(())
+        #
+        # plt.suptitle('Patches of faces\nTrain time %.1fs on %d patches' %
+        #              (dt, 8 * len(faces.images)), fontsize=16)
+        # plt.subplots_adjust(0.08, 0.02, 0.92, 0.85, 0.08, 0.23)
+        #
+        # plt.show()
+
+    fig, ax = plot_image(image, cmap=cmap, interpolation=interpolation, norm=norm, plot_axis=plot_axis, hold=True, patch=patch)
+    plt.hold(1); plt.title(title)
     argmaxgrad = feature.get('argmaxgrad')  # tuple of (argmaxgrad[0], argmaxgrad[1]) = (ndarray, ndarray) = (col, row)
     scale = feature.get('scale')  # 1d-array
     strength = feature.get('strength')
@@ -667,9 +697,14 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
                         hist_ind += 1
                     elif blob_color == 'strength': o_color = blob_cmap.to_rgba(strength[ii])
                     elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
-                    plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
-                             [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)],
-                              color=o_color, linewidth=0.5)
+
+                    if feature_ref is None:
+                        plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
+                                 [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)], color=o_color, linewidth=1)
+                    elif (feature_ref[0] == ii) and (feature_ref[1] == jj):
+                        # print 'bx', bx, 'by', by
+                        plt.plot([bx, bx + np.sqrt(scale[ii]) * 1.5 * np.cos(ori)],
+                                 [by, by + np.sqrt(scale[ii]) * 1.5 * np.sin(ori)], color=o_color, linewidth=1)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
@@ -677,8 +712,12 @@ def plot_feature(image, feature, feature_name='blob', cmap='gray', interpolation
             elif blob_color == 'class':
                 if len(orientation[ii]) == 0: b_color = 'None'
                 else: b_color = blob_cmap(mean)
-            ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
-                    by, color=b_color, linewidth=0.5)
+            if feature_ref is None:
+                ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
+                        by, color=b_color, linewidth=1)
+            elif feature_ref[0] == ii:
+                ax.plot(ucirc[0, :]*np.sqrt(scale[ii])*1.5 + bx, ucirc[1, :]*np.sqrt(scale[ii])*1.5 +
+                        by, color=b_color, linewidth=1)
             # ax.text(bx, by, '(%d,%d; %.1f; %.2f' % (bx, by, 3 * np.sqrt(scale[ii]), strength), color='r')
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(blob_cmap, label='3$\sqrt{t}$ [pixel - analysis]')

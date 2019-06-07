@@ -569,39 +569,52 @@ def memory_usage():
     print("CPU Usage = " + CPU_Pct)
 
 
-def read_features(input_files, training_set=1):
+def read_features(input_files, training_set=1, training_size=0.8, redo_trainingset=0):
 
     import pickle
 
-    feature_all_aux = []; file_dirs = []
+    feature_all_aux = []; feature_all_test_aux=[]; file_dirs = []
     for kk in range(len(input_files)):
         print '\t reading output variables in', input_files[kk]
         file_variables = open(input_files[kk],'rb')
         output = pickle.load(file_variables)
         feature_all = output[0]; file_dir = output[1]; dict_inputfile = output[2]
         dict_image = output[3]; dict_sift = output[4]
-        if len(output) < 6:
-            print '\t\tgenerating training set...'
-            trainingset_filenames = generate_training_set([input_files[kk]])
-        else: trainingset_filenames = output[5]
-        print '\t\t\tTraining set:'
-        for file_name in trainingset_filenames:
-            print '\t\t\t\t', file_name
-        print '\t\t\tsize of training set = ', len(trainingset_filenames), 'of', len(feature_all)
-        file_variables.close()
-        output = []; del output
         if training_set:
+            if len(output) < 6:
+                print '\t\tgenerating training set with', training_size*100, '% of dataset...'
+                trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
+            else:
+                print '\t\tThis dataset contains already a training set.'
+                trainingset_filenames = output[5]
+                if redo_trainingset:
+                    print '\t\tOverwriting... generating training set with', training_size * 100, '% of dataset...'
+                    trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
+            print '\t\t\tTraining set:'
+            for file_name in trainingset_filenames:
+                print '\t\t\t\t', file_name
+            print '\t\t\tTest set:'
+            for file_name in [feature['file_name'] for feature in feature_all if feature['file_name'] \
+                    not in trainingset_filenames]:
+                print '\t\t\t\t', file_name
+            print '\t\t\tsize of training set = ', len(trainingset_filenames), 'of', len(feature_all)
             files = [ii for ii, feature in enumerate(feature_all) if feature['file_name'] in trainingset_filenames]
             feature_all_aux.append([feature_all[ii] for ii in files])
-        else: feature_all_aux.append(feature_all)
+        else:
+            trainingset_filenames = []
+            feature_all_aux.append(feature_all)
+        files_test = [ii for ii, feature in enumerate(feature_all) if feature['file_name'] not in trainingset_filenames]
+        feature_all_test_aux.append([feature_all[ii] for ii in files_test])
+
+        file_variables.close()
+        output = []; del output
         file_dirs.append(file_dir)
     feature_all = []; del feature_all
     feature_all = [feature for exp in feature_all_aux for feature in exp]; feature_all_aux = []; del feature_all_aux
+    feature_all_test = [feature for exp in feature_all_test_aux for feature in exp]; feature_all_test_aux = []; del \
+        feature_all_test_aux
 
-    if training_set:
-        return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, trainingset_filenames
-    else:
-        return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift
+    return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, feature_all_test
 
 
 def save_features_small(input_files):
@@ -614,15 +627,15 @@ def save_features_small(input_files):
         feature_all = output[0]; file_dir = output[1]; dict_inputfile = output[2]
         dict_image = output[3]; dict_sift = output[4]
         if len(output) < 6:
-            trainingset_filenames = generate_training_set(input_files[kk])
+            trainingset_filenames = generate_training_set(feature_all)
         else: trainingset_filenames = output[5]
         file_variables.close()
         output = []; del output
-        print '\t removing vor and image and saving to', input_files[kk]+'2'
+        print '\t removing vor and image and saving to', input_files[kk]+'_small'
         for feature in feature_all:
-            print feature['file_name']
+            print '\t\t\t', feature['file_name']
             feature.pop('vor', None); feature.pop('image', None)
-        file_variables = open(input_files[kk]+'small', 'wb')
+        file_variables = open(input_files[kk]+'_small', 'wb')
         pickle.dump([feature_all, file_dir, dict_inputfile, dict_image, dict_sift, trainingset_filenames],
                     file_variables)
         file_variables.close()
@@ -630,22 +643,29 @@ def save_features_small(input_files):
     return 1
 
 
-def generate_training_set(input_files):
+def generate_training_set(feature_all, size_set=0.8):
 
-    import pickle, random
-    for kk in range(len(input_files)):
-        file_variables = open(input_files[kk],'rb')
-        [feature_all, file_dir, dict_inputfile, dict_image, dict_sift] = pickle.load(file_variables)
-        file_variables.close()
-
-        print '\t\tsaving training output variables in', input_files[kk]
-        trainingset = random.sample(range(len(feature_all)), k=int(0.8*len(feature_all)))
-        trainingset.sort()
-        trainingset_filenames = [feature['file_name'] for feat, feature in enumerate(feature_all) if feat in
+    import random
+    trainingset = random.sample(range(len(feature_all)), k=int(size_set*len(feature_all)))
+    trainingset.sort()
+    trainingset_filenames = [feature['file_name'] for feat, feature in enumerate(feature_all) if feat in
                                  trainingset]
-        file_variables = open(input_files[kk], 'wb')
-        pickle.dump([feature_all, file_dir, dict_inputfile, dict_image, dict_sift, trainingset_filenames],
-                    file_variables)
-        file_variables.close()
-
     return trainingset_filenames
+
+
+def colorbar(mappable):
+
+    """
+    function that resized colorbar to hight of the figure. Taken from https://joseph-long.com/writing/colorbars/
+
+    call: img = ax.imshow(data); colorbar(img)
+
+    """
+
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.05)
+    return fig.colorbar(mappable, cax=cax)
