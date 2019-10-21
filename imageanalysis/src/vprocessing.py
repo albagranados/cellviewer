@@ -1,7 +1,19 @@
 import os, matplotlib
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
-matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
+#
+# params = {
+#     'axes.labelsize': 20,  # fontsize for x and y labels (was 10)
+#     'font.size': 24,  # was 10
+#     'legend.fontsize': 10, # was 10
+#     'xtick.labelsize': 10,
+#     'ytick.labelsize': 10,
+#     'text.usetex': True,
+#     'font.family': 'serif',
+# }
+# mpl.rcParams.update(params)
+mpl.rcParams["text.usetex"] = True; mpl.rcParams['font.family'] = 'serif'  # configure latex plots
 
 
 def _adjust_bounds(ax, points):
@@ -309,7 +321,7 @@ def plot_densities(vor, thr=None, plot_axis='on', show_points=True, cmap='jet', 
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
     plt.hold(True)
     if show_points is True:
-        ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5)
+        ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.2)
 
     if plot_axis is 'off':
         plt.axis(plot_axis)
@@ -371,6 +383,7 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     """
     from scipy.interpolate import griddata
     from matplotlib.colors import LogNorm
+    import math
 
     grid_x, grid_y = np.mgrid[np.min(vor.points[:, 0]):np.max(vor.points[:, 0]):scale_pixel_size,
                               np.min(vor.points[:, 1]):np.max(vor.points[:, 1]):scale_pixel_size]
@@ -383,10 +396,34 @@ def densities_interpolate(vor, scale_pixel_size, interpolate_method='nearest', f
     # cbar.ax.set_ylabel('zero-rank density [nm$^{-2}$]', rotation=270); cbar.ax.set_xlabel('$log_{10}$')
     # plt.show()
 
+    plt.figure()
+    plt.imshow(densities_image.T, interpolation='none', cmap='jet')
+
+    densities_image2=[]
     if density_transform is not 'linear':
-        if np.any(densities_image <= 0):
-            densities_image[np.where(densities_image <= 0)] = None
-        densities_image = np.log10(densities_image)
+        if density_transform is 'log':
+            if np.any(densities_image <= 0):
+                densities_image[np.where(densities_image <= 0)] = None
+            densities_image = np.log10(densities_image)
+        elif density_transform is 'log_normal':
+            if np.any(densities_image < 0):
+                densities_image[np.where(densities_image < 0)] = 0
+            output_max = 255. #np.log10(np.max(densities_image))
+            print np.max(densities_image+1)
+            c = 1  # output_max/np.log10(np.max(densities_image+1))
+            densities_image2 = c*np.log10(densities_image)
+
+    # max_ = np.max(densities_image)
+    #
+    # def log_transform():
+    #     return (255 / np.log(1 + max_)) * np.log(1 + densities_image)
+    #
+    # plt.figure()
+    # plt.imshow(log_transform(), cmap=plt.get_cmap(name='gray'))
+    #
+    # print np.max(densities_image2)
+    # plt.figure()
+    # plt.imshow(densities_image2.T, interpolation='none', cmap='jet')
 
     return densities_image
 
@@ -417,11 +454,15 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='g
     strength = feature.get('strength')
     orientation = feature.get('orientation', [])
 
-    # fig, ax = plot_densities(vor, plot_axis=plot_axis, show_points=show_points, cmap=cmap, norm=norm, hold=True)
-    fig, ax = plt.subplots()
+    fig, ax = plot_densities(vor, plot_axis=plot_axis, show_points=show_points, cmap=cmap, norm=norm, hold=True)
+    # fig, ax = plt.subplots()
     ax.plot(vor.points[:, 0], vor.points[:, 1], 'k.', markersize=0.5, alpha=0.5); ax.hold(True)
     ax.set_xlim(vor.points[:, 0].min(), vor.points[:, 0].max()); ax.set_ylim(vor.points[:, 1].min(), vor.points[:, 1].max())
     ax.set_aspect('equal', adjustable='box'); ax.hold('True')
+    if plot_axis is 'off':
+        # plt.axis(plot_axis)
+        ax.axes.get_xaxis().set_ticks([])
+        ax.axes.get_yaxis().set_ticks([])
 
     ox = np.min(vor.points[:, 0]); oy = np.min(vor.points[:, 1])
 
@@ -458,18 +499,19 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='g
                         hist_ind += 1
                     elif blob_color == 'strength': o_color = blob_cmap.to_rgba(strength[ii])
                     elif blob_color == 'scale': o_color = blob_cmap.to_rgba(np.sqrt(scale[ii]) * 2 * 1.5)
+                    o_color = 'k'
                     if feature_ref is None:
                         plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
                                   np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
                                  [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
                                   np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
-                                  color=o_color, linewidth=1)
+                                  color=o_color, linewidth=0.3)
                     elif (feature_ref[0] == ii) and (feature_ref[1] == jj):
                         plt.plot([ox + bx * scale_pixel_size, ox + bx * scale_pixel_size +
                                   np.sqrt(scale[ii]) * 1 * 1.5 * np.cos(ori) * scale_pixel_size],
                                  [oy + by * scale_pixel_size, oy + by * scale_pixel_size +
                                   np.sqrt(scale[ii]) * 1 * 1.5 * np.sin(ori) * scale_pixel_size],
-                                  color=o_color, linewidth=1)
+                                  color=o_color, linewidth=0.3)
                 if len(orientation[ii]) > 0 and ori_color is not None: mean = Counter(mean).most_common(1)[0][0]
             # # plot blobs - detected features
             if blob_color == 'strength': b_color = blob_cmap.to_rgba(strength[ii])
@@ -477,14 +519,15 @@ def plot_feature(vor, feature, dict_sift, plot_axis='on', show_points=1, cmap='g
             elif blob_color == 'class':
                 if len(orientation[ii]) == 0: b_color = 'None'
                 else: b_color = blob_cmap(mean)
+            b_color = 'k'
             if feature_ref is None:
                 ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
                               oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
-                              color=b_color, linewidth=1)
+                              color=b_color, linewidth=0.3)
             elif feature_ref[0] == ii:
                 ax = plt.plot(ox + (ucirc[0, :] * np.sqrt(scale[ii]) * 1*1.5 + bx)*scale_pixel_size,
                               oy + (ucirc[1, :] * np.sqrt(scale[ii]) * 1*1.5 + by)*scale_pixel_size,
-                              color=b_color, linewidth=1)
+                              color=b_color, linewidth=0.3)
         # fig.colorbar(blob_cmap, label='max$_t\{\Delta_{\gamma-norm}\}$')
         # fig.colorbar(scalarmap, label='3$\sqrt{t}$ [pixel - original]')
     if plot_axis is 'off':

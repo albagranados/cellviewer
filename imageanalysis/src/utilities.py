@@ -1,7 +1,20 @@
 import os, matplotlib
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
-matplotlib.rcParams["text.usetex"] = True; matplotlib.rcParams['font.family'] = 'serif'  # configure latex plots
+
+# params = {
+#     'axes.labelsize': 20,  # fontsize for x and y labels (was 10)
+#     'font.size': 24,  # was 10
+#     'legend.fontsize': 10, # was 10
+#     'xtick.labelsize': 10,
+#     'ytick.labelsize': 10,
+#     'text.usetex': True,
+#     'font.family': 'serif',
+# }
+# mpl.rcParams.update(params)
+mpl.rcParams["text.usetex"] = True; mpl.rcParams['font.family'] = 'serif'  # configure latex plots
+
 
 
 class pointpattern():
@@ -60,17 +73,17 @@ class pointpattern():
                            self.points1 = self.points[np.where(self.channels == ch)]
                            print '\tChannel %d in .points1.' % ch
                            if save_output_dir is not None:
-                               np.savetxt(save_output_dir + file_name + '_Ch1' + fileExt,
+                               np.savetxt(save_output_dir + file_name + '_Ch' + str(ch) + fileExt,
                                           self.points[np.where(self.channels == out_channel[0])])
-                               print '\tFile saved in *_Ch1'
+                               print '\tFile saved in *_Ch' + str(ch)
                         if jj == 1:
                             print 'in out_channel==2'
                             self.points2 = self.points[np.where(self.channels == ch)]
                             print '\tChannel %d in .points2.' % ch
                             if save_output_dir is not None:
-                                np.savetxt(save_output_dir + file_name + '_Ch2' + fileExt,
+                                np.savetxt(save_output_dir + file_name + '_Ch' + str(ch) + fileExt,
                                           self.points[np.where(self.channels == out_channel[1])])
-                                print '\tFile saved in *_Ch2'
+                                print '\tFile saved in *_Ch' + str(ch)
                 else:
                    if save_output_dir is True:
                        np.savetxt(save_output_dir + file_name + fileExt, self.points)
@@ -458,16 +471,11 @@ def permute_labels(siftclusters, k, centers_permuted0):
     return centers_permuted0, siftclusters
 
 
-def select_labels_image(feature_all, labels_all, image_no):
+def select_labels_image(feature_all, image_no):
 
-    aux = 0; num_features = []
-    for feature in feature_all:
-        for ori in feature['orientation']:
-            aux += len(ori)
-        num_features.append(aux)  # number of features or hist (!=[]) per image
-        aux = 0
-    image_ref = np.append(0, np.cumsum(num_features))
-    siftclusters_labels_image = labels_all[image_ref[image_no]:image_ref[image_no+1]]
+    feature = feature_all[image_no]
+    siftclusters_labels_image = [feature['word_label'][ii][jj] for ii, orientation in
+                                enumerate(feature['orientation']) for jj, ori in enumerate(orientation)]
 
     return siftclusters_labels_image
 
@@ -569,52 +577,79 @@ def memory_usage():
     print("CPU Usage = " + CPU_Pct)
 
 
-def read_features(input_files, training_set=1, training_size=0.8, redo_trainingset=0):
+def read_features(input_files, redo_trainingset=0, training_size=0.7):
 
     import pickle
 
-    feature_all_aux = []; feature_all_test_aux=[]; file_dirs = []
+    feature_all_aux = []; file_dirs = []; trainingset_filenames = []; trainingset_filenames_all = []
     for kk in range(len(input_files)):
-        print '\t reading output variables in', input_files[kk]
+        print '\t reading output variables in', '.../' + '/'.join(input_files[kk].split('/')[-3:])
         file_variables = open(input_files[kk],'rb')
-        output = pickle.load(file_variables)
+        output = pickle.load(file_variables); file_variables.close()
         feature_all = output[0]; file_dir = output[1]; dict_inputfile = output[2]
         dict_image = output[3]; dict_sift = output[4]
-        if training_set:
-            if len(output) < 6:
-                print '\t\tgenerating training set with', training_size*100, '% of dataset...'
-                trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
-            else:
-                print '\t\tThis dataset contains already a training set.'
-                trainingset_filenames = output[5]
-                if redo_trainingset:
-                    print '\t\tOverwriting... generating training set with', training_size * 100, '% of dataset...'
-                    trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
-            print '\t\t\tTraining set:'
-            for file_name in trainingset_filenames:
-                print '\t\t\t\t', file_name
-            print '\t\t\tTest set:'
-            for file_name in [feature['file_name'] for feature in feature_all if feature['file_name'] \
-                    not in trainingset_filenames]:
-                print '\t\t\t\t', file_name
-            print '\t\t\tsize of training set = ', len(trainingset_filenames), 'of', len(feature_all)
-            files = [ii for ii, feature in enumerate(feature_all) if feature['file_name'] in trainingset_filenames]
-            feature_all_aux.append([feature_all[ii] for ii in files])
-        else:
-            trainingset_filenames = []
-            feature_all_aux.append(feature_all)
-        files_test = [ii for ii, feature in enumerate(feature_all) if feature['file_name'] not in trainingset_filenames]
-        feature_all_test_aux.append([feature_all[ii] for ii in files_test])
 
-        file_variables.close()
+        feature_all_aux.append(feature_all)
+
+        if len(output) < 6:
+            print '\t\tThis dataset does not contain a training set. Generating training set with', training_size*100, '% of dataset...'
+            trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
+        else:
+            print '\t\tThis dataset contains already a training set.'
+            trainingset_filenames = output[5]
+            if redo_trainingset:
+                print '\t\tOverwriting... generating training set with', training_size * 100, '% of dataset...'
+                trainingset_filenames = generate_training_set(feature_all, size_set=training_size)
+        if len(output) < 6 or redo_trainingset:
+            print '\t\tNew trainingset text file saved in variables.'
+            file_variables = open(input_files[kk], 'wb')
+            pickle.dump([output[0], output[1], output[2], output[3], output[4], trainingset_filenames],
+                        file_variables)
+            file_variables.close()
+
         output = []; del output
+        trainingset_filenames_all.extend(trainingset_filenames)
         file_dirs.append(file_dir)
+
     feature_all = []; del feature_all
     feature_all = [feature for exp in feature_all_aux for feature in exp]; feature_all_aux = []; del feature_all_aux
-    feature_all_test = [feature for exp in feature_all_test_aux for feature in exp]; feature_all_test_aux = []; del \
-        feature_all_test_aux
 
-    return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, feature_all_test
+    return feature_all, file_dirs, dict_inputfile, dict_image, dict_sift, trainingset_filenames_all
+
+
+def train_test_split(feature_all, trainingset_filenames):
+
+    feature_all_test = []
+    if len(trainingset_filenames) > 0:
+        feature_all_aux = []; feature_all_test_aux = []
+        print '\t\t\t- size of training set = ', len(trainingset_filenames), 'of', len(feature_all)
+        print '\t\tTraining set:'
+        for ii, feat in enumerate([feature for feature in feature_all if feature['file_name'] in
+                trainingset_filenames]):
+                print '\t\t\t', ii, ''.join(feat['file_dir'].split('/')[-2:]), '\t', feat['file_name']
+        print '\t\tTest set:'
+        for ii, feat in enumerate([feature for feature in feature_all if feature['file_name'] not in \
+                trainingset_filenames]):
+                print '\t\t\t', ii, ''.join(feat['file_dir'].split('/')[-2:]), '\t', feat['file_name']
+        # for file_name in [feature['file_name'] for feature in feature_all if feature['file_name'] \
+        #         not in trainingset_filenames]:
+        #     print '\t\t\t\t', file_name
+
+        feature_all_aux.append(
+            [feature for feature in feature_all if feature['file_name'] in trainingset_filenames])
+        feature_all_test_aux.append(
+            [feature for feature in feature_all if feature['file_name'] not in trainingset_filenames])
+
+        feature_all = []; del feature_all
+        feature_all = [feature for exp in feature_all_aux for feature in exp];
+        feature_all_aux = []; del feature_all_aux
+
+        feature_all_test = [feature for exp in feature_all_test_aux for feature in exp]
+        feature_all_test_aux = []; del feature_all_test_aux
+    else:
+        print '\tno training/test split is performed.'
+
+    return feature_all, feature_all_test
 
 
 def save_features_small(input_files):
@@ -669,3 +704,61 @@ def colorbar(mappable):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.05)
     return fig.colorbar(mappable, cax=cax)
+
+
+def make_meshgrid(x, h=.02):
+    """Create a mesh of points to plot in
+
+    Parameters
+    ----------
+    x: array with n_sample \times n_features dimension to base meshgrid on [x0, x1, x2, ...].
+    h: stepsize for meshgrid, optional
+
+    Returns
+    -------
+    ndarrays
+    """
+
+    mesh = []
+    h = 1./100*abs(x[:, 0].max()+abs(0.5*x[:, 0].max())-x[:, 0].min()-abs(0.5*x[:, 0].min()))
+    print h
+
+    for ii in range(x.shape[1]):  # in dimension - each coordinate
+        mesh.append(np.arange(x[:, ii].min()-abs(0.5*x[:, ii].min()), x[:, ii].max()+abs(0.5*x[:, ii].max()), h))
+
+    return np.meshgrid(*mesh)
+
+    # x_min, x_max = x.min() - 1, x.max() + 1
+    # y_min, y_max = y.min() - 1, y.max() + 1
+    # xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+    #                      np.arange(y_min, y_max, h))
+    # return xx, yy
+
+
+def plot_contours(ax, svm_model, xx, yy, **params):
+    """Plot the decision boundaries for a classifier.
+
+    Parameters
+    ----------
+    ax: matplotlib axes object
+    clf: a classifier
+    xx: meshgrid ndarray
+    yy: meshgrid ndarray
+    params: dictionary of params to pass to contourf, optional
+    """
+
+    Z = svm_model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    out = ax.contourf(xx, yy, Z, **params)
+
+    return out
+
+
+def find_file_dirs(feature_all):
+
+    if not isinstance(feature_all, list): feature_all = [feature_all]  # only one sample
+
+    file_dirs_all = np.asarray([feature['file_dir'] for feature in feature_all])
+    file_dirs = file_dirs_all[np.sort(np.unique(file_dirs_all, return_index=True)[1])]
+
+    return file_dirs
